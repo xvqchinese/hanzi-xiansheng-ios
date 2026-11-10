@@ -1,0 +1,9 @@
+int bdeasrInitial(void) { return -1; }
+int bdeasrStartRecognition(void) { return -1; }
+void *bdeasrFront(void) { return 0; }
+void *bdeasrGetJSONResult(void) { return 0; }
+long bdeasrRec(void) { return 0; }
+long bdeasrSetParam(void) { return 0; }
+long bdeasrSetSlot(void) { return 0; }
+long bdeasrBuildSlot(void) { return 0; }
+long bdeasrExit(void) { return 0; }

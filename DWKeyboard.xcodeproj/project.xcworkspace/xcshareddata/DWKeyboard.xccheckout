@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>EE59F5E2-4B7C-49BC-9FDE-62CBA1D2E0A3</string>
+	<key>IDESourceControlProjectName</key>
+	<string>DWKeyboard</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>5bf8bafd-5911-ef45-9079-b32d4a64ba0e</key>
+		<string>https://192.168.1.188/svn/ios_keyboard</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>DWIme/DWKeyboard.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>5bf8bafd-5911-ef45-9079-b32d4a64ba0e</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>5bf8bafd-5911-ef45-9079-b32d4a64ba0e</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.subversion</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>5bf8bafd-5911-ef45-9079-b32d4a64ba0e</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ios_keyboard</string>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,28 @@
+/* 
+  Localizable.strings
+  DWKeyboard
+
+  Created by mac on 14-11-18.
+  Copyright (c) 2014年 Apple. All rights reserved.
+*/
+"lang"="cn";
+"home_title" = "输入法设置";
+
+"phrs_title" = "下拉更新";
+
+"about_title" = "关于";
+"about_message" = "鼎氏输入法 (iOS版本)\nwww.xvqchinese.com 版权所有";
+"about_button_ok" = "确定";
+"button_download" = "下载";
+"news_title" = "官网新闻";
+"help_title" = "帮助";
+"user_title" = "自造词管理";
+
+"dbupdate_title" = "词库升级";
+"themes_title" = "皮肤";
+"user_title" = "用户词库";
+"settings_title" = "设置";
+
+"button_delete" = "  删 除  ";
+"is_last_version" = "已是最新版本！";
+

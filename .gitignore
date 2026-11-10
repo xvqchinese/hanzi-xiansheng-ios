@@ -1,0 +1,11 @@
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+Keyboard_broken_2012/
+.DS_Store
+*(1)
+*(1).a
+*(1).*

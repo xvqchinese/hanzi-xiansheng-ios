@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "5bf8bafd-5911-ef45-9079-b32d4a64ba0e",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "5bf8bafd-5911-ef45-9079-b32d4a64ba0e" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "5bf8bafd-5911-ef45-9079-b32d4a64ba0e" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "EE59F5E2-4B7C-49BC-9FDE-62CBA1D2E0A3",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "5bf8bafd-5911-ef45-9079-b32d4a64ba0e" : "ios_keyboard\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "DWKeyboard",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "DingShiIme\/DWKeyboard.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/192.168.1.188\/svn\/ios_keyboard",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "5bf8bafd-5911-ef45-9079-b32d4a64ba0e"
+    }
+  ]
+}

@@ -1,0 +1,896 @@
+//
+//  KeyboardViewController.swift
+//  Keyboard
+//
+//  Created by Alexei Baboulevitch on 6/9/14.
+//  Copyright (c) 2014 Apple. All rights reserved.
+//
+
+import UIKit
+import Foundation
+import AudioToolbox
+import CoreLocation
+import MapKit
+
+//func metric(name: String) -> CGFloat { return CGFloat(metrics[name]!) }
+
+class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLocationManagerDelegate
+{
+    
+    let backspaceDelay: NSTimeInterval = 0.5
+    let backspaceRepeat: NSTimeInterval = 0.05
+    
+    var heightConstraint: NSLayoutConstraint!
+    var heightConstraintAdd: Bool = false
+
+    var engine: EngineService!
+    var layout: KeyboardLayout!
+    var mForwardingView: ForwardingView!
+    var mBannerCmd: CommandBanner!
+    
+    var mBannerCand: SmallCand2?
+    var mBigCandPanel: BigCandView2?
+    var mSelectKB:   SelectKBView?
+    var mSettingPanel: SettingView?
+    var mPhrsPanel: PhrsView?
+    var mCoinciding: CoincidingView?
+    var mSmilePanel: SmileView?
+
+    var backspaceDelayTimer: Timer?
+    var backspaceRepeatTimer: Timer?
+    var autoMoveFocusTimer: Timer?
+    var hwTimer: Timer?
+    var shiftWasMultitapped: Bool = false
+    var oldBounds: CGRect?
+    var oldTopBannerH: CGFloat = 0
+    var candBounds: CGRect?
+    var hwAssociateKey: String?
+    var mHwQuery : UILabel? = nil
+    var mHwQueryStringList : [String]? = nil
+    var mBig5StringList : [String]? = nil
+    var mLocation: CLLocationManager?
+    var mComposingText:String?      // 预先上屏的字符串
+    
+    var lastPage: Int = KbPage.M_Chn              // 数字键盘返回时要用到
+    var currentPage: Int
+    {
+        didSet
+        {
+            MyLog("------->> currentPage didSet")
+
+            // add by lzl 20141017
+            //self.unsetupKeys()
+            
+            RunTimeBegin()
+            self.layout.initialize(currentPage)
+            RunTimeEnd("layout.initialize")
+
+            RunTimeBegin()
+            self.layout.layoutTemp(currentPage)
+            RunTimeEnd("layout.layoutTemp")
+
+            RunTimeBegin()
+            self.setupKeys()
+            RunTimeEnd("setupKeys")
+            // add by lzl 20141017
+            
+            self.engine.InitIM(currentPage)
+            self.closeCand()
+            if IsEnglishKB(currentPage)
+            {
+                Globals.prefs.setInteger(currentPage, forKey: "defaultEnIM")
+            }            
+            else if IsNeedEngine(currentPage)
+            {
+                Globals.prefs.setInteger(currentPage, forKey: "defaultCnIM")
+            }
+            self.onModeChange(currentPage)
+        }
+    }
+    
+    var backspaceActive: Bool
+    {
+        get
+        {
+            return (backspaceDelayTimer != nil) || (backspaceRepeatTimer != nil)
+        }
+    }
+    
+    enum ShiftState
+    {
+        case Disabled
+        case Enabled
+        case Locked
+        
+        func uppercase() -> Bool
+        {
+            switch self
+            {
+            case Disabled:
+                return false
+            case Enabled:
+                return true
+            case Locked:
+                return true
+            }
+        }
+    }
+    var shiftState: ShiftState
+    {
+        didSet
+        {
+            switch shiftState
+            {
+            case .Disabled:
+                self.updateKeyCaps(true)
+            case .Enabled:
+                self.updateKeyCaps(false)
+            case .Locked:
+                self.updateKeyCaps(false)
+            }
+        }
+    }
+    
+    
+    // TODO: why does the app crash if this isn't here?
+    
+    convenience init()
+    {
+        MyLog("------->> init()")
+        RunTimeBegin()
+        self.init(nibName: nil, bundle: nil)
+        RunTimeEnd("init")
+    }
+    
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?)
+    {
+        MyLog("------->> init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?)")
+        
+        KeyboardColor.Load()
+        Globals.Load()
+        
+        self.currentPage = Globals.prefs.integer(forKey: "defaultCnIM") // KbPage.M_Chn
+        self.shiftState = .Disabled
+        self.engine = EngineService()
+
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        
+        RunTimeBegin()
+        self.mForwardingView = ForwardingView(frame: CGRect.zero)
+        self.mBannerCmd = self.banner_cmd()
+        RunTimeEnd("init Banner")
+
+        RunTimeBegin()
+        self.layout = KeyboardLayout(model: Globals.keyboard, superview: self.mForwardingView)
+        RunTimeEnd("init layout")
+
+        RunTimeBegin()
+        self.view.addSubview(self.mBannerCmd!)
+        self.view.addSubview(self.mForwardingView)
+        self.view.clipsToBounds = false
+        self.view.backgroundColor = UIColor(red: 225/255, green: 225/255, blue: 225/255, alpha: 1)
+
+        self.mBannerCmd.show()
+        self.mForwardingView.show()
+        RunTimeEnd("init --> addSubview")
+        
+        RunTimeBegin()
+        self.layout.initialize(self.currentPage)
+        RunTimeEnd("init --- >> layout.initialize")
+        self.setupKeys()
+        self.onModeChange(self.currentPage)
+    }
+    
+    
+    required init(coder: NSCoder)
+    {
+        MyLog("------->> init(coder: NSCoder)")
+        
+        fatalError("NSCoding not supported")
+    }
+    
+    override func viewDidLoad()
+    {
+        super.viewDidLoad()
+        IMEngine.DWIMEOpenException()
+
+        let dummyView = UILabel(frame:CGRect.zero)
+        dummyView.translatesAutoresizingMaskIntoConstraints = false
+        self.view.addSubview(dummyView);
+        
+        let height : CGFloat = 400
+        
+        self.heightConstraint = NSLayoutConstraint(item:self.inputView!, attribute:.Height,
+                                    relatedBy:.Equal, toItem:nil, attribute:.NotAnAttribute, multiplier:0.0, constant:height)
+    }
+    
+    deinit
+    {
+        MyLog("------->>KeyboardViewController --> deinit")
+        self.End()
+        NSNotificationCenter.defaultCenter().removeObserver(self)
+    }
+    
+    private func End()
+    {
+        MyLog("------->> End  ******* 释放 *******")
+
+        if self.engine != nil
+        {
+            self.engine.End()
+            self.engine = nil
+        }
+
+        if self.layout != nil
+        {
+            self.layout.End()
+            self.layout = nil
+        }
+        
+        if self.mForwardingView != nil
+        {
+            self.mForwardingView.removeFromSuperview()
+            self.mForwardingView.End()
+            self.mForwardingView = nil
+        }
+
+        if self.mBannerCmd != nil
+        {
+            self.mBannerCmd.removeFromSuperview()
+            self.mBannerCmd.End()
+            self.mBannerCmd = nil
+        }
+        
+        if self.mHwQuery != nil
+        {
+            self.mHwQuery!.removeFromSuperview();
+            self.mHwQuery = nil
+        }
+
+        self.closeSmallCand()
+        self.closeSelectKB()
+        self.closeSetting()
+        self.closePhrase()
+        self.closeBigCand()
+        self.closeCoinciding()
+
+        /*
+        if self.keyboard != nil
+        {
+            self.keyboard.End()
+            self.keyboard = nil
+        }*/
+        
+        self.heightConstraint = nil
+        self.oldBounds = nil
+        self.candBounds = nil
+        self.backspaceDelayTimer = nil
+        self.backspaceRepeatTimer = nil
+        self.autoMoveFocusTimer = nil
+        self.hwTimer = nil
+        self.hwAssociateKey = nil
+        self.mComposingText = nil
+        self.mHwQueryStringList = nil
+        self.mBig5StringList = nil
+        self.mLocation = nil
+        
+        //self.unsetupKeys()
+        Globals.End()
+        KeyboardColor.End()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool)
+    {
+        MyLog("------->> viewWillDisappear")
+        super.viewWillDisappear(animated)
+        self.End()
+    }
+    
+    override func dismissKeyboard()
+    {
+        MyLog("------->> dismissKeyboard")
+        super.dismissKeyboard()
+        self.End()
+    }
+    
+    override func viewDidDisappear(_ animated: Bool)
+    {
+        MyLog("------->> viewDidDisappear")
+        super.viewDidDisappear(animated)
+        self.End()
+    }
+    
+    override func updateViewConstraints()
+    {
+        MyLog("------->> updateViewConstraints")
+        super.updateViewConstraints()
+    }
+    
+    
+    override func viewDidLayoutSubviews()
+    {
+        MyLog("------->> viewDidLayoutSubviews")
+        super.viewDidLayoutSubviews()
+        let kbHeight = getKbHeight(getOrientation())
+        let topBanner = (self.currentPage == KbPage.M_HW) ? (kbHeight / 6) : (kbHeight / 5)
+        let kbWidth = Globals.singleHand ? (self.view.frame.width/5*4) : self.view.frame.width
+        let fullRect = CGRect(x: self.view.frame.origin.x, y: self.view.frame.origin.y, width: kbWidth, height: self.view.frame.height)
+        
+        // when a key gets a popup added, we don't want the entire layout to be redone
+        if (self.oldBounds == nil || self.oldBounds! != fullRect || self.oldTopBannerH != topBanner)
+        {
+            MyLog("------->> viewDidLayoutSubviews --->>> set")
+            RunTimeBegin()
+            
+            self.mForwardingView?.frame = CGRect(x: 0, y: topBanner, width: kbWidth, height: kbHeight - topBanner)
+            self.layout?.layoutTemp(self.currentPage)
+    
+            self.mBannerCmd?.frame = CGRect(x: 0, y: 0, width: kbWidth, height: topBanner)
+
+            self.oldBounds = fullRect
+            self.oldTopBannerH = topBanner;
+            self.candBounds = CGRect(x: 0, y: 0, width: kbWidth, height: topBanner)
+            RunTimeEnd("viewDidLayoutSubviews")
+        }
+        
+        if self.mBannerCand != nil
+        {
+            self.mBannerCand?.frame = CGRect(x: 0, y: 0, width: kbWidth, height: topBanner)
+        }
+        if self.mBigCandPanel != nil
+        {
+            self.mBigCandPanel?.frame = fullRect // 全屏
+        }
+        if (self.mForwardingView != nil && self.mForwardingView.enableHandWriting)
+        {
+            self.mForwardingView?.hwRect = self.layout?.getHandWritingRect(true)
+        }
+        if (self.mCoinciding != nil && IsNeedCoinciding(self.currentPage))
+        {
+            self.mCoinciding!.frame = self.layout.getCoincidingRect()
+        }
+        if (self.mSettingPanel != nil)
+        {
+            self.mSettingPanel!.frame = CGRect(x: 0, y: topBanner, width: kbWidth, height: kbHeight - topBanner)//self.view.frame // 全屏
+        }
+        if (self.mPhrsPanel != nil)
+        {
+            self.mPhrsPanel!.frame = fullRect
+        }
+        if (self.mSelectKB != nil)
+        {
+            self.mSelectKB!.frame = CGRect(x: 0, y: topBanner, width: kbWidth, height: kbHeight - topBanner)
+        }
+        if (self.mSmilePanel != nil)
+        {
+            self.mSmilePanel!.frame = CGRect(x: 0, y: topBanner, width: kbWidth, height: kbHeight - topBanner)
+        }
+        
+        if (self.mHwQuery != nil)
+        {
+            self.mHwQuery!.frame.origin.x = 10
+            self.mHwQuery!.frame.origin.y = topBanner
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool)
+    {
+        MyLog("------->> viewWillAppear")
+        super.viewWillAppear(animated)
+        
+        //if self.interfaceOrientation.isPortrait
+        //{
+            self.heightConstraint.constant = getKbHeight(getOrientation())
+            self.inputView!.addConstraint(self.heightConstraint)
+            self.heightConstraintAdd = true
+        //}
+        //else
+        //{
+            // 横屏不改高度
+        //}
+    }
+
+    override func viewDidAppear(_ animated: Bool)
+    {
+        MyLog("------->> viewDidAppear")
+        super.viewDidAppear(animated)
+        
+        self.engine.InitIM(self.currentPage)
+    }
+    
+    // TODO: the new size "snaps" into place on rotation, which I believe is related to performance
+    override func willRotateToInterfaceOrientation(toInterfaceOrientation: UIInterfaceOrientation, duration: NSTimeInterval)
+    {
+        MyLog("------->> willRotateToInterfaceOrientation")
+        self.oldBounds = nil  // 这里可以使界面重新布局
+        //if toInterfaceOrientation.isPortrait
+        //{
+            if !self.heightConstraintAdd
+            {
+                self.heightConstraint.constant = getKbHeight(toInterfaceOrientation)
+                self.inputView!.addConstraint(self.heightConstraint)
+                self.heightConstraintAdd = true
+            }
+            else
+            {
+                self.heightConstraint.constant = getKbHeight(toInterfaceOrientation)
+            }
+        //}
+        //else
+        //{
+            // 横屏不改高度
+        //}
+        
+        self.mForwardingView.reset()
+    }
+    
+    func getKbHeight(toInterfaceOrientation: UIInterfaceOrientation) -> CGFloat
+    {
+        //MyLog("------->> getKbHeight")
+        let h = max(UIScreen.main.bounds.height, UIScreen.main.bounds.width)
+        let w = min(UIScreen.main.bounds.height, UIScreen.main.bounds.width)
+        let r = h / w
+        var ret: CGFloat = 0;
+        
+        if toInterfaceOrientation.isPortrait
+        {
+            if r <= 1.5
+            {
+                ret = (h * 0.30) * r // ipa=1.33, iphone=1.5, 1.77
+            }
+            else
+            {
+                ret = (h * 0.25) * r // ipa=1.33, iphone=1.5, 1.77
+            }
+        }
+        else
+        {
+            if r <= 1.5
+            {
+                ret = (w * 0.40) * r // ipa=1.33, iphone=1.5, 1.77
+            }
+            else
+            {
+                ret = (w * 0.35) * r // ipa=1.33, iphone=1.5, 1.77
+            }
+        }
+        
+        if self.currentPage == KbPage.M_HW
+        {
+            return CGFloat(Int(ret * Globals.kbHeight)) * 1.1 /*放大倍数*/
+        }
+        return CGFloat(Int(ret * Globals.kbHeight)) /*放大倍数*/
+    }
+    
+    func setupKey(remove:Bool, key: Key)
+    {
+        let showOptions: UIControl.Event = [.touchDown, .TouchDragInside, .TouchDragEnter]
+        let hideOptions: UIControl.Event = [.touchUpInside, .touchUpOutside, .TouchDragOutside]
+        let cancelEvents: UIControl.Event = [UIControl.Event.touchUpInside, UIControl.Event.touchUpInside, UIControl.Event.touchDragExit, UIControl.Event.touchUpOutside, UIControl.Event.touchCancel, UIControl.Event.touchDragOutside]
+        
+        let keyView = self.layout.viewForKey(key) // TODO: check
+        
+        switch key.type
+        {
+        case Key.KeyType.KeyboardChange:
+            keyView?.setTarget(remove, target: self, action: "advanceToNextInputMode", for: .touchUpInside)
+            
+        case Key.KeyType.Backspace:
+            keyView?.setTarget(remove, target: self, action: "backspaceDown:", for: .touchDown)
+            keyView?.setTarget(remove, target: self, action: "backspaceUp:", for: cancelEvents)
+            
+        case Key.KeyType.Shift:
+            keyView?.setTarget(remove, target: self, action: Selector("shiftDown:"), for: .touchUpInside)
+            keyView?.setTarget(remove, target: self, action: Selector("shiftDoubleTapped:"), for: .touchDownRepeat)
+
+        case Key.KeyType.Mode2PopupSymb:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChangePopupSymb"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2T9_123:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2T9_123"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2123_CN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2123_CN"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2123_EN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2123_EN"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2Eng:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2Eng"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2Sym_CN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2Sym_CN"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2Sym_EN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2Sym_EN"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2Chn:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChange2Chn"), for: .touchUpInside)
+            
+        case Key.KeyType.ModeRet_Chn:
+            keyView?.setTarget(remove, target: self, action: Selector("modeReturnChn"), for: .touchUpInside)
+
+        case Key.KeyType.ModeRet_Auto:
+            keyView?.setTarget(remove, target: self, action: Selector("modeReturnAuto"), for: .touchUpInside)
+            
+        case Key.KeyType.ModeRet_Eng:
+            keyView?.setTarget(remove, target: self, action: Selector("modeReturnEng"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2CommonEN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChangeCommonEng"), for: .touchUpInside)
+            
+        case Key.KeyType.Mode2SmartEN:
+            keyView?.setTarget(remove, target: self, action: Selector("modeChangeSmartEng"), for: .touchUpInside)
+            
+        default:
+            break
+        }
+        if key.hasOutput
+        {
+            keyView?.setTarget(remove, target: self, action: "keyPressedHelper:", for: .touchUpInside)
+        }
+        
+        if key.showPop && (key.type == Key.KeyType.Character || key.type == Key.KeyType.Period)
+        {
+            keyView?.setTarget(remove, target: keyView, action: Selector("showPopup"), for: showOptions)
+            keyView?.setTarget(remove, target: keyView, action: Selector("hidePopup"), for: hideOptions)
+        }
+        
+        if key.type != Key.KeyType.Shift
+        {
+            keyView?.setTarget(remove, target: self, action: Selector("highlightKey:"), for: showOptions)
+            keyView?.setTarget(remove, target: self, action: Selector("unHighlightKey:"), for: hideOptions)
+        }
+    }
+    
+    /*
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    BUG NOTE
+    None of the UIContentContainer methods are called for this controller.
+    */
+    //override func viewWillTransitionToSize(size: CGSize, withTransitionCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+    //    super.viewWillTransitionToSize(size, withTransitionCoordinator: coordinator)
+    //
+    // 分配按键功能
+    //
+    //}
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private func setupKeys()
+    {
+        let page = Globals.keyboard.pages[self.currentPage]
+        for rowKeys in page.rows
+        {
+            for key in rowKeys
+            {
+                self.setupKey(false, key: key)
+            }
+        }
+    }
+    
+    /*
+    private func unsetupKeys()
+    {
+        // 不缓冲 key 了，所以也不用 unsetup
+        for page in Globals.keyboard.pages
+        {
+            for rowKeys in page.rows
+            {
+                for key in rowKeys
+                {
+                    self.setupKey(true, key: key)
+                }
+            }
+        }
+    }*/
+    
+    override func didReceiveMemoryWarning()
+    {
+        MyLog("------->> didReceiveMemoryWarning ************** 注意 **************")
+
+        super.didReceiveMemoryWarning()
+        //self.view.backgroundColor = UIColor.red
+        self.mBannerCmd.backgroundColor = UIColor.red.withAlphaComponent(0.2)
+        // Dispose of any resources that can be recreated
+    }
+    
+    override func textWillChange(textInput: UITextInput?)
+    {
+        MyLog("------->> textWillChange")
+        // The app is about to change the document's contents. Perform any preparation here.
+    }
+    
+    override func textDidChange(textInput: UITextInput?)
+    {
+        MyLog("------->> textDidChange")
+        // The app has just changed the document's contents, the document context has been updated.
+    }
+    
+    func updateReturnKey()
+    {
+        if let proxy = self.textDocumentProxy as UITextInputTraits?
+        {
+            var title: String = "return"
+
+            MyLog("------->> updateReturnKey ---->> Value =  \(proxy.returnKeyType?.rawValue)")
+            
+            if proxy.returnKeyType == UIReturnKeyType.Go
+            {
+                title = "Go"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Google
+            {
+                title = "Google"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Join
+            {
+                title = "Join"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Next
+            {
+                title = "Next"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Route
+            {
+                title = "Route"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Search
+            {
+                title = "Search"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Send
+            {
+                title = "Send"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Yahoo
+            {
+                title = "Yahoo"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.Done
+            {
+                title = "Done"
+            }
+            if proxy.returnKeyType == UIReturnKeyType.EmergencyCall
+            {
+                title = "Call"
+            }
+            let page = Globals.keyboard.pages[self.currentPage]
+            for rowKeys in page.rows
+            {
+                for key in rowKeys
+                {
+                    let keyView = self.layout.viewForKey(key)
+                    if keyView != nil && keyView!.getType() == Key.KeyType.Return && keyView!.text != title
+                    {
+                        keyView!.text = title
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    @objc func highlightKey(sender: KeyboardKey)
+    {
+        if !sender.highlighted && Globals.accessOpen
+        {
+            /*
+            if Globals.vibrate
+            {
+                AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
+            }**/
+            if Globals.sound
+            {
+                AudioServicesPlaySystemSound(1104)
+            }
+        }
+        sender.highlighted = true
+    }
+    
+    @objc func unHighlightKey(sender: KeyboardKey)
+    {
+        sender.highlighted = false
+    }
+    
+    func keyPressedHelper(sender: KeyboardKey)
+    {
+        // alas, this doesn't seem to work yet
+        UIDevice.currentDevice().playInputClick()
+        
+        if let key = self.layout.keyForView(sender)
+        {
+            self.keyPressed(key, isSwipeDown: sender.isSwipeDown)
+            sender.isSwipeDown = false
+        }
+        
+        // 英文状态下：shift 按下了，要还原它
+        if self.shiftState == ShiftState.Enabled && IsEnglishKB(self.currentPage)
+        {
+            self.shiftState = ShiftState.Disabled
+
+            for (_, key) in self.layout.modelToView
+            {
+                if key.page == self.currentPage && key.highlighted == true && key.getType() == Key.KeyType.Shift
+                {
+                    key.highlighted = false
+                }
+            }
+        }
+    }
+    
+    func cancelBackspaceTimers()
+    {
+        self.backspaceDelayTimer?.invalidate()
+        self.backspaceRepeatTimer?.invalidate()
+        self.backspaceDelayTimer = nil
+        self.backspaceRepeatTimer = nil
+    }
+    
+    func backspaceDown(sender: KeyboardKey)
+    {
+        self.cancelBackspaceTimers()
+        
+        // first delete
+        UIDevice.currentDevice().playInputClick()
+        
+        if let textDocumentProxy = self.textDocumentProxy as UIKeyInput?
+        {
+            let keyBack = Key(.Backspace)
+            if !self.MyKeyPressed(keyBack, repeatCount: 0, isSwipeDown: false)
+            {
+                textDocumentProxy.deleteBackward()
+            }
+        }
+        
+        // trigger for subsequent deletes
+        self.backspaceDelayTimer = Timer.scheduledTimer(timeInterval: backspaceDelay - backspaceRepeat, target: self, selector: Selector("backspaceDelayCallback"), userInfo: nil, repeats: false)
+    }
+    
+    func backspaceUp(sender: KeyboardKey)
+    {
+        self.cancelBackspaceTimers()
+    }
+    
+    @objc func backspaceDelayCallback()
+    {
+        self.backspaceDelayTimer = nil
+        self.backspaceRepeatTimer = Timer.scheduledTimer(timeInterval: backspaceRepeat, target: self, selector: Selector("backspaceRepeatCallback"), userInfo: nil, repeats: true)
+    }
+    
+    @objc func backspaceRepeatCallback()
+    {
+        if let textDocumentProxy = self.textDocumentProxy as UIKeyInput?
+        {
+            let keyBack = Key(.Backspace)
+            if !self.MyKeyPressed(keyBack, repeatCount: 0, isSwipeDown: false)
+            {
+                textDocumentProxy.deleteBackward()
+            }
+        }
+    }
+    
+    @objc func shiftDown(sender: KeyboardKey)
+    {
+        if self.shiftWasMultitapped
+        {
+            self.shiftWasMultitapped = false
+            return
+        }
+        
+        switch self.shiftState
+        {
+        case .Disabled:
+            self.shiftState = .Enabled
+            sender.highlighted = true
+        case .Enabled:
+            self.shiftState = .Disabled
+            sender.highlighted = false
+        case .Locked:
+            self.shiftState = .Disabled
+            sender.highlighted = false
+        }
+        
+        (sender.shape as? ShiftShape)?.withLock = false
+    }
+    
+    @objc func shiftDoubleTapped(sender: KeyboardKey)
+    {
+        self.shiftWasMultitapped = true
+        
+        switch self.shiftState
+        {
+        case .Disabled:
+            self.shiftState = .Locked
+            sender.highlighted = true
+        case .Enabled:
+            self.shiftState = .Locked
+            sender.highlighted = true
+        case .Locked:
+            self.shiftState = .Disabled
+            sender.highlighted = false
+        }
+        
+        (sender.shape as? ShiftShape)?.withLock = (self.shiftState == .Locked)
+    }
+    
+    func updateKeyCaps(lowercase: Bool)
+    {
+        if IsEnglishKB(self.currentPage)
+        {
+            for (model, key) in self.layout.modelToView
+            {
+                if key.page == self.currentPage
+                {
+                    key.text = model.keyCapForCase(!lowercase)
+                }
+            }
+        }
+    }
+
+    func onModeChange(newMode: Int)
+    {
+        self.shiftState = .Disabled
+        
+        if IsNeedCoinciding(newMode)
+        {
+            self.showCoinciding()
+            //self.view.setNeedsLayout()
+        }
+        else
+        {
+            self.closeCoinciding()
+        }
+        
+        //-------------------------------------------------------
+        // 允许不同模式高度不同
+        //-------------------------------------------------------
+        self.heightConstraint.constant = getKbHeight(getOrientation())
+        //-------------------------------------------------------
+        //-------------------------------------------------------
+
+        if newMode == KbPage.M_HW
+        {
+            self.view.setNeedsLayout()
+        }
+        else
+        {
+            self.mHwQuery?.removeFromSuperview()
+            self.mHwQuery = nil
+        }
+        self.mForwardingView.onModeChange(newMode, handler: self)
+    }
+    
+    func doHide()
+    {
+        self.dismissKeyboard()
+    }
+    
+    func hideKeyboard()
+    {
+        self.mForwardingView.hide()
+        self.closeCoinciding()
+        self.mHwQuery?.isHidden = true
+    }
+
+    func showKeyboard()
+    {
+        self.mForwardingView.show()
+        if IsNeedCoinciding(self.currentPage)
+        {
+            self.showCoinciding()
+        }
+        if self.currentPage == KbPage.M_HW
+        {
+            self.mHwQuery?.isHidden = false
+        }
+    }
+
+    func keyPressed(key: Key, isSwipeDown: Bool) {}
+}
+
+//// does not work; drops CPU to 0% when run on device
+//extension UIInputView: UIInputViewAudioFeedback {
+//    public var enableInputClicksWhenVisible: Bool {
+//        return true
+//    }
+//}

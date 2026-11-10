@@ -1,0 +1,35 @@
+/* 
+  Localizable.strings
+  DWKeyboard
+
+  Created by mac on 14-11-18.
+  Copyright (c) 2014年 Apple. All rights reserved.
+*/
+"  返回  "="  Back  ";
+"  返 回  "="  Back  ";
+"  英 文  "=" English ";
+"  中 文  "=" Chinese ";
+"  数 学  "=" Ｍath ";
+"  网 络  "=" Net ";
+"  图 形  "=" Ｇraph ";
+"  其 它  "=" Ｏther ";
+"请打开“完成访问”使用更多功能！"="Please open \"Allow Full Access\".";
+"  取消单手  "=" Single On  ";
+"  单手模式  "=" Single Off ";
+"  定位  "=" Loca. ";
+"  设置  "="  Set.  ";
+"按键声音"="Key sound";
+"中文发音"="Chinese reading";
+
+"手写"="HW";
+"鼎氏拼音"="PinYin";
+"符"="Symb.";
+"更多"="More";
+"中文"="Cn";
+"返回"="Back";
+"鼎氏笔画"="Stroke";
+"字母"="Letter";
+"单词"="Word";
+"空格"="Space";
+"组词"="Phr.";
+"通配"="?";

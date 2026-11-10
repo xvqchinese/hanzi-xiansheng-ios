@@ -1,0 +1,294 @@
+diff --git a/DWKeyboard.xcodeproj/project.pbxproj b/DWKeyboard.xcodeproj/project.pbxproj
+index b5e7e55..6482dc1 100644
+--- a/DWKeyboard.xcodeproj/project.pbxproj
++++ b/DWKeyboard.xcodeproj/project.pbxproj
+@@ -2128,7 +2128,7 @@
+ 					"$(PROJECT_DIR)/DingShiApp/umeng_ios_social_sdk_5.2_arm64_custom/UMSocial_Sdk_Extra_Frameworks/SinaSSO",
+ 				);
+ 				OTHER_LDFLAGS = "-ObjC";
+-				PRODUCT_BUNDLE_IDENTIFIER = DWIMECN.DingShi.App;
++				PRODUCT_BUNDLE_IDENTIFIER = com.shuxiongd.hanzixiansheng;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				PROVISIONING_PROFILE = "";
+ 				SWIFT_OBJC_BRIDGING_HEADER = "DingShiApp/DingShiApp-Bridging-Header.h";
+@@ -2169,7 +2169,7 @@
+ 					"$(PROJECT_DIR)/DingShiApp/umeng_ios_social_sdk_5.2_arm64_custom/UMSocial_Sdk_Extra_Frameworks/SinaSSO",
+ 				);
+ 				OTHER_LDFLAGS = "-ObjC";
+-				PRODUCT_BUNDLE_IDENTIFIER = DWIMECN.DingShi.App;
++				PRODUCT_BUNDLE_IDENTIFIER = com.shuxiongd.hanzixiansheng;
+ 				PRODUCT_NAME = "$(TARGET_NAME)";
+ 				PROVISIONING_PROFILE = "";
+ 				SWIFT_OBJC_BRIDGING_HEADER = "DingShiApp/DingShiApp-Bridging-Header.h";
+@@ -2201,7 +2201,7 @@
+ 					"$(inherited)",
+ 					"$(PROJECT_DIR)/Keyboard",
+ 				);
+-				PRODUCT_BUNDLE_IDENTIFIER = DWIMECN.DingShi.App.Keyboard;
++				PRODUCT_BUNDLE_IDENTIFIER = com.shuxiongd.hanzixiansheng.Keyboard;
+ 				PRODUCT_NAME = Keyboard;
+ 				PROVISIONING_PROFILE = "";
+ 				SKIP_INSTALL = YES;
+@@ -2229,7 +2229,7 @@
+ 					"$(inherited)",
+ 					"$(PROJECT_DIR)/Keyboard",
+ 				);
+-				PRODUCT_BUNDLE_IDENTIFIER = DWIMECN.DingShi.App.Keyboard;
++				PRODUCT_BUNDLE_IDENTIFIER = com.shuxiongd.hanzixiansheng.Keyboard;
+ 				PRODUCT_NAME = Keyboard;
+ 				PROVISIONING_PROFILE = "";
+ 				SKIP_INSTALL = YES;
+diff --git a/DWKeyboard.xcodeproj/xcshareddata/xcschemes/DingShiApp.xcscheme b/DWKeyboard.xcodeproj/xcshareddata/xcschemes/DingShiApp.xcscheme
+new file mode 100644
+index 0000000..43449cf
+--- /dev/null
++++ b/DWKeyboard.xcodeproj/xcshareddata/xcschemes/DingShiApp.xcscheme
+@@ -0,0 +1,79 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<Scheme
++   LastUpgradeVersion = "1540"
++   version = "1.7">
++   <BuildAction
++      parallelizeBuildables = "YES"
++      buildImplicitDependencies = "YES"
++      buildArchitectures = "Automatic">
++      <BuildActionEntries>
++         <BuildActionEntry
++            buildForTesting = "YES"
++            buildForRunning = "YES"
++            buildForProfiling = "YES"
++            buildForArchiving = "YES"
++            buildForAnalyzing = "YES">
++            <BuildableReference
++               BuildableIdentifier = "primary"
++               BlueprintIdentifier = "4E807D9219461D9000D875D1"
++               BuildableName = "DingShiApp.app"
++               BlueprintName = "DingShiApp"
++               ReferencedContainer = "container:DWKeyboard.xcodeproj">
++            </BuildableReference>
++         </BuildActionEntry>
++      </BuildActionEntries>
++   </BuildAction>
++   <TestAction
++      buildConfiguration = "Debug"
++      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
++      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
++      shouldUseLaunchSchemeArgsEnv = "YES">
++      <Testables>
++      </Testables>
++   </TestAction>
++   <LaunchAction
++      buildConfiguration = "Debug"
++      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
++      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
++      launchStyle = "0"
++      useCustomWorkingDirectory = "NO"
++      ignoresPersistentStateOnLaunch = "NO"
++      debugDocumentVersioning = "YES"
++      debugServiceExtension = "internal"
++      allowLocationSimulation = "YES">
++      <BuildableProductRunnable
++         runnableDebuggingMode = "0">
++         <BuildableReference
++            BuildableIdentifier = "primary"
++            BlueprintIdentifier = "4E807D9219461D9000D875D1"
++            BuildableName = "DingShiApp.app"
++            BlueprintName = "DingShiApp"
++            ReferencedContainer = "container:DWKeyboard.xcodeproj">
++         </BuildableReference>
++      </BuildableProductRunnable>
++   </LaunchAction>
++   <ProfileAction
++      buildConfiguration = "Release"
++      shouldUseLaunchSchemeArgsEnv = "YES"
++      savedToolIdentifier = ""
++      useCustomWorkingDirectory = "NO"
++      debugDocumentVersioning = "YES">
++      <BuildableProductRunnable
++         runnableDebuggingMode = "0">
++         <BuildableReference
++            BuildableIdentifier = "primary"
++            BlueprintIdentifier = "4E807D9219461D9000D875D1"
++            BuildableName = "DingShiApp.app"
++            BlueprintName = "DingShiApp"
++            ReferencedContainer = "container:DWKeyboard.xcodeproj">
++         </BuildableReference>
++      </BuildableProductRunnable>
++   </ProfileAction>
++   <AnalyzeAction
++      buildConfiguration = "Debug">
++   </AnalyzeAction>
++   <ArchiveAction
++      buildConfiguration = "Release"
++      revealArchiveInOrganizer = "YES">
++   </ArchiveAction>
++</Scheme>
+diff --git a/DingShiApp/DingShiApp.entitlements b/DingShiApp/DingShiApp.entitlements
+index 9025962..46e9de1 100644
+--- a/DingShiApp/DingShiApp.entitlements
++++ b/DingShiApp/DingShiApp.entitlements
+@@ -4,7 +4,7 @@
+ <dict>
+ 	<key>com.apple.security.application-groups</key>
+ 	<array>
+-		<string>group.DWIME_DS</string>
++		<string>group.com.shuxiongd.hanzixiansheng</string>
+ 	</array>
+ </dict>
+ </plist>
+diff --git a/DingShiApp/Utils.swift b/DingShiApp/Utils.swift
+index f1cda0c..d6c6c76 100644
+--- a/DingShiApp/Utils.swift
++++ b/DingShiApp/Utils.swift
+@@ -47,7 +47,7 @@ func getSysTicks() -> TimeInterval
+ func fileUrlFromGroup(file: String) -> URL
+ {
+     let fm: FileManager = FileManager.default
+-    let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
++    let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.shuxiongd.hanzixiansheng")
+     let fileURL = containerURL!.appendingPathComponent(file)
+ 
+     return fileURL
+@@ -63,7 +63,7 @@ func loadStringFileFromGroup(file: String) -> NSString?
+ 
+ func getGlobalPrefs() -> UserDefaults
+ {
+-    let gprefs : UserDefaults = UserDefaults(suiteName: "group.DWIME_DS")!
++    let gprefs : UserDefaults = UserDefaults(suiteName: "group.com.shuxiongd.hanzixiansheng")!
+     
+     // 默认值
+     //{
+diff --git a/Keyboard/BigCandView.swift b/Keyboard/BigCandView.swift
+index 93e9dec..b29b2a2 100644
+--- a/Keyboard/BigCandView.swift
++++ b/Keyboard/BigCandView.swift
+@@ -336,7 +336,7 @@ class BigCandView: UIView
+         {
+             cand.removeFromSuperview()
+         }
+-        self.loadOnePage(self.pageHistory.removeLast())
++        self.loadOnePage(begin: self.pageHistory.removeLast())
+     }
+ 
+     // 下一页
+@@ -359,7 +359,7 @@ class BigCandView: UIView
+         }
+ 
+         self.pageHistory.append(currentIdx)
+-        self.loadOnePage(nextIdx)
++        self.loadOnePage(begin: nextIdx)
+     }
+     
+     // 缓冲结果
+@@ -373,7 +373,7 @@ class BigCandView: UIView
+         {
+             for i in 0..<count
+             {
+-                self.candCache.append(engine.GetCand(i))
++                self.candCache.append(engine.GetCand(index: i))
+             }
+         }
+     }
+@@ -391,11 +391,11 @@ class BigCandView: UIView
+         {
+             for i in 0...99     // 这里限制数量
+             {
+-                self.cands.append(self.createCand2(i))
++                self.cands.append(self.createCand2(idx: i))
+             }
+         }
+-        self.cacheCand(engine)
+-        self.loadOnePage(0)
++        self.cacheCand(engine: engine)
++        self.loadOnePage(begin: 0)
+     }
+     
+     /*
+diff --git a/Keyboard/Globals.swift b/Keyboard/Globals.swift
+index af705e7..5fa6a96 100644
+--- a/Keyboard/Globals.swift
++++ b/Keyboard/Globals.swift
+@@ -18,7 +18,7 @@ struct Globals
+     static var sound: Bool = false
+     static var accessOpen: Bool = false
+     static var singleHand: Bool = false
+-    static var gprefs : UserDefaults = UserDefaults(suiteName: "group.DWIME_DS")!
++    static var gprefs : UserDefaults = UserDefaults(suiteName: "group.com.shuxiongd.hanzixiansheng")!
+     static var prefs : UserDefaults = UserDefaults.standard
+     static var images: [String:UIImage] = [:]
+     static var keyboard: Keyboard! = nil
+diff --git a/Keyboard/ImeHandler.swift b/Keyboard/ImeHandler.swift
+index d754fe3..120bdc8 100644
+--- a/Keyboard/ImeHandler.swift
++++ b/Keyboard/ImeHandler.swift
+@@ -409,7 +409,7 @@ extension KeyboardViewController
+         if let textDocumentProxy = self.textDocumentProxy as UIKeyInput?
+         {
+             let fm: FileManager = FileManager.default
+-            let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
++            let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.shuxiongd.hanzixiansheng")
+             let fileURL = containerURL!.appendingPathComponent("eLog.txt")
+             
+             let tt : NSString = "logs, test !"
+diff --git a/Keyboard/Keyboard.entitlements b/Keyboard/Keyboard.entitlements
+index 9025962..46e9de1 100644
+--- a/Keyboard/Keyboard.entitlements
++++ b/Keyboard/Keyboard.entitlements
+@@ -4,7 +4,7 @@
+ <dict>
+ 	<key>com.apple.security.application-groups</key>
+ 	<array>
+-		<string>group.DWIME_DS</string>
++		<string>group.com.shuxiongd.hanzixiansheng</string>
+ 	</array>
+ </dict>
+ </plist>
+diff --git a/Keyboard/SmallCand.swift b/Keyboard/SmallCand.swift
+index 334955d..ca93c52 100644
+--- a/Keyboard/SmallCand.swift
++++ b/Keyboard/SmallCand.swift
+@@ -137,7 +137,7 @@ class SmallCand: BannerView
+         while(i < str.length)
+         {
+             let hz = str.substring(with: NSRange(location: i, length: 1))
+-            self.cands.append(self.createCand(hz, idx: i))
++            self.cands.append(self.createCand(name: hz, idx: i))
+             i += 1
+         }
+ 
+@@ -155,11 +155,10 @@ class SmallCand: BannerView
+         }
+         self.cands.removeAll(keepingCapacity: true)
+         
+-        var i: Int32 = 0
+         let count: Int32 = engine.CandCount()
+-        for i = 0; i < 50 && i < count; i += 1
++        for i in 0 ..< min(50, count)
+         {
+-            self.cands.append(self.createCand(engine.GetCand(i) as String, idx: Int(i)))
++            self.cands.append(self.createCand(name: engine.GetCand(index: i) as String, idx: Int(i)))
+         }
+ 
+         self.candBar.contentOffset = CGPointZero
+@@ -169,7 +168,7 @@ class SmallCand: BannerView
+     
+     func updateComp(compStr: NSString, page: Int)
+     {
+-        if !IsNeedComp(page)
++        if !IsNeedComp(page: page)
+         {
+             if !self.compBar.isHidden
+             {
+diff --git a/Keyboard/Utils.swift b/Keyboard/Utils.swift
+index bc47f6f..ce88e31 100644
+--- a/Keyboard/Utils.swift
++++ b/Keyboard/Utils.swift
+@@ -78,7 +78,7 @@ func getSysTicks() -> TimeInterval
+ func fileUrlFromGroup(file: String) -> URL
+ {
+     let fm: FileManager = FileManager.default
+-    let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
++    let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.shuxiongd.hanzixiansheng")
+     let fileURL = containerURL!.appendingPathComponent(file)
+     MyLog("fileURL = \(fileURL)")
+     return fileURL

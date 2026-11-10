@@ -1,0 +1,121 @@
+/* 
+  Localizable.strings
+  DWKeyboard
+
+  Created by mac on 14-11-18.
+  Copyright (c) 2014年 Apple. All rights reserved.
+*/
+
+"lang"="en";
+
+"home_title" = "Settings";
+
+"词典"="Dict";
+"翻译"="Translate";
+"设置"="Setting";
+"请输入中文或英文进行查询"="Please enter word for inquiry";
+"翻译结果已复制成功！"="Translation results copy successfully!";
+"✅如何开启“鼎氏输入法“？"="✅How to start input method?";
+"👥用户词库管理"="👥User data";
+"🔧输入法设置"="🔧Keyboard settings";
+"🌐词库在线更新"="🌐Data update";
+"🎨输入法皮肤"="🎨Theme options";
+"📚输入法使用说明"="📚Use instructions";
+"🏢鼎氏学院"="🏢Xvqchinese school";
+"♥️与朋友分享"="♥️Share with friends";
+"ℹ️关于输入法"="ℹ️About...";
+"输入法异常日志"="Error logs";
+
+"鼎氏学院"="Xvqchinese";
+
+"清空"="Clear";
+"取消"="Cancel";
+"皮肤"="Themes";
+"完成"="Done";
+"用户"="User center";
+"说明书"="Instructions";
+
+"help_title" = "Help";
+"user_title" = "User data";
+"dbupdate_title" = "Updates";
+"about_title" = "About";
+"settings_title" = "Options";
+"button_delete" = "Delete";
+
+"  拼 音  "=" Pinyin ";
+"  笔 画  "=" Stroke ";
+"取消  "="Cancel";
+"  清空历史  "="  Clear history  ";
+"     关 闭     "="     Close     ";
+
+"点击更新"="Click to update";
+"已是最新版本"="Latest version";
+"开始下载"="Downloading";
+
+"拼音词库"="Pinyin data";
+"笔画词库"="Stroke data";
+"英文单词库"="English data";
+
+"上拉可以加载更多数据"="Pull up can load more data";
+"松开立即加载更多数据"="Release to load more data immediately";
+"正在加载数据..."="Loading data...";
+"上拉可以刷新"="Pull up to refresh";
+"松开立即刷新"="Release to refresh";
+"正在刷新中..."="Refresh...";
+"最后刷新时间:"="Last refresh:";
+
+
+"中文 » 英语"="Chinese » English";
+"英语 » 中文"="English » Chinese";
+"中文 » 日语"="Chinese » Japanese";
+"日语 » 中文"="Japanese » Chinese";
+"中文 » 韩语"="Chinese » Korean";
+"韩语 » 中文"="Korean » Chinese";
+"中文 » 法语"="Chinese » French";
+"法语 » 中文"="French » Chinese";
+
+"请输入需要翻译的内容..."="Please input the content that needs to be translated";
+
+"请说话"="Please speak";
+"正在识别"="Being recognized...";
+"完毕"="Complete";
+"词条内容"="Dict content";
+"备份完成！"="Backup completed!";
+"数据下载还原成功！"="Data download success!";
+"数据下载完成！"="Data download success!";
+"楷体_GB2312_v2"="KaiTi_GB2312_v2";
+
+"秒"="Seconds";
+"手写识别超时设置"="Handwriting recognition timeout";
+"当手指抬起开始计时，达到超时即清除手写区，重新开始。"="When the fingers are raised to start the timer, the time out is to clear the area and start again. ";
+"铅笔"="Pencil";
+"毛笔"="Brush";
+"手写笔效果"="Handwriting pen effect";
+"键盘高度"="Keyboard height";
+"拼音风格"="Pinyin style";
+
+"大"="Large";
+"中"="Ｍedium";
+"小"="Small";
+"不转换"="No conversion";
+"繁体"="Traditional";
+"英文"="English";
+"中文"="Chinese";
+"中文输出转换"="Chinese output conversion";
+"英文输出转换"="English output conversion";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

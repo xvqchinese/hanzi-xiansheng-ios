@@ -1,0 +1,146 @@
+//
+//  CommonWebView
+//  CommonWebView
+//
+//  Created by mac on 14-11-20.
+//  Copyright (c) 2014年 Apple. All rights reserved.
+//
+
+import UIKit
+import WebKit
+
+
+class CommonWebView: UIViewController, WKNavigationDelegate
+{
+    var web: WKWebView?
+    var url: String!
+    var titleStr: String!
+    var activityIndicatorView: UIActivityIndicatorView!
+    var scalesPage: Bool = true
+    var hzFlash :HZFlashView!
+    var showTimer: Timer?
+    
+    init(url: String, title: String, scalesPage: Bool)
+    {
+        self.init()
+        self.url = url
+        self.titleStr = title
+        self.scalesPage = scalesPage
+    }
+
+    override init(nibName: String?, bundle: Bundle?) {
+        super.init(nibName: nibName, bundle: bundle)
+    }
+
+    required init(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad()
+    {
+        self.web = WKWebView(frame: self.view.frame)
+        self.web?.navigationDelegate = self
+        self.view.addSubview(self.web!)
+        self.navigationItem.title = self.titleStr
+        
+        self.hzFlash = HZFlashView();
+        
+        if self.url.count == 0
+        {
+            // 无 url 就显示帮助: how to open ime?
+            let mb = Bundle.main
+            let srcPath = (mb.resourcePath! as NSString).appendingPathComponent("index.htm")
+        
+            let log = try? String(contentsOfFile: srcPath, encoding: String.Encoding.utf8)
+            self.web?.loadHTMLString(log as! String, baseURL: URL(fileURLWithPath: srcPath))
+        }
+        else if self.url == "share"
+        {
+            // 无 url 就显示帮助: how to open ime?
+            let mb = Bundle.main
+            let srcPath = (mb.resourcePath! as NSString).appendingPathComponent("share.htm")
+            
+            let log = try? String(contentsOfFile: srcPath, encoding: String.Encoding.utf8)
+            self.web?.loadHTMLString(log as! String, baseURL: URL(fileURLWithPath: srcPath))
+        }
+        else
+        {
+            self.web?.load(URLRequest(url: URL(string: self.url)!))
+        }
+
+        // wait...
+        activityIndicatorView = UIActivityIndicatorView(style: .white)
+        activityIndicatorView.frame = CGRect(x: self.view.frame.size.width/2 - 50, y: self.view.frame.size.height/2 - 30, width: 100, height: 60)
+        activityIndicatorView.hidesWhenStopped = true
+        activityIndicatorView.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        activityIndicatorView.color = UIColor.white
+        activityIndicatorView.layer.cornerRadius = 5.0
+        self.view.addSubview(activityIndicatorView)
+     
+        // 设置下拉, show.php 下拉不刷新，影响使用
+        if !self.url.contains("show.php")
+        {
+            self.web!.scrollView.addHeaderWithCallback { () -> Void in
+                self.web!.reload()
+                self.web!.scrollView.headerEndRefreshing()
+            }
+        }
+    }
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!)
+    {
+        self.activityIndicatorView.startAnimating()
+    }
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!)
+    {
+        self.activityIndicatorView.stopAnimating()
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error)
+    {
+        self.activityIndicatorView.stopAnimating()
+    }
+    
+    @objc func showHZFlash()
+    {
+        self.hzFlash.show()
+    }
+    
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void)
+    {
+        if navigationAction.navigationType == .linkActivated
+        {
+            if let urlString = navigationAction.request.url?.absoluteString
+            {
+                print(urlString)
+                
+                if urlString.contains("voice.cpp")
+                {
+                    let pys = urlString.components(separatedBy: "cn=&yin=")
+                    if pys.count == 2
+                    {
+                        playWav(pys[1]);
+                    }
+                    decisionHandler(.cancel)
+                    return
+                }
+                
+                if urlString.contains("flash.cpp")
+                {
+                    let phrs = urlString.components(separatedBy: "?phr=")
+                    if phrs.count == 2
+                    {
+                        self.hzFlash.setWord(word: (ocUtils.urlDecodedString(phrs[1]) ?? "") as NSString)
+                        self.showTimer?.invalidate()
+                        self.showTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: Selector("showHZFlash"), userInfo: nil, repeats: false)
+
+                    }
+                    decisionHandler(.cancel)
+                    return
+                }
+            }
+        }
+        decisionHandler(.allow)
+    }
+}
