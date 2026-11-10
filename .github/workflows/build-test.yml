@@ -1,0 +1,24 @@
+name: compile-test
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build-check:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+      - name: 选择最新 Xcode
+        run: |
+          ls /Applications | grep -i xcode || true
+          xcodebuild -version
+      - name: 编译主 App（不签名，验证代码可编译）
+        run: |
+          xcodebuild build \
+            -project DWKeyboard.xcodeproj \
+            -scheme DingShiApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO
