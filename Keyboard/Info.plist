@@ -38,6 +38,8 @@
 			<true/>
 			<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>用于语音输入：把您说的话实时转成文字，避免手动打字。</string>
 </dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.keyboard-service</string>
