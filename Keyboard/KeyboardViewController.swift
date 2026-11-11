@@ -51,6 +51,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     var mBig5StringList : [String]? = nil
     var mLocation: CLLocationManager?
     var mComposingText:String?      // 预先上屏的字符串
+    var mDiagLabel: UILabel? = nil  // 屏上诊断（临时）
     
     var lastPage: Int = KbPage.M_Chn              // 数字键盘返回时要用到
     var currentPage: Int
@@ -76,6 +77,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
             // add by lzl 20141017
             
             self.engine.InitIM(currentPage)
+            self.showDiag()
             self.closeCand()
             if IsEnglishKB(currentPage)
             {
@@ -210,6 +212,25 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         MyLog("------->>KeyboardViewController --> deinit")
         self.End()
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    
+    // MARK: - 屏上诊断（临时排障用，正式上架前删除）
+    func showDiag()
+    {
+        if self.engine == nil { return }
+        mDiagLabel?.removeFromSuperview()
+        let h: CGFloat = 26
+        let lab = UILabel(frame: CGRect(x: 0, y: self.view.bounds.height - h - 2, width: self.view.bounds.width, height: h))
+        lab.backgroundColor = UIColor(white: 0, alpha: 0.82)
+        lab.textColor = UIColor.white
+        lab.font = UIFont.systemFont(ofSize: 12)
+        lab.textAlignment = .center
+        lab.text = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0)"
+        lab.isUserInteractionEnabled = false
+        self.view.addSubview(lab)
+        mDiagLabel = lab
+        UIView.animate(withDuration: 0.2, delay: 12, options: [], animations: { lab.alpha = 0 }, completion: { _ in lab.removeFromSuperview() })
     }
     
     private func End()
@@ -398,6 +419,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         super.viewDidAppear(animated)
         
         self.engine.InitIM(self.currentPage)
+        self.showDiag()
     }
     
     // TODO: the new size "snaps" into place on rotation, which I believe is related to performance
