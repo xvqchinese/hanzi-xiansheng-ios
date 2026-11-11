@@ -34,8 +34,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 rootVC.present(ac0, animated: true, completion: nil)
                 return
             }
-            let tail = t.count > 1200 ? String(t.suffix(1200)) : t
-            let ac = UIAlertController(title: "键盘诊断日志（末尾）", message: tail, preferredStyle: .alert)
+            var extVer = "?"
+            if let plugins = Bundle.main.builtInPlugInsURL {
+                let kb = plugins.appendingPathComponent("Keyboard.appex")
+                if let b = Bundle(url: kb), let v = b.infoDictionary?["CFBundleShortVersionString"] as? String { extVer = v }
+            }
+            let appVer = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "?"
+            let head = "扩展版本=\(extVer)  主App=\(appVer)\n\n"
+            let tail = t.count > 1100 ? String(t.suffix(1100)) : t
+            let ac = UIAlertController(title: "键盘诊断日志（末尾）", message: head + tail, preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
             rootVC.present(ac, animated: true, completion: nil)
         }
