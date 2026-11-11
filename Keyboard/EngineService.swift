@@ -197,21 +197,29 @@ class EngineService
     {
         if file.count > 0
         {
+            // 1) 优先读共享容器里的在线词库，但必须校验完整性（0 字节/残缺文件会让引擎索引表为空）
             let mainPath = fileUrlFromGroup(file)
-            let dbData: Data! = try? Data(contentsOf: mainPath as URL)
-            if dbData != nil
+            if let dbData = try? Data(contentsOf: mainPath as URL), dbData.count > 1024
             {
-                // 这是在线下载的词库
+                MyLog("[DB] group \(file) = \(dbData.count) bytes")
                 return dbData
             }
+            else if let bad = try? Data(contentsOf: mainPath as URL)
+            {
+                MyLog("[DB] group \(file) 无效，长度=\(bad.count)，改用内置词库")
+            }
+
+            // 2) 回退到 App 内置词库（一定完整）
+            let mb = Bundle.main
+            let innerPath = (mb.resourcePath! as NSString).appendingPathComponent(file)
+            guard let dbMain = try? Data(contentsOf: URL(fileURLWithPath: innerPath), options: .mappedIfSafe), dbMain.count > 1024
             else
             {
-                // 这是 app 打包的词库
-                let mb = Bundle.main
-                let mainPath = (mb.resourcePath! as NSString).appendingPathComponent(file)
-                let dbMain: Data! = try? Data(contentsOf: URL(fileURLWithPath: mainPath), options: .mappedIfSafe)
-                return dbMain
+                MyLog("[DB] 内置词库 \(file) 读取失败")
+                return nil
             }
+            MyLog("[DB] bundle \(file) = \(dbMain.count) bytes")
+            return dbMain
         }
         return nil
     }
@@ -248,7 +256,8 @@ class EngineService
             else
             {
                 // py, wb, sk ...
-                var dbMain: Data! = self.loadDB(Page2DataFile(page))
+                guard let dbMainCheck = self.loadDB(Page2DataFile(page)), dbMainCheck.count > 1024 else { MyLog("[INIT] 词库不可用，跳过引擎"); return false }
+                var dbMain: Data! = dbMainCheck
                 var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
                 ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
                                     nil, 0,
