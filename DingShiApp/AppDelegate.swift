@@ -24,19 +24,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window?.addSubview(rootVC.view!)
         self.window!.makeKeyAndVisible()
         
-        // 临时诊断：显示键盘写入的引擎初始化结果（正式上架前删除）
-        if let txt = UserDefaults(suiteName: "group.DWIME_DS")?.string(forKey: "diag")
-        {
-            let ac = UIAlertController(title: "键盘引擎诊断", message: txt, preferredStyle: .alert)
+        // 临时自检：主 App 内直接跑引擎（正式上架前删除）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            let txt = AppDelegate.engineSelfTest()
+            let ac = UIAlertController(title: "引擎自检", message: txt, preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                rootVC.present(ac, animated: true, completion: nil)
-            }
+            rootVC.present(ac, animated: true, completion: nil)
         }
         
         return true
     }
 
+
+    // 临时自检（正式上架前删除）
+    static func engineSelfTest() -> String
+    {
+        var msg = ""
+        guard let path = Bundle.main.path(forResource: "py", ofType: "data"),
+              let d = try? Data(contentsOf: URL(fileURLWithPath: path))
+        else { return "内置 py.data 读取失败" }
+        msg += "词库 \(d.count) 字节"
+        IMEngine.dwimeExit()
+        let code: Int32 = d.withUnsafeBytes { raw in
+            IMEngine.dwimeInit(raw.baseAddress, Int32(d.count), nil, 0, nil, 0, 2, 1, 8)
+        }
+        msg += "\n初始化返回 \(code)"
+        if code == 0
+        {
+            let k: Int32 = IMEngine.dwimeProcessKey(110, 0, 0)
+            msg += "\n按键 n 返回 \(k)"
+            let c = IMEngine.dwimeCount()
+            msg += "\n候选数 \(c)"
+            if c > 0, let cand = IMEngine.dwimeGetCand(0, false)
+            {
+                msg += "\n首个候选 \(cand)"
+            }
+        }
+        return msg
+    }
+    
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
