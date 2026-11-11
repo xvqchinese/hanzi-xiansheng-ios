@@ -29,7 +29,9 @@
 			<array>
 				<string>DWIME.DingShiApp.ext</string>
 			</array>
-		</dict>
+			<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
