@@ -9,9 +9,11 @@
 name: build-ipa
 
 on:
-#  push:
-#    branches: [ main ]
-  workflow_dispatch:   # 也可在网页上手动点 Run workflow
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ReleaseTrigger.txt'
 
 jobs:
   build:
