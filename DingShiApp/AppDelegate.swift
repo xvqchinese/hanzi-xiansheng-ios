@@ -40,29 +40,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     static func engineSelfTest() -> String
     {
         var msg = ""
-        guard let path = Bundle.main.path(forResource: "py", ofType: "data"),
-              let d = try? Data(contentsOf: URL(fileURLWithPath: path))
-        else { return "内置 py.data 读取失败" }
-        msg += "词库 \(d.count) 字节"
+        var d: Data? = nil
+        var src = ""
+
+        if let path = Bundle.main.path(forResource: "py", ofType: "data"),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: path)), data.count > 1024
+        {
+            d = data; src = "内置"
+        }
+        else
+        {
+            let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
+            let grp = container?.appendingPathComponent("py.data")
+            if let gp = grp, let data = try? Data(contentsOf: gp), data.count > 1024
+            { d = data; src = "共享区" }
+        }
+
+        guard let db = d else { return "两处都没有 py.data（内置与共享区均缺失）" }
+        msg += "词库来源 \(src)  \(db.count) 字节"
+
         IMEngine.dwimeExit()
-        let code: Int32 = d.withUnsafeBytes { raw in
-            IMEngine.dwimeInit(raw.baseAddress, Int32(d.count), nil, 0, nil, 0, 2, 1, 8)
+        let code: Int32 = db.withUnsafeBytes { raw in
+            IMEngine.dwimeInit(raw.baseAddress, Int32(db.count), nil, 0, nil, 0, 2, 1, 8)
         }
         msg += "\n初始化返回 \(code)"
+        let c0 = IMEngine.dwimeCount()
+        msg += "  初始候选 \(c0)"
         if code == 0
         {
             let k: Int32 = IMEngine.dwimeProcessKey(110, 0, 0)
             msg += "\n按键 n 返回 \(k)"
             let c = IMEngine.dwimeCount()
-            msg += "\n候选数 \(c)"
+            msg += "  候选数 \(c)"
             if c > 0, let cand = IMEngine.dwimeGetCand(0, false)
-            {
-                msg += "\n首个候选 \(cand)"
-            }
+            { msg += "\n首个候选：\(cand)" }
+            else { msg += "\n无候选（索引可能没建起来）" }
         }
         return msg
     }
-    
+
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
