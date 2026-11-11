@@ -52,6 +52,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     var mLocation: CLLocationManager?
     var mComposingText:String?      // 预先上屏的字符串
     var mDiagLabel: UILabel? = nil  // 屏上诊断（临时）
+    var mDiagText: String? = nil
     
     var lastPage: Int = KbPage.M_Chn              // 数字键盘返回时要用到
     var currentPage: Int
@@ -219,20 +220,35 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     func showDiag()
     {
         if self.engine == nil { return }
-        mDiagLabel?.removeFromSuperview()
-        let h: CGFloat = 26
-        let lab = UILabel(frame: CGRect(x: 0, y: self.view.bounds.height - h - 2, width: self.view.bounds.width, height: h))
-        lab.backgroundColor = UIColor(white: 0, alpha: 0.82)
-        lab.textColor = UIColor.white
-        lab.font = UIFont.systemFont(ofSize: 12)
-        lab.textAlignment = .center
-        lab.text = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0)"
-        lab.isUserInteractionEnabled = false
-        self.view.addSubview(lab)
-        mDiagLabel = lab
-        UIView.animate(withDuration: 0.2, delay: 12, options: [], animations: { lab.alpha = 0 }, completion: { _ in lab.removeFromSuperview() })
+        let t = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0)"
+        mDiagText = t
+        if mDiagLabel == nil
+        {
+            let lab = UILabel()
+            lab.backgroundColor = UIColor(red: 0.85, green: 0.1, blue: 0.1, alpha: 0.95)
+            lab.textColor = UIColor.white
+            lab.font = UIFont.boldSystemFont(ofSize: 13)
+            lab.textAlignment = .center
+            lab.numberOfLines = 1
+            lab.isUserInteractionEnabled = false
+            lab.autoresizingMask = [.flexibleWidth, .flexibleTopMargin]
+            lab.tag = 9001
+            self.view.addSubview(lab)
+            self.view.bringSubviewToFront(lab)
+            mDiagLabel = lab
+        }
+        mDiagLabel!.text = t
+        self.layoutDiag()
     }
     
+    func layoutDiag()
+    {
+        guard let lab = mDiagLabel else { return }
+        let w = self.view.bounds.width
+        if w <= 0 { return }
+        lab.frame = CGRect(x: 0, y: 0, width: w, height: 24)
+        self.view.bringSubviewToFront(lab)
+    }
     private func End()
     {
         MyLog("------->> End  ******* 释放 *******")
@@ -413,6 +429,12 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         //}
     }
 
+    override func viewDidLayoutSubviews()
+    {
+        super.viewDidLayoutSubviews()
+        self.layoutDiag()
+    }
+    
     override func viewDidAppear(_ animated: Bool)
     {
         MyLog("------->> viewDidAppear")
