@@ -277,8 +277,11 @@ class EngineService
             MyLog("[INIT] page=\(page) mode=\(self.mMode) code=\(self.lastInitCode) ret=\(ret) len=\(self.lastDbLen)")
             MyLog("[INIT2] count=\(IMEngine.dwimeCount())")
 
-            IMEngine.dwimeProcessKey(EST.SPKEY_API_AUTOCOMMIT, EST.SPKT_Down, 0)
-            IMEngine.dwimeProcessKey(EST.SPKEY_API_SHORTCUTS, EST.SPKT_Down, 0)
+            if ret
+            {
+                IMEngine.dwimeProcessKey(EST.SPKEY_API_AUTOCOMMIT, EST.SPKT_Down, 0)
+                IMEngine.dwimeProcessKey(EST.SPKEY_API_SHORTCUTS, EST.SPKT_Down, 0)
+            }
         }
 
         return ret
