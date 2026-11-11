@@ -274,6 +274,7 @@ class EngineService
             }
             self.isReady = ret
             self.lastDbLen = self.mDbMain?.count ?? 0
+            UserDefaults(suiteName: "group.DWIME_DS")?.set("页面=\(page) mode=\(self.mMode)\ninit返回码=\(self.lastInitCode)\n词库字节=\(self.lastDbLen)\n可用于按键=\(self.isReady ? 1 : 0)", forKey: "diag")
             MyLog("[INIT] page=\(page) mode=\(self.mMode) code=\(self.lastInitCode) ret=\(ret) len=\(self.lastDbLen)")
             MyLog("[INIT2] count=\(IMEngine.dwimeCount())")
 
@@ -435,12 +436,14 @@ class EngineService
     
     func CandCount() -> Int32
     {
+        if !self.isReady { return 0 }
         return IMEngine.dwimeCount()
     }
     
     // 取同一个多次也会死机, 500 以上
     func GetCand(_ index: Int32) -> NSString
     {
+        if !self.isReady { return "" as NSString }
         let cand = IMEngine.dwimeGetCand(index, false)
         if (cand != nil && cand!.count > 0)
         {
@@ -451,12 +454,14 @@ class EngineService
     
     func GetCandCode(_ index: Int32) -> NSString
     {
+        if !self.isReady { return "" as NSString }
         let code = IMEngine.dwimeGetCandCode(index);
         return (code ?? "") as NSString;
     }
     
     func Select(_ index: Int32) -> Int32
     {
+        if !self.isReady { return EST.SMR_Ignored }
         let count1 = IMEngine.dwimeUserDBGetCount(self.mMode, nil)
         let ret = IMEngine.dwimeSelect(index)
         let count2 = IMEngine.dwimeUserDBGetCount(self.mMode, nil)
@@ -470,6 +475,7 @@ class EngineService
     
     func hasInput() -> Bool
     {
+        if !self.isReady { return false }
         let input = IMEngine.dwimeGetInput()
         
         if input != nil && input!.count > 0
@@ -481,21 +487,25 @@ class EngineService
 
     func showIMWin() -> Bool
     {
+        if !self.isReady { return false }
         return IMEngine.dwimeisShowIM()
     }
 
     func canUpscreen() -> Bool
     {
+        if !self.isReady { return false }
         return IMEngine.dwimeCanUpScrenn()
     }
     
     func UpscreenStr() -> NSString
     {
+        if !self.isReady { return "" as NSString }
         return (IMEngine.dwimeGetUpScrenn() ?? "") as NSString
     }
     
     func inputStr() -> NSString
     {
+        if !self.isReady { return "" as NSString }
         if let input = IMEngine.dwimeGetInput()
         {
             return input as NSString
@@ -505,6 +515,7 @@ class EngineService
 
     func compStr() -> NSString
     {
+        if !self.isReady { return "" as NSString }
         if (self.mMode == IDouble.piNYIN && self.hasInput() && self.CandCount() > 0)
         {
             return (IMEngine.dwimeGetCandPY9(Int32(0)) ?? "") as NSString
@@ -528,11 +539,13 @@ class EngineService
     
     func syllableNum() -> Int
     {
+        if !self.isReady { return 0 }
         return Int(IMEngine.dwimeSyllableNum())
     }
 
     func syllableStr(_ index: Int) -> NSString
     {
+        if !self.isReady { return "" as NSString }
         return (IMEngine.dwimeGetSyllable(Int32(index)) ?? "") as NSString
     }
 
