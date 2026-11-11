@@ -54,6 +54,16 @@ jobs:
           echo "$PROV_KEYBOARD" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/keyboard.mobileprovision
           ls ~/Library/MobileDevice/Provisioning\ Profiles/
 
+      - name: 检查 profile 内容
+        run: |
+          for f in ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision; do
+            echo "== $f"
+            security cms -D -i "$f" > /tmp/pp.plist 2>/dev/null || continue
+            /usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp.plist
+            /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pp.plist
+            /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.security.application-groups" /tmp/pp.plist 2>/dev/null || echo "(无 App Group)"
+          done
+
       - name: Archive（真机构建）
         run: |
           set -o pipefail

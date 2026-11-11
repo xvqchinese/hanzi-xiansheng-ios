@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.shuxiongd.hanzixiansheng</string>
+		<string>group.DWIME_DS</string>
 	</array>
 </dict>
 </plist>
