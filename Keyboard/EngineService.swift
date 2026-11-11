@@ -185,6 +185,9 @@ class EngineService
     var mDbMain: Data?
     var mDbUser: NSData?
     var mUserPtr: UnsafeMutableRawPointer?
+    var lastInitCode: Int32 = -1     // dwimeInit 原始返回码
+    var lastDbLen: Int = 0           // 实际吃到的词库字节数
+    var isReady: Bool = false        // 初始化成功才允许按键
     
     init()
     {
@@ -237,7 +240,8 @@ class EngineService
             if IsEnglishKB(page)
             {
                 var dbMain: Data! = self.loadDB(Page2DataFile(page))
-                ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count), nil, 0, nil, 0, Page2KbType(page), Page2Mode(page), EST.SL_English) == EST.SMR_OK)
+                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count), nil, 0, nil, 0, Page2KbType(page), Page2Mode(page), EST.SL_English);
+                ret = (self.lastInitCode == EST.SMR_OK)
                 self.mDbMain = dbMain
             }
             else if page == KbPage.M_HW
@@ -246,10 +250,11 @@ class EngineService
                 // 联想初始化，用拼音的数据
                 var dbMain: Data! = self.loadDB(Page2DataFile(KbPage.M_Chn))
                 var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
-                ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
+                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
-                                    dbUser != nil ? Int32(dbUser!.count) : 0, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese) == EST.SMR_OK)
+                                    dbUser != nil ? Int32(dbUser!.count) : 0, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese);
+                ret = (self.lastInitCode == EST.SMR_OK)
                 self.mDbMain = dbMain
                 self.mDbUser = dbUser
             }
@@ -259,14 +264,17 @@ class EngineService
                 guard let dbMainCheck = self.loadDB(Page2DataFile(page)), dbMainCheck.count > 1024 else { MyLog("[INIT] 词库不可用，跳过引擎"); return false }
                 var dbMain: Data! = dbMainCheck
                 var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
-                ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
+                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
-                                    dbUser != nil ? Int32(dbUser!.count) : 0, Page2KbType(page), self.mMode, EST.SL_Chinese) == EST.SMR_OK)
+                                    dbUser != nil ? Int32(dbUser!.count) : 0, Page2KbType(page), self.mMode, EST.SL_Chinese);
+                ret = (self.lastInitCode == EST.SMR_OK)
 	            self.mDbMain = dbMain
                 self.mDbUser = dbUser
             }
-            MyLog("[INIT] page=\(page) mode=\(self.mMode) ret=\(ret)")
+            self.isReady = ret
+            self.lastDbLen = self.mDbMain?.count ?? 0
+            MyLog("[INIT] page=\(page) mode=\(self.mMode) code=\(self.lastInitCode) ret=\(ret) len=\(self.lastDbLen)")
             MyLog("[INIT2] count=\(IMEngine.dwimeCount())")
 
             IMEngine.dwimeProcessKey(EST.SPKEY_API_AUTOCOMMIT, EST.SPKT_Down, 0)
@@ -353,6 +361,7 @@ class EngineService
 
     func SendKey(_ key: Int32, param: Int32) ->Int32
     {
+        if !self.isReady { MyLog("[KEY] 引擎未就绪，忽略按键"); return EST.SMR_Ignored }
         if self.mMode == IDouble.piNYIN ||
            self.mMode == EST.IM_STROKE ||
            self.mMode == EST.IM_LATIN
@@ -365,6 +374,7 @@ class EngineService
     
     func SendKeys(_ keys: [Int16], param: Int32) -> Int32
     {
+        if !self.isReady { return EST.SMR_Ignored }
         if self.mMode == IDouble.piNYIN ||
             self.mMode == EST.IM_STROKE ||
             self.mMode == EST.IM_LATIN
@@ -384,14 +394,16 @@ class EngineService
             let inputStr : NSString = self.inputStr()
             if (self.hasInput() && inputStr.length > 0 && inputStr.character(at: inputStr.length-1) != UInt16(EST.SPKEY_SEPARATOR))
             {
-                return (self.SendKey(EST.SPKEY_SEPARATOR, param: 0) == EST.SMR_OK)
+                return (self.SendKey(EST.SPKEY_SEPARATOR, param: 0);
+                ret = (self.lastInitCode == EST.SMR_OK)
             }
             return true
         }
         else if key.type == Key.KeyType.Backspace
         {
             // 退格
-            return (self.SendKey(EST.SPKEY_Back, param: 0) == EST.SMR_OK)
+            return (self.SendKey(EST.SPKEY_Back, param: 0);
+                ret = (self.lastInitCode == EST.SMR_OK)
         }
         else
         {
@@ -409,11 +421,13 @@ class EngineService
             {
                 if isSwipeDown && self.mMode == EST.IM_STROKE
                 {
-                    return (self.SendKey(v, param: (uppercase ? 1 : 0)) == EST.SMR_OK)
+                    return (self.SendKey(v, param: (uppercase ? 1 : 0));
+                ret = (self.lastInitCode == EST.SMR_OK)
                 }
                 else
                 {
-                    return (self.SendKey(v, param: (uppercase ? 1 : 0)) == EST.SMR_OK)
+                    return (self.SendKey(v, param: (uppercase ? 1 : 0));
+                ret = (self.lastInitCode == EST.SMR_OK)
                 }
             }
         }
