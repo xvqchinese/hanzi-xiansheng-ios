@@ -36,7 +36,9 @@
 			<string>zh-Hans</string>
 			<key>RequestsOpenAccess</key>
 			<true/>
-		</dict>
+			<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.keyboard-service</string>
 		<key>NSExtensionPrincipalClass</key>
