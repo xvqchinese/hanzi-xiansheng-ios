@@ -347,6 +347,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     
     override func viewDidLayoutSubviews()
     {
+        self.layoutDiag()
         MyLog("------->> viewDidLayoutSubviews")
         super.viewDidLayoutSubviews()
         let kbHeight = getKbHeight(getOrientation())
@@ -429,12 +430,6 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         //}
     }
 
-    override func viewDidLayoutSubviews()
-    {
-        super.viewDidLayoutSubviews()
-        self.layoutDiag()
-    }
-    
     override func viewDidAppear(_ animated: Bool)
     {
         MyLog("------->> viewDidAppear")
