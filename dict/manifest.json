@@ -1,0 +1,23 @@
+{
+ "version": "20261111",
+ "items": {
+  "py": {
+   "md5": "8bcfeccaf49d06a4b17a810582277bbe",
+   "size": 1276724,
+   "url": "https://raw.githubusercontent.com/xvqchinese/hanzi-xiansheng-ios/main/dict/py.data",
+   "huawei": ""
+  },
+  "sk": {
+   "md5": "53d2f0ce1bd17b92632736764db358dc",
+   "size": 1324970,
+   "url": "https://raw.githubusercontent.com/xvqchinese/hanzi-xiansheng-ios/main/dict/sk.data",
+   "huawei": ""
+  },
+  "en": {
+   "md5": "388fbb18fea941eafd00d6ee1449022d",
+   "size": 1793894,
+   "url": "https://raw.githubusercontent.com/xvqchinese/hanzi-xiansheng-ios/main/dict/en.data",
+   "huawei": ""
+  }
+ }
+}
