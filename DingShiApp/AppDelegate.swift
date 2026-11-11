@@ -24,14 +24,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window?.addSubview(rootVC.view!)
         self.window!.makeKeyAndVisible()
         
-        // 临时自检：主 App 内直接跑引擎（正式上架前删除）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            let txt = AppDelegate.engineSelfTest()
-            let ac = UIAlertController(title: "引擎自检", message: txt, preferredStyle: .alert)
-            ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
-            rootVC.present(ac, animated: true, completion: nil)
-        }
-        
         return true
     }
 
