@@ -397,16 +397,14 @@ class EngineService
             let inputStr : NSString = self.inputStr()
             if (self.hasInput() && inputStr.length > 0 && inputStr.character(at: inputStr.length-1) != UInt16(EST.SPKEY_SEPARATOR))
             {
-                return (self.SendKey(EST.SPKEY_SEPARATOR, param: 0);
-                ret = (self.lastInitCode == EST.SMR_OK)
+                return (self.SendKey(EST.SPKEY_SEPARATOR, param: 0) == EST.SMR_OK)
             }
             return true
         }
         else if key.type == Key.KeyType.Backspace
         {
             // 退格
-            return (self.SendKey(EST.SPKEY_Back, param: 0);
-                ret = (self.lastInitCode == EST.SMR_OK)
+            return (self.SendKey(EST.SPKEY_Back, param: 0) == EST.SMR_OK)
         }
         else
         {
@@ -424,13 +422,11 @@ class EngineService
             {
                 if isSwipeDown && self.mMode == EST.IM_STROKE
                 {
-                    return (self.SendKey(v, param: (uppercase ? 1 : 0));
-                ret = (self.lastInitCode == EST.SMR_OK)
+                    return (self.SendKey(v, param: (uppercase ? 1 : 0)) == EST.SMR_OK)
                 }
                 else
                 {
-                    return (self.SendKey(v, param: (uppercase ? 1 : 0));
-                ret = (self.lastInitCode == EST.SMR_OK)
+                    return (self.SendKey(v, param: (uppercase ? 1 : 0)) == EST.SMR_OK)
                 }
             }
         }
