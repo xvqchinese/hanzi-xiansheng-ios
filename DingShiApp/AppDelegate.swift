@@ -37,6 +37,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     // 临时自检（正式上架前删除）
+    static var dbHolder: Data?      // 必须持有，否则引擎读到已释放内存会崩
+
     static func engineSelfTest() -> String
     {
         var msg = ""
@@ -51,31 +53,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         else
         {
             let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
-            let grp = container?.appendingPathComponent("py.data")
-            if let gp = grp, let data = try? Data(contentsOf: gp), data.count > 1024
+            let gp = container?.appendingPathComponent("py.data")
+            if let gp2 = gp, let data = try? Data(contentsOf: gp2), data.count > 1024
             { d = data; src = "共享区" }
         }
 
         guard let db = d else { return "两处都没有 py.data（内置与共享区均缺失）" }
+
+        AppDelegate.dbHolder = db
         msg += "词库来源 \(src)  \(db.count) 字节"
 
         IMEngine.dwimeExit()
-        let code: Int32 = db.withUnsafeBytes { raw in
-            IMEngine.dwimeInit(raw.baseAddress, Int32(db.count), nil, 0, nil, 0, 2, 1, 8)
+
+        // 所有引擎调用都放在 withUnsafeBytes 内，保证内存全程有效
+        let r: (Int32, Int32, Int32, Int32, String) = db.withUnsafeBytes { raw -> (Int32, Int32, Int32, Int32, String) in
+            let code = IMEngine.dwimeInit(raw.baseAddress, Int32(db.count), nil, 0, nil, 0, 2, 1, 8)
+            if code != 0 { return (code, 0, 0, 0, "") }
+            let c0 = IMEngine.dwimeCount()
+            let k = IMEngine.dwimeProcessKey(110, 0, 0)
+            let c1 = IMEngine.dwimeCount()
+            var word = ""
+            if c1 > 0, let cand = IMEngine.dwimeGetCand(0, false) { word = String(cString: cand) }
+            return (code, c0, k, c1, word)
         }
-        msg += "\n初始化返回 \(code)"
-        let c0 = IMEngine.dwimeCount()
-        msg += "  初始候选 \(c0)"
-        if code == 0
-        {
-            let k: Int32 = IMEngine.dwimeProcessKey(110, 0, 0)
-            msg += "\n按键 n 返回 \(k)"
-            let c = IMEngine.dwimeCount()
-            msg += "  候选数 \(c)"
-            if c > 0, let cand = IMEngine.dwimeGetCand(0, false)
-            { msg += "\n首个候选：\(cand)" }
-            else { msg += "\n无候选（索引可能没建起来）" }
-        }
+
+        msg += "\n初始化返回 \(r.0)  初始候选 \(r.1)"
+        if r.0 != 0 { return msg + "\n初始化失败，后续不再调用引擎" }
+        msg += "\n按键 n 返回 \(r.2)  候选数 \(r.3)"
+        msg += r.4.isEmpty ? "\n无候选（拼音索引没建起来）" : "\n首个候选：\(r.4)"
         return msg
     }
 
