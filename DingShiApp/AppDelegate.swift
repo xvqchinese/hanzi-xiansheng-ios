@@ -23,7 +23,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window!.rootViewController = rootVC
         self.window?.addSubview(rootVC.view!)
         self.window!.makeKeyAndVisible()
-        
+
+        // 临时诊断：把键盘落盘日志弹出来（正式上架前删除）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            guard let c = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS") else { return }
+            let u = c.appendingPathComponent("kb_diag.log")
+            guard let t = try? String(contentsOf: u, encoding: .utf8), !t.isEmpty else {
+                let ac0 = UIAlertController(title: "键盘诊断日志", message: "还没有日志：请先在键盘上按一个字母，再回来打开 App", preferredStyle: .alert)
+                ac0.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
+                rootVC.present(ac0, animated: true, completion: nil)
+                return
+            }
+            let tail = t.count > 1200 ? String(t.suffix(1200)) : t
+            let ac = UIAlertController(title: "键盘诊断日志（末尾）", message: tail, preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
+            rootVC.present(ac, animated: true, completion: nil)
+        }
+
         return true
     }
 
