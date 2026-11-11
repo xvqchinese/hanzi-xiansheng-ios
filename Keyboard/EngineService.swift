@@ -237,7 +237,7 @@ class EngineService
                 IMEngine.dwhwInit(nil)
                 // 联想初始化，用拼音的数据
                 var dbMain: Data! = self.loadDB(Page2DataFile(KbPage.M_Chn))
-                var dbUser: NSData? = (nil as NSData?)
+                var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
                 ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
@@ -249,7 +249,7 @@ class EngineService
             {
                 // py, wb, sk ...
                 var dbMain: Data! = self.loadDB(Page2DataFile(page))
-                var dbUser: NSData? = (nil as NSData?)
+                var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
                 ret = (IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
@@ -259,15 +259,7 @@ class EngineService
             }
             MyLog("[INIT] page=\(page) mode=\(self.mMode) ret=\(ret)")
             MyLog("[INIT2] count=\(IMEngine.dwimeCount())")
-            if ret && (self.mMode == IDouble.piNYIN || self.mMode == EST.IM_STROKE) {
-                let userSize = Int(IMEngine.dwimePrepareUserDB(self.mMode))
-                MyLog("[USERDB] size=\(userSize)")
-                if userSize > 0 {
-                    let raw = malloc(userSize)
-                    IMEngine.dwimeCreateUserDB(self.mMode, raw)
-                    self.mUserPtr = raw
-                }
-            }
+
             IMEngine.dwimeProcessKey(EST.SPKEY_API_AUTOCOMMIT, EST.SPKT_Down, 0)
             IMEngine.dwimeProcessKey(EST.SPKEY_API_SHORTCUTS, EST.SPKT_Down, 0)
         }
@@ -287,38 +279,38 @@ class EngineService
     
     private func loadUserDB() -> Data?
     {
-        if Globals.accessOpen
+        var file : NSURL! = nil
+        if self.mMode == IDouble.piNYIN
         {
-            var file : NSURL!;
-            if self.mMode == IDouble.piNYIN
-            {
-                file = fileUrlFromGroup("userDB_PY.data")
-            }
-            else if (self.mMode == EST.IM_STROKE)
-            {
-                file = fileUrlFromGroup("userDB_SK.data")
-            }
-            else
-            {
-                return nil
-            }
-            
-            let data: Data? = try? Data(contentsOf: file as URL)
-            if data == nil
-            {
-                // 没有，先创建
-                let dbSize = Int(IMEngine.dwimePrepareUserDB(self.mMode))
-                let dbNew: UnsafeMutableRawPointer = malloc(Int(dbSize))
-                IMEngine.dwimeCreateUserDB(self.mMode, dbNew)
-                let newData = Data(bytes: dbNew, count: dbSize)
-                try? newData.write(to: file as URL, options: [])
-                free(dbNew)
-                
-                return newData
-            }
+            file = fileUrlFromGroup("userDB_PY.data")
+        }
+        else if (self.mMode == EST.IM_STROKE)
+        {
+            file = fileUrlFromGroup("userDB_SK.data")
+        }
+        else
+        {
+            return nil
+        }
+
+        if let data = try? Data(contentsOf: file as URL), data.count > 0
+        {
             return data
         }
-        return nil
+
+        // 没有则先创建：必须在 DWIMEInit 之前调用，否则 PrepareUserDB 返回 0
+        let dbSize = Int(IMEngine.dwimePrepareUserDB(self.mMode))
+        if dbSize <= 0
+        {
+            MyLog("[USERDB] PrepareUserDB 返回 0, mode=\(self.mMode)")
+            return nil
+        }
+        guard let dbNew = malloc(dbSize) else { return nil }
+        IMEngine.dwimeCreateUserDB(self.mMode, dbNew)
+        let newData = Data(bytes: dbNew, count: dbSize)
+        try? newData.write(to: file as URL, options: [])
+        free(dbNew)
+        return newData
     }
     
     private func saveUserDB()
@@ -339,7 +331,8 @@ class EngineService
                 return
             }
             let dbSize = Int(IMEngine.dwimePrepareUserDB(self.mMode))
-            let dbNew: UnsafeMutableRawPointer = malloc(Int(dbSize))
+            if dbSize <= 0 { return }
+            guard let dbNew = malloc(dbSize) else { return }
             IMEngine.dwimeCopyUserDB(dbNew)
             let newData = Data(bytes: dbNew, count: dbSize)
             try? newData.write(to: file as URL, options: [])
