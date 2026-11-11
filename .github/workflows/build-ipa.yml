@@ -64,6 +64,13 @@ jobs:
             /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.security.application-groups" /tmp/pp.plist 2>/dev/null || echo "(无 App Group)"
           done
 
+      - name: 写入构建号
+        run: |
+          B=$(date +%Y%m%d%H%M)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $B" DingShiApp/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $B" Keyboard/Info.plist
+          echo "构建号 $B"
+
       - name: Archive（真机构建）
         run: |
           set -o pipefail
@@ -109,7 +116,8 @@ jobs:
           echo "$ASC_KEY_B64" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
           xcrun altool --upload-app -f /tmp/ipa/*.ipa \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
-            --type ios
+            --type ios 2>&1 | tee /tmp/altool.log
+          grep -q "No errors uploading" /tmp/altool.log || { echo "ALTOOL 上传失败"; grep -iE "Validation failed|ERROR:" /tmp/altool.log | head -6; exit 1; }
         env:
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
