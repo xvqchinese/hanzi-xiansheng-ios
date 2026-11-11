@@ -227,6 +227,23 @@ class EngineService
         return nil
     }
     
+    func kbDiagLog(_ s: String)
+    {
+        guard let c = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS") else { return }
+        let u = c.appendingPathComponent("kb_diag.log")
+        let line = "\(Date().timeIntervalSince1970) \(s)\n"
+        if let h = try? FileHandle(forWritingTo: u)
+        {
+            h.seekToEndOfFile()
+            h.write(line.data(using: .utf8)!)
+            h.closeFile()
+        }
+        else
+        {
+            try? line.data(using: .utf8)!.write(to: u)
+        }
+    }
+
     func InitIM(_ page: Int) -> Bool
     {
         var ret: Bool = false
@@ -277,6 +294,17 @@ class EngineService
             UserDefaults(suiteName: "group.DWIME_DS")?.set("页面=\(page) mode=\(self.mMode)\ninit返回码=\(self.lastInitCode)\n词库字节=\(self.lastDbLen)\n可用于按键=\(self.isReady ? 1 : 0)", forKey: "diag")
             MyLog("[INIT] page=\(page) mode=\(self.mMode) code=\(self.lastInitCode) ret=\(ret) len=\(self.lastDbLen)")
             MyLog("[INIT2] count=\(IMEngine.dwimeCount())")
+
+            if ret && page == KbPage.M_Chn
+            {
+                self.kbDiagLog("[PROBE] 拼音 init OK kb=\(self.mKbType) mode=\(self.mMode) len=\(self.lastDbLen)")
+                let sn = IMEngine.dwimeSyllableNum()
+                self.kbDiagLog("[PROBE] syllableNum=\(sn)")
+                let comp = IMEngine.dwimeGetComp()
+                self.kbDiagLog("[PROBE] comp=\(comp ?? "nil")")
+                let kk = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
+                self.kbDiagLog("[PROBE] key n ret=\(kk) count=\(IMEngine.dwimeCount())")
+            }
 
             if ret
             {
@@ -370,7 +398,10 @@ class EngineService
            self.mMode == EST.IM_STROKE ||
            self.mMode == EST.IM_LATIN
         {
-            return IMEngine.dwimeProcessKey(key, EST.SPKT_Down, param)
+            self.kbDiagLog("[KEY] before key=\(key) param=\(param)")
+            let r = IMEngine.dwimeProcessKey(key, EST.SPKT_Down, param)
+            self.kbDiagLog("[KEY] after key=\(key) ret=\(r) count=\(IMEngine.dwimeCount())")
+            return r
         }
 
         return EST.SMR_Ignored;
