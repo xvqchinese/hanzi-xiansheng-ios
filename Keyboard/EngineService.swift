@@ -244,6 +244,42 @@ class EngineService
         }
     }
 
+    func kbProbePinyin()
+    {
+        guard let db = self.mDbMain else { return }
+        let userNS: NSData? = self.mDbUser
+        func doInit(_ kb: Int32) -> Int32
+        {
+            IMEngine.dwimeExit()
+            return db.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> Int32 in
+                IMEngine.dwimeInit(raw.baseAddress, Int32(db.count), nil, 0,
+                                   userNS != nil ? userNS!.bytes : nil,
+                                   userNS != nil ? Int32(userNS!.count) : 0,
+                                   kb, IDouble.piNYIN, EST.SL_Chinese)
+            }
+        }
+
+        self.kbDiagLog("[PROBE] A 九宫 init 开始")
+        let ca = doInit(EST.KBT_DIGIT)
+        self.kbDiagLog("[PROBE] A 九宫 init code=\(ca) syll=\(IMEngine.dwimeSyllableNum())")
+        self.kbDiagLog("[PROBE] A 九宫 按键50 开始")
+        let ra = IMEngine.dwimeProcessKey(50, EST.SPKT_Down, 0)
+        self.kbDiagLog("[PROBE] A 九宫 按键50 ret=\(ra) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
+        if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false)
+        { self.kbDiagLog("[PROBE] A 九宫 首候选=\(String(cString: c))") }
+
+        self.kbDiagLog("[PROBE] B 全键盘 init 开始")
+        let cb = doInit(EST.KBT_QWERTY)
+        self.kbDiagLog("[PROBE] B 全键盘 init code=\(cb) syll=\(IMEngine.dwimeSyllableNum())")
+        self.kbDiagLog("[PROBE] B 全键盘 按键110 开始")
+        let rb = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
+        self.kbDiagLog("[PROBE] B 全键盘 按键110 ret=\(rb) count=\(IMEngine.dwimeCount())")
+
+        self.kbDiagLog("[PROBE] 恢复正式 init 开始")
+        let cr = doInit(Page2KbType(KbPage.M_Chn))
+        self.kbDiagLog("[PROBE] 恢复 code=\(cr) len=\(db.count) 探针结束")
+    }
+
     func InitIM(_ page: Int) -> Bool
     {
         var ret: Bool = false
@@ -297,13 +333,8 @@ class EngineService
 
             if ret && page == KbPage.M_Chn
             {
-                self.kbDiagLog("[PROBE] 拼音 init OK kb=\(self.mKbType) mode=\(self.mMode) len=\(self.lastDbLen)")
-                let sn = IMEngine.dwimeSyllableNum()
-                self.kbDiagLog("[PROBE] syllableNum=\(sn)")
-                let comp = IMEngine.dwimeGetComp()
-                self.kbDiagLog("[PROBE] comp=\(comp ?? "nil")")
-                let kk = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
-                self.kbDiagLog("[PROBE] key n ret=\(kk) count=\(IMEngine.dwimeCount())")
+                self.kbDiagLog("[PROBE] 拼音 init OK kb=\(self.mKbType) len=\(self.lastDbLen)")
+                self.kbProbePinyin()
             }
 
             if ret
