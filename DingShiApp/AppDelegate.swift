@@ -24,6 +24,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window?.addSubview(rootVC.view!)
         self.window!.makeKeyAndVisible()
         
+        // 临时诊断：显示键盘写入的引擎初始化结果（正式上架前删除）
+        if let txt = UserDefaults(suiteName: "group.DWIME_DS")?.string(forKey: "diag")
+        {
+            let ac = UIAlertController(title: "键盘引擎诊断", message: txt, preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                rootVC.present(ac, animated: true, completion: nil)
+            }
+        }
+        
         return true
     }
 
