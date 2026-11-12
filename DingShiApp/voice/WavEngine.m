@@ -170,11 +170,29 @@ const char *DWPeekMore(const void *db)
     static char out[1100];
     out[0] = 0;
     unsigned long obj = dw_find_obj(db);
-    if (!obj) return out;
+    if (!obj) { snprintf(out, sizeof(out), " 对象没找到"); return out; }
     unsigned long arr = *(unsigned long *)(obj + 0x82c0u);
-    if (arr < 0x100000000UL || arr > 0x400000000UL) { snprintf(out,sizeof(out)," 检索表=空"); return out; }
+    unsigned long dbp = (unsigned long)db;
+    unsigned long p30 = *(unsigned long *)(obj + 0x8030u);
+    unsigned long p38 = *(unsigned long *)(obj + 0x8038u);
+    unsigned long p40 = *(unsigned long *)(obj + 0x8040u);
+    if (arr < 0x100000000UL || arr > 0x400000000UL) {
+        snprintf(out, sizeof(out), " p30=+%ld p38=+%ld p40=+%ld 检索表=空", (long)(p30-dbp), (long)(p38-dbp), (long)(p40-dbp));
+        return out;
+    }
     unsigned int cnt = *(unsigned int *)arr;
-    snprintf(out, sizeof(out), " 表条数=%u", cnt);
+    unsigned long base = arr + 4u;
+    unsigned int e0 = *(unsigned int *)base;
+    unsigned int e1 = *(unsigned int *)(base + 4u);
+    unsigned int e2 = *(unsigned int *)(base + 8u);
+    unsigned int el = cnt > 0 ? *(unsigned int *)(base + (unsigned long)(cnt-1) * 4u) : 0;
+    unsigned short i0 = 0, i1 = 0, i2 = 0, il = 0;
+    if ((unsigned long)e0 + 8u < 0x200000UL) i0 = *(unsigned short *)(dbp + (unsigned long)e0 + 4u);
+    if ((unsigned long)e1 + 8u < 0x200000UL) i1 = *(unsigned short *)(dbp + (unsigned long)e1 + 4u);
+    if ((unsigned long)e2 + 8u < 0x200000UL) i2 = *(unsigned short *)(dbp + (unsigned long)e2 + 4u);
+    if ((unsigned long)el + 8u < 0x200000UL) il = *(unsigned short *)(dbp + (unsigned long)el + 4u);
+    snprintf(out, sizeof(out), " cnt=%u e0=%x i0=%u e1=%x i1=%u eL=%x iL=%u p30=+%ld p40=+%ld",
+             cnt, e0, i0, e1, i1, el, il, (long)(p30-dbp), (long)(p40-dbp));
     return out;
 }
 
