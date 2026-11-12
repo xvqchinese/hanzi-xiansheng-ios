@@ -730,5 +730,4 @@ extension EngineService {
         }
         EngineService.sumBuf += line + "\n"
     }
-    }
 }
