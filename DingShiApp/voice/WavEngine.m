@@ -73,22 +73,27 @@ static void dw_sym(unsigned long addr, char *out, int outlen)
 static void dw_guard_handler(int sig, siginfo_t *si, void *uc)
 {
     g_dw_sig = sig;
-    char buf[220], spc[180];
+    char buf[240], spc[180], slr[180];
     ucontext_t *u = (ucontext_t *)uc;
-    unsigned long x[30] = {0}, pc = 0, fp = 0;
+    unsigned long x[30] = {0}, pc = 0, lr = 0, fp = 0;
     if (u) {
         for (int i = 0; i < 29; i++) x[i] = (unsigned long)u->uc_mcontext->__ss.__x[i];
         pc = (unsigned long)u->uc_mcontext->__ss.__pc;
+        lr = (unsigned long)u->uc_mcontext->__ss.__lr;
         fp = x[29];
     }
     dw_sym(pc, spc, sizeof(spc));
-    snprintf(buf, sizeof(buf), "\n    pc=%s fault=%p", spc, si ? si->si_addr : (void *)0);
+    dw_sym(lr, slr, sizeof(slr));
+    snprintf(buf, sizeof(buf), "\n    pc=%s lr=%s", spc, slr);
     dw_strcat(g_dw_detail, buf);
     snprintf(buf, sizeof(buf), "\n    x0=%lx x1=%lx x2=%lx x3=%lx x4=%lx x5=%lx x6=%lx",
              x[0], x[1], x[2], x[3], x[4], x[5], x[6]);
     dw_strcat(g_dw_detail, buf);
-    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x24=%lx x25=%lx",
-             x[19], x[20], x[21], x[22], x[24], x[25]);
+    snprintf(buf, sizeof(buf), "\n    x8=%lx x9=%lx x10=%lx x11=%lx x12=%lx x13=%lx",
+             x[8], x[9], x[10], x[11], x[12], x[13]);
+    dw_strcat(g_dw_detail, buf);
+    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x23=%lx x24=%lx x25=%lx",
+             x[19], x[20], x[21], x[22], x[23], x[24], x[25]);
     dw_strcat(g_dw_detail, buf);
     snprintf(buf, sizeof(buf), "\n    bt:");
     dw_strcat(g_dw_detail, buf);
