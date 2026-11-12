@@ -8,6 +8,31 @@
 
 import UIKit
 
+@_silgen_name("DWGuardCall")
+func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
+
+final class DWAppProbe {
+    static let shared = DWAppProbe()
+    var holders: [Data] = []
+    var curIdx: Int = 0
+    var line: String = ""
+}
+
+func dwAppProbeEntry(_ tag: Int32) {
+    let p = DWAppProbe.shared
+    guard p.curIdx < p.holders.count else { return }
+    let d = p.holders[p.curIdx]
+    let ptr = d.withUnsafeBytes { $0.baseAddress }
+    guard let pp = ptr else { return }
+    IMEngine.dwimeExit()
+    let code = IMEngine.dwimeInit(pp, Int32(d.count), nil, 0, nil, 0, 2, 1, 8)
+    if code != 0 { p.line += "init=\(code) "; return }
+    let r = IMEngine.dwimeProcessKey(110, 0, 0)
+    p.line += "r=\(r) cnt=\(IMEngine.dwimeCount())"
+    if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false) { p.line += " 首=\(String(cString: c))" }
+    p.line += " len=\(d.count)"
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
                             
@@ -45,7 +70,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("kb_sum.log"),
                let d = try? Data(contentsOf: u), let txt = String(data: d, encoding: .utf8) { sum = txt }
             let tail = t.count > 700 ? String(t.suffix(700)) : t
-            let ac = UIAlertController(title: "键盘诊断：测试汇总 + 末尾日志", message: head + "【测试汇总】\n" + sum + "\n\n【末尾】\n" + tail, preferredStyle: .alert)
+            let dictRes = AppDelegate.probeDictVariants()
+            let ac = UIAlertController(title: "键盘诊断：词库 × 版本测试", message: head + "【词库版本测试（中文 L=8 + 键 n）】\n" + dictRes + "\n\n【键盘汇总】\n" + sum, preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
             rootVC.present(ac, animated: true, completion: nil)
         }
@@ -159,4 +185,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return UMSocialSnsService.handleOpen(url)
     }
 
+}
+
+
+extension AppDelegate {
+    static func probeDictVariants() -> String {
+        var out = ""
+        var datas: [(String, Data)] = []
+        if let u = Bundle.main.url(forResource: "py", withExtension: "data"), let d = try? Data(contentsOf: u) {
+            datas.append(("内置py", d))
+        }
+        let urls: [(String, String)] = [
+            ("2019", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data"),
+            ("2016.08", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data.2016.08"),
+            ("2016.10", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data.2016.10")
+        ]
+        for (name, u) in urls {
+            if let url = URL(string: u) {
+                let sem = DispatchSemaphore(value: 0)
+                var got: Data? = nil
+                let t = URLSession.shared.dataTask(with: url) { d, _, _ in got = d; sem.signal() }
+                t.resume()
+                _ = sem.wait(timeout: .now() + 12)
+                if let d = got, d.count > 100000 { datas.append((name, d)) }
+            }
+        }
+        let p = DWAppProbe.shared
+        p.holders = datas.map { $0.1 }
+        for i in 0..<p.holders.count {
+            p.curIdx = i
+            p.line = datas[i].0 + "（\(datas[i].1.count)字节） "
+            let sg = DWGuardCall(dwAppProbeEntry, Int32(i))
+            if sg != 0 { p.line += "崩溃s=\(sg)" }
+            out += p.line + "\n"
+        }
+        return out.isEmpty ? "（无可用词库）\n" : out
+    }
 }
