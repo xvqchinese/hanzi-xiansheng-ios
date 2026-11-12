@@ -7,6 +7,10 @@
 //
 
 #import "WavEngine.h"
+#include <string.h>
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+
 
 @implementation WavEngine
 
@@ -112,6 +116,66 @@ static void dw_guard_handler(int sig, siginfo_t *si, void *uc)
     }
     if (g_dw_armed) { g_dw_armed = 0; siglongjmp(g_dw_env, 1); }
     _exit(139);
+}
+
+
+//==== 引擎对象内存窥探（诊断用，临时） ====
+static unsigned long dw_find_obj(const void *db)
+{
+    if (!db) return 0;
+    unsigned long dbp = (unsigned long)db, obj = 0;
+    int images = (int)_dyld_image_count();
+    for (int i = 0; i < images && !obj; i++) {
+        const struct mach_header_64 *h = (const struct mach_header_64 *)_dyld_get_image_header(i);
+        if (!h || h->magic != MH_MAGIC_64) continue;
+        unsigned long slide = (unsigned long)_dyld_get_image_vmaddr_slide(i);
+        const struct load_command *lc = (const struct load_command *)((const char *)h + sizeof(struct mach_header_64));
+        for (unsigned int j = 0; j < h->ncmds && !obj; j++) {
+            if (lc->cmd == LC_SEGMENT_64) {
+                const struct segment_command_64 *sg = (const struct segment_command_64 *)lc;
+                if (strcmp(sg->segname, "__DATA") == 0 || strcmp(sg->segname, "__DATA_CONST") == 0) {
+                    uintptr_t a0 = (uintptr_t)(sg->vmaddr + slide);
+                    uintptr_t a1 = a0 + (uintptr_t)sg->vmsize;
+                    for (uintptr_t a = a0; a + 8 <= a1; a += 8) {
+                        if (*(unsigned long *)a == dbp) {
+                            unsigned long cand = a - 0x8018u;
+                            if (cand > 0x100000000UL && cand < 0x400000000UL &&
+                                *(unsigned long *)(cand + 0x8018u) == dbp) { obj = cand; break; }
+                        }
+                    }
+                }
+            }
+            lc = (const struct load_command *)((const char *)lc + lc->cmdsize);
+        }
+    }
+    return obj;
+}
+
+const char *DWPeekEngine(const void *db)
+{
+    static char out[1100];
+    out[0] = 0;
+    unsigned long obj = dw_find_obj(db);
+    if (!obj) { snprintf(out, sizeof(out), " 对象=没找到"); return out; }
+    unsigned long arr = *(unsigned long *)(obj + 0x82c0u);
+    unsigned long p30 = *(unsigned long *)(obj + 0x8030u);
+    unsigned long p38 = *(unsigned long *)(obj + 0x8038u);
+    unsigned long p40 = *(unsigned long *)(obj + 0x8040u);
+    snprintf(out, sizeof(out), " 对象=%lx 表=%lx p30=%lx p38=%lx p40=%lx", obj, arr, p30, p38, p40);
+    return out;
+}
+
+const char *DWPeekMore(const void *db)
+{
+    static char out[1100];
+    out[0] = 0;
+    unsigned long obj = dw_find_obj(db);
+    if (!obj) return out;
+    unsigned long arr = *(unsigned long *)(obj + 0x82c0u);
+    if (arr < 0x100000000UL || arr > 0x400000000UL) { snprintf(out,sizeof(out)," 检索表=空"); return out; }
+    unsigned int cnt = *(unsigned int *)arr;
+    snprintf(out, sizeof(out), " 表条数=%u", cnt);
+    return out;
 }
 
 int DWGuardCall(void (*fn)(int tag), int tag)
