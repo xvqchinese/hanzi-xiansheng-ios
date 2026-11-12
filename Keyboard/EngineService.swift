@@ -275,7 +275,7 @@ class EngineService
             self.kbDiagLog("[PROBE] dlsym g=\(String(describing: gAddr)) SplImeInit=\(String(describing: sAddr))")
             if let g = gAddr
             {
-                let base = g.assumingMemoryBound(to: UInt8.self)
+                let base = UnsafeRawPointer(g)
                 let want = UInt(bitPattern: dbBase)
                 var hit = -1
                 for off in stride(from: 0, to: 0x9000, by: 8)
