@@ -711,8 +711,11 @@ extension EngineService {
                                                self.curKB, self.curMode, self.curLang)
         var line = " init=\(self.lastInitCode)"
         if let c = DWPeekEngine(pp) { line += String(cString: c) }
+        if let m = DWPeekMore(pp) { line += String(cString: m) }
+        EngineService.sumBuf += line + "\n"
+        self.writeSum()
+        line = ""
         if self.lastInitCode == 0 {
-            if let m = DWPeekMore(pp) { line += String(cString: m) }
             let r = IMEngine.dwimeProcessKey(self.curKey, self.curParam, self.curDown)
             line += " r=\(r) cnt=\(IMEngine.dwimeCount())"
             if IMEngine.dwimeCount() > 0, let cd = IMEngine.dwimeGetCand(0, false) {
