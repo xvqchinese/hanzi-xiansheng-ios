@@ -17,3 +17,6 @@
 
 
 @end
+
+// 崩溃隔离：捕获引擎 SIGSEGV/SIGBUS/SIGILL，记录后继续运行（仅诊断用）
+int32_t DWGuardCall(void (^ _Nonnull blk)(void));
