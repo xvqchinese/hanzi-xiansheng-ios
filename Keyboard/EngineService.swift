@@ -188,6 +188,7 @@ class EngineService
     var curParam: Int32 = 0
     var curDown: Int32 = 0
     var curDB = Data()
+    static var sumBuf: String = ""
 
     var mMode: Int32
     var mKbType: Int32
@@ -283,8 +284,10 @@ class EngineService
         for (tag, kb, mode, lang, key, param, down) in cases {
             self.curKB = kb; self.curMode = mode; self.curLang = lang
             self.curKey = key; self.curParam = param; self.curDown = down
+            EngineService.sumBuf += "\nT\(tag)>> "
             let sg = DWGuardCall(dwProbeEntry, Int32(tag))
-            if sg != 0 { self.kbDiagLog("[GUARD] T\(tag) 结束 s=\(sg)") }
+            if sg != 0 { EngineService.sumBuf += "崩溃s=\(sg)" }
+            self.writeSum()
         }
 
     }
@@ -687,6 +690,12 @@ func dwProbeEntry(_ tag: Int32) {
 }
 
 extension EngineService {
+    func writeSum() {
+        guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?
+            .appendingPathComponent("kb_sum.log") else { return }
+        try? EngineService.sumBuf.write(to: url, atomically: false, encoding: .utf8)
+    }
+
     func runAttempt(_ tag: Int32) {
         let initSG = Int32(0)
         _ = initSG
@@ -695,13 +704,13 @@ extension EngineService {
             self.lastInitCode = IMEngine.dwimeInit(pp, Int32(self.curDB.count), nil, 0, nil, 0,
                                                    self.curKB, self.curMode, self.curLang)
         }
-        self.kbDiagLog("[GUARD] T\(tag) init code=\(self.lastInitCode)")
+        EngineService.sumBuf += "T\(tag) init=\(self.lastInitCode) "
         if self.lastInitCode != 0 || self.curKey < 0 { return }
-        self.kbDiagLog("[GUARD] T\(tag) 按键\(self.curKey) 开始")
+        EngineService.sumBuf += "key\(self.curKey) "
         let r = IMEngine.dwimeProcessKey(self.curKey, self.curDown, self.curParam)
-        self.kbDiagLog("[GUARD] T\(tag) ret=\(r) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
+        EngineService.sumBuf += "ret=\(r) cnt=\(IMEngine.dwimeCount())| "
         if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false) {
-            self.kbDiagLog("[GUARD] T\(tag) 首候选=\(String(cString: c))")
+            EngineService.sumBuf += "首=\(String(cString: c))| "
         }
     }
 }
