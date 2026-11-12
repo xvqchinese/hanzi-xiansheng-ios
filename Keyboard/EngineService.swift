@@ -259,6 +259,23 @@ class EngineService
                                kb, IDouble.piNYIN, EST.SL_Chinese)
         }
 
+        // D: 带“独立联想数据”初始化（老代码 InitEngine 是有 asse 的）
+        self.kbDiagLog("[PROBE] D 带 asse 初始化开始")
+        IMEngine.dwimeExit()
+        if let pAsse = self.stableDBPointer(db)
+        {
+            let cd = IMEngine.dwimeInit(pAsse, Int32(db.count), pAsse, Int32(db.count),
+                                        userNS != nil ? userNS!.bytes : nil,
+                                        userNS != nil ? Int32(userNS!.count) : 0,
+                                        EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese)
+            self.kbDiagLog("[PROBE] D init code=\(cd) syll=\(IMEngine.dwimeSyllableNum())")
+            self.kbDiagLog("[PROBE] D 按键110 开始")
+            let rd = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
+            self.kbDiagLog("[PROBE] D 按键110 ret=\(rd) count=\(IMEngine.dwimeCount())")
+            if IMEngine.dwimeCount() > 0, let c0 = IMEngine.dwimeGetCand(0, false)
+            { self.kbDiagLog("[PROBE] D 首候选=\(String(cString: c0))") }
+        }
+
         // C: 先走手写初始化，再走拼音
         self.kbDiagLog("[PROBE] C 开始：dwhwInit 前置")
         let hw = IMEngine.dwhwInit(nil)
