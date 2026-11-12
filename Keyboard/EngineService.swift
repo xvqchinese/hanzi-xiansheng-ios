@@ -259,6 +259,18 @@ class EngineService
             }
         }
 
+        // C: 先走手写初始化，再走拼音
+        self.kbDiagLog("[PROBE] C 开始：dwhwInit 前置")
+        let hw = IMEngine.dwhwInit(nil)
+        self.kbDiagLog("[PROBE] C dwhwInit ret=\(hw)")
+        let cc = doInit(EST.KBT_QWERTY)
+        self.kbDiagLog("[PROBE] C 拼音 init code=\(cc) syll=\(IMEngine.dwimeSyllableNum())")
+        self.kbDiagLog("[PROBE] C 按键110 开始")
+        let rc = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
+        self.kbDiagLog("[PROBE] C 按键110 ret=\(rc) count=\(IMEngine.dwimeCount())")
+        if IMEngine.dwimeCount() > 0, let c0 = IMEngine.dwimeGetCand(0, false)
+        { self.kbDiagLog("[PROBE] C 首候选=\(String(cString: c0))") }
+
         self.kbDiagLog("[PROBE] A 九宫 init 开始")
         let ca = doInit(EST.KBT_DIGIT)
         self.kbDiagLog("[PROBE] A 九宫 init code=\(ca) syll=\(IMEngine.dwimeSyllableNum())")
