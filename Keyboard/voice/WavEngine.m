@@ -39,3 +39,40 @@ extern int OpenVoiceEngine();
 
 
 @end
+
+#import <setjmp.h>
+#include <signal.h>
+#include <unistd.h>
+
+static sigjmp_buf g_dw_env;
+static volatile int g_dw_armed = 0;
+static volatile int g_dw_sig = 0;
+
+static void dw_guard_handler(int sig)
+{
+    g_dw_sig = sig;
+    if (g_dw_armed) { g_dw_armed = 0; siglongjmp(g_dw_env, 1); }
+    _exit(139);
+}
+
+int32_t DWGuardCall(void (^blk)(void))
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = dw_guard_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_NODEFER | SA_RESETHAND;
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGBUS,  &sa, NULL);
+    sigaction(SIGILL,  &sa, NULL);
+    sigaction(SIGTRAP, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    g_dw_sig = 0;
+    if (sigsetjmp(g_dw_env, 1) == 0) {
+        g_dw_armed = 1;
+        blk();
+        g_dw_armed = 0;
+        return 0;
+    }
+    return g_dw_sig ? g_dw_sig : -1;
+}
