@@ -252,12 +252,11 @@ class EngineService
         func doInit(_ kb: Int32) -> Int32
         {
             IMEngine.dwimeExit()
-            return db.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> Int32 in
-                IMEngine.dwimeInit(raw.baseAddress, Int32(db.count), nil, 0,
-                                   userNS != nil ? userNS!.bytes : nil,
-                                   userNS != nil ? Int32(userNS!.count) : 0,
-                                   kb, IDouble.piNYIN, EST.SL_Chinese)
-            }
+            guard let p = self.stableDBPointer(db) else { return -1 }
+            return IMEngine.dwimeInit(p, Int32(db.count), nil, 0,
+                               userNS != nil ? userNS!.bytes : nil,
+                               userNS != nil ? Int32(userNS!.count) : 0,
+                               kb, IDouble.piNYIN, EST.SL_Chinese)
         }
 
         // C: 先走手写初始化，再走拼音
@@ -267,7 +266,7 @@ class EngineService
         let cc = doInit(EST.KBT_QWERTY)
         self.kbDiagLog("[PROBE] C 拼音 init code=\(cc) syll=\(IMEngine.dwimeSyllableNum())")
         // 精确读取引擎工作区（ctx = g + 0x6ef8），必要时自己调 SLP_Startup 把索引表补上
-        if let dbBase = db.withUnsafeBytes({ $0.baseAddress })
+        if let dbBase = self.stableDBPointer(db)
         {
             let h = dlopen(nil, RTLD_NOW)
             if let g = dlsym(h, "g_SplImeGlobals") ?? dlsym(h, "_g_SplImeGlobals")
@@ -275,7 +274,7 @@ class EngineService
                 let ctx = UnsafeRawPointer(g).advanced(by: 0x6ef8)
                 func r64(_ off: Int) -> UInt { ctx.load(fromByteOffset: off, as: UInt.self) }
                 func hex(_ v: UInt) -> String { "0x" + String(v, radix: 16) }
-                self.kbDiagLog("[PROBE] 数据指针=" + hex(UInt(bitPattern: dbBase)) + " 工作区=" + hex(UInt(bitPattern: ctx)))
+                self.kbDiagLog("[PROBE] 数据指针=" + hex(UInt(bitPattern: dbBase)) + " 引擎存=" + hex(r64(0x8018)) + " 一致=\(r64(0x8018) == UInt(bitPattern: dbBase))")
                 self.kbDiagLog("[PROBE] +8018=" + hex(r64(0x8018)) + " +8020=" + hex(r64(0x8020)) + " +8028=" + hex(r64(0x8028)))
                 self.kbDiagLog("[PROBE] +8030=" + hex(r64(0x8030)) + " +8038=" + hex(r64(0x8038)) + " +8040=" + hex(r64(0x8040)))
 
@@ -328,6 +327,25 @@ class EngineService
         self.kbDiagLog("[PROBE] 恢复 code=\(cr) len=\(db.count) 探针结束")
     }
 
+    // 词库常驻缓冲：引擎会长期持有这个指针，绝不能用临时指针（NSData.bytes / withUnsafeBytes 出了作用域就失效）
+    static var gDBPtr: UnsafeMutableRawPointer?
+    static var gDBSize: Int = 0
+
+    func stableDBPointer(_ data: Data) -> UnsafeMutableRawPointer?
+    {
+        if let p = EngineService.gDBPtr, EngineService.gDBSize == data.count { return p }
+        if let old = EngineService.gDBPtr { free(old); EngineService.gDBPtr = nil; EngineService.gDBSize = 0 }
+        guard data.count > 0 else { return nil }
+        guard let p = malloc(data.count) else { return nil }
+        data.withUnsafeBytes { raw in
+            if let src = raw.baseAddress { p.copyMemory(from: src, byteCount: data.count) }
+        }
+        EngineService.gDBPtr = p
+        EngineService.gDBSize = data.count
+        MyLog("[DB] 常驻缓冲已建立 0x\(String(UInt(bitPattern: p), radix: 16)) len=\(data.count)")
+        return p
+    }
+
     func InitIM(_ page: Int) -> Bool
     {
         var ret: Bool = false
@@ -341,7 +359,8 @@ class EngineService
             if IsEnglishKB(page)
             {
                 var dbMain: Data! = self.loadDB(Page2DataFile(page))
-                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count), nil, 0, nil, 0, Page2KbType(page), Page2Mode(page), EST.SL_English);
+                guard let pEN = self.stableDBPointer(dbMain) else { return false }
+                self.lastInitCode = IMEngine.dwimeInit(pEN, Int32(dbMain.count), nil, 0, nil, 0, Page2KbType(page), Page2Mode(page), EST.SL_English);
                 ret = (self.lastInitCode == EST.SMR_OK)
                 self.mDbMain = dbMain
             }
@@ -351,7 +370,8 @@ class EngineService
                 // 联想初始化，用拼音的数据
                 var dbMain: Data! = self.loadDB(Page2DataFile(KbPage.M_Chn))
                 var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
-                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
+                guard let pHW = self.stableDBPointer(dbMain) else { return false }
+                self.lastInitCode = IMEngine.dwimeInit(pHW, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
                                     dbUser != nil ? Int32(dbUser!.count) : 0, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese);
@@ -365,7 +385,8 @@ class EngineService
                 guard let dbMainCheck = self.loadDB(Page2DataFile(page)), dbMainCheck.count > 1024 else { MyLog("[INIT] 词库不可用，跳过引擎"); return false }
                 var dbMain: Data! = dbMainCheck
                 var dbUser: NSData? = self.loadUserDB().map { $0 as NSData }
-                self.lastInitCode = IMEngine.dwimeInit((dbMain as NSData).bytes, Int32(dbMain.count),
+                guard let pZH = self.stableDBPointer(dbMain) else { return false }
+                self.lastInitCode = IMEngine.dwimeInit(pZH, Int32(dbMain.count),
                                     nil, 0,
                                     dbUser != nil ? (dbUser! as NSData).bytes : nil,
                                     dbUser != nil ? Int32(dbUser!.count) : 0, Page2KbType(page), self.mMode, EST.SL_Chinese);
