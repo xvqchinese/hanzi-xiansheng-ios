@@ -18,5 +18,5 @@
 
 @end
 
-// 崩溃隔离：捕获引擎 SIGSEGV/SIGBUS/SIGILL，记录后继续运行（仅诊断用）
-int32_t DWGuardCall(void (^ _Nonnull blk)(void));
+// 崩溃隔离（仅诊断用）：fn(tag) 内部崩溃时返回信号编号，否则返回 0
+int DWGuardCall(void (*fn)(int tag), int tag);
