@@ -266,35 +266,38 @@ class EngineService
         self.kbDiagLog("[PROBE] C dwhwInit ret=\(hw)")
         let cc = doInit(EST.KBT_QWERTY)
         self.kbDiagLog("[PROBE] C 拼音 init code=\(cc) syll=\(IMEngine.dwimeSyllableNum())")
-        // 用 dlsym 拿引擎全局符号，再看工作区里拼音索引表指针写没写进去
+        // 精确读取引擎工作区（ctx = g + 0x6ef8），必要时自己调 SLP_Startup 把索引表补上
         if let dbBase = db.withUnsafeBytes({ $0.baseAddress })
         {
             let h = dlopen(nil, RTLD_NOW)
-            let gAddr = dlsym(h, "g_SplImeGlobals") ?? dlsym(h, "_g_SplImeGlobals")
-            let sAddr = dlsym(h, "SplImeInit") ?? dlsym(h, "_SplImeInit")
-            self.kbDiagLog("[PROBE] dlsym g=\(String(describing: gAddr)) SplImeInit=\(String(describing: sAddr))")
-            if let g = gAddr
+            if let g = dlsym(h, "g_SplImeGlobals") ?? dlsym(h, "_g_SplImeGlobals")
             {
-                let base = UnsafeRawPointer(g)
-                let want = UInt(bitPattern: dbBase)
-                var hit = -1
-                for off in stride(from: 0, to: 0x9000, by: 8)
+                let ctx = UnsafeRawPointer(g).advanced(by: 0x6ef8)
+                func r64(_ off: Int) -> UInt { ctx.load(fromByteOffset: off, as: UInt.self) }
+                func hex(_ v: UInt) -> String { "0x" + String(v, radix: 16) }
+                self.kbDiagLog("[PROBE] 数据指针=" + hex(UInt(bitPattern: dbBase)) + " 工作区=" + hex(UInt(bitPattern: ctx)))
+                self.kbDiagLog("[PROBE] +8018=" + hex(r64(0x8018)) + " +8020=" + hex(r64(0x8020)) + " +8028=" + hex(r64(0x8028)))
+                self.kbDiagLog("[PROBE] +8030=" + hex(r64(0x8030)) + " +8038=" + hex(r64(0x8038)) + " +8040=" + hex(r64(0x8040)))
+
+                if r64(0x8020) == 0
                 {
-                    if base.load(fromByteOffset: off, as: UInt.self) == want { hit = off; break }
-                }
-                self.kbDiagLog("[PROBE] 数据指针=0x" + String(want, radix: 16) + " 命中偏移=\(hit)")
-                if hit >= 0
-                {
-                    let ctx = base + hit
-                    let t = ctx.load(fromByteOffset: 0x08, as: UInt.self)
-                    self.kbDiagLog("[PROBE] 索引表指针=0x" + String(t, radix: 16))
-                    if t != 0
+                    self.kbDiagLog("[PROBE] 索引表为空 → 主动调 SLP_Startup 补表")
+                    typealias StartupFn = @convention(c) (UnsafeMutableRawPointer?, UnsafeRawPointer?, Int, Int) -> Int32
+                    if let sp = dlsym(h, "SLP_Startup") ?? dlsym(h, "_SLP_Startup")
                     {
-                        let tb = UnsafeRawPointer(bitPattern: Int(t))
-                        self.kbDiagLog("[PROBE] 表首 6 条目=" + String((0..<6).map { i -> String in
-                            tb!.load(fromByteOffset: i*4, as: UInt32.self).description
-                        }.joined(separator: " ")))
+                        let f = unsafeBitCast(sp, to: StartupFn.self)
+                        let ret = f(UnsafeMutableRawPointer(mutating: ctx), dbBase, db.count, 8)
+                        self.kbDiagLog("[PROBE] 手动 SLP_Startup ret=\(ret)")
+                        self.kbDiagLog("[PROBE] 补表后 +8018=" + hex(r64(0x8018)) + " +8020=" + hex(r64(0x8020)) + " +8030=" + hex(r64(0x8030)))
                     }
+                    else { self.kbDiagLog("[PROBE] 找不到 SLP_Startup") }
+                }
+                if r64(0x8020) != 0
+                {
+                    let tb = UnsafeRawPointer(bitPattern: Int(r64(0x8020)))!
+                    self.kbDiagLog("[PROBE] 表首 8 条目=" + String((0..<8).map { i in
+                        String(tb.load(fromByteOffset: i*4, as: UInt32.self), radix: 16)
+                    }.joined(separator: " ")))
                 }
             }
         }
