@@ -41,8 +41,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
             let appVer = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "?"
             let head = "扩展版本=\(extVer)  主App=\(appVer)\n\n"
-            let tail = t.count > 1100 ? String(t.suffix(1100)) : t
-            let ac = UIAlertController(title: "键盘诊断日志（末尾）", message: head + tail, preferredStyle: .alert)
+            var sum = ""
+            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("kb_sum.log"),
+               let d = try? Data(contentsOf: u), let txt = String(data: d, encoding: .utf8) { sum = txt }
+            let tail = t.count > 700 ? String(t.suffix(700)) : t
+            let ac = UIAlertController(title: "键盘诊断：测试汇总 + 末尾日志", message: head + "【测试汇总】\n" + sum + "\n\n【末尾】\n" + tail, preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
             rootVC.present(ac, animated: true, completion: nil)
         }
