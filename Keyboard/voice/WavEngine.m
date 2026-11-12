@@ -41,7 +41,6 @@ extern int OpenVoiceEngine();
 @end
 
 #import <dlfcn.h>
-#include <execinfo.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <sys/ucontext.h>
@@ -50,51 +49,50 @@ extern int OpenVoiceEngine();
 static sigjmp_buf g_dw_env;
 static volatile int g_dw_armed = 0;
 static volatile int g_dw_sig = 0;
-static char g_dw_detail[1200] = {0};
-
-static long dw_off(unsigned long addr)
-{
-    if (!addr) return -1;
-    Dl_info info;
-    if (dladdr((void *)addr, &info) && info.dli_fbase)
-        return (long)(addr - (unsigned long)info.dli_fbase);
-    return -1;
-}
+static char g_dw_detail[1100] = {0};
 
 static void dw_strcat(char *dst, const char *src)
 {
     size_t l = strlen(dst);
-    snprintf(dst + l, 1200 - l, "%s", src);
+    if (l < 1090) snprintf(dst + l, 1100 - l, "%s", src);
 }
 
 static void dw_guard_handler(int sig, siginfo_t *si, void *uc)
 {
     g_dw_sig = sig;
-    char buf[200];
+    char buf[220];
     ucontext_t *u = (ucontext_t *)uc;
-    unsigned long x[30] = {0}, pc = 0, lr = 0, sp = 0;
+    unsigned long x[30] = {0}, pc = 0, sp = 0, fp = 0;
     if (u) {
         for (int i = 0; i < 29; i++) x[i] = (unsigned long)u->uc_mcontext->__ss.__x[i];
         pc = (unsigned long)u->uc_mcontext->__ss.__pc;
-        lr = (unsigned long)u->uc_mcontext->__ss.__lr;
         sp = (unsigned long)u->uc_mcontext->__ss.__sp;
+        fp = x[29];
     }
-    snprintf(buf, sizeof(buf), "\n    pc=%ld lr=%ld fault=%p",
-             (long)dw_off(pc), (long)dw_off(lr), si ? si->si_addr : (void *)0);
+    snprintf(buf, sizeof(buf), "\n    pc=%lx sp=%lx fault=%p",
+             pc - 0x100000000UL, sp, si ? si->si_addr : (void *)0);
     dw_strcat(g_dw_detail, buf);
-    snprintf(buf, sizeof(buf), "\n    x0=%lx x1=%lx x2=%lx x3=%lx x4=%lx x5=%lx x6=%lx x7=%lx",
-             x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+    snprintf(buf, sizeof(buf), "\n    x0=%lx x1=%lx x2=%lx x3=%lx x4=%lx x5=%lx x6=%lx",
+             x[0], x[1], x[2], x[3], x[4], x[5], x[6]);
     dw_strcat(g_dw_detail, buf);
-    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x23=%lx x24=%lx x25=%lx x26=%lx",
-             x[19], x[20], x[21], x[22], x[23], x[24], x[25], x[26]);
+    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x23=%lx x24=%lx x25=%lx",
+             x[19], x[20], x[21], x[22], x[23], x[24], x[25]);
     dw_strcat(g_dw_detail, buf);
-    void *bt[12] = {0};
-    int n = backtrace(bt, 12);
+    /* 帧指针链回溯（不调用 backtrace，避免死锁） */
     snprintf(buf, sizeof(buf), "\n    bt:");
     dw_strcat(g_dw_detail, buf);
-    for (int i = 0; i < n && i < 8; i++) {
-        snprintf(buf, sizeof(buf), " %ld", (long)dw_off((unsigned long)bt[i]));
-        dw_strcat(g_dw_detail, buf);
+    unsigned long cur = fp;
+    for (int k = 0; k < 8 && cur; k++) {
+        if ((cur & 7) || cur < 0x100000000UL || cur > 0x8000000000UL) break;
+        unsigned long *p = (unsigned long *)cur;
+        unsigned long prev = p[0];
+        unsigned long ra = p[1];
+        if (ra > 0x100000000UL && ra < 0x100650000UL) {
+            snprintf(buf, sizeof(buf), " %lx", ra - 0x100000000UL);
+            dw_strcat(g_dw_detail, buf);
+        }
+        if (prev <= cur) break;
+        cur = prev;
     }
     if (g_dw_armed) { g_dw_armed = 0; siglongjmp(g_dw_env, 1); }
     _exit(139);
