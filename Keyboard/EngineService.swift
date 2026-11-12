@@ -259,89 +259,34 @@ class EngineService
                                kb, IDouble.piNYIN, EST.SL_Chinese)
         }
 
-        // D: 带“独立联想数据”初始化（老代码 InitEngine 是有 asse 的）
-        self.kbDiagLog("[PROBE] D 带 asse 初始化开始")
-        IMEngine.dwimeExit()
-        if let pAsse = self.stableDBPointer(db)
+        // ==== 崩溃隔离批量测试：每次尝试独立捕获 SIGSEGV ====
+        func tryOne(_ tag: String, _ kb: Int32, _ mode: Int32, _ lang: Int32, _ key: Int32, _ param: Int32, _ down: Int32)
         {
-            let cd = IMEngine.dwimeInit(pAsse, Int32(db.count), pAsse, Int32(db.count),
-                                        userNS != nil ? userNS!.bytes : nil,
-                                        userNS != nil ? Int32(userNS!.count) : 0,
-                                        EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese)
-            self.kbDiagLog("[PROBE] D init code=\(cd) syll=\(IMEngine.dwimeSyllableNum())")
-            self.kbDiagLog("[PROBE] D 按键110 开始")
-            let rd = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
-            self.kbDiagLog("[PROBE] D 按键110 ret=\(rd) count=\(IMEngine.dwimeCount())")
-            if IMEngine.dwimeCount() > 0, let c0 = IMEngine.dwimeGetCand(0, false)
-            { self.kbDiagLog("[PROBE] D 首候选=\(String(cString: c0))") }
-        }
-
-        // C: 先走手写初始化，再走拼音
-        self.kbDiagLog("[PROBE] C 开始：dwhwInit 前置")
-        let hw = IMEngine.dwhwInit(nil)
-        self.kbDiagLog("[PROBE] C dwhwInit ret=\(hw)")
-        let cc = doInit(EST.KBT_QWERTY)
-        self.kbDiagLog("[PROBE] C 拼音 init code=\(cc) syll=\(IMEngine.dwimeSyllableNum())")
-        // 精确读取引擎工作区（ctx = g + 0x6ef8），必要时自己调 SLP_Startup 把索引表补上
-        if let dbBase = self.stableDBPointer(db)
-        {
-            let h = dlopen(nil, RTLD_NOW)
-            if let g = dlsym(h, "g_SplImeGlobals") ?? dlsym(h, "_g_SplImeGlobals")
-            {
-                let ctx = UnsafeRawPointer(g).advanced(by: 0x6ef8)
-                func r64(_ off: Int) -> UInt { ctx.load(fromByteOffset: off, as: UInt.self) }
-                func hex(_ v: UInt) -> String { "0x" + String(v, radix: 16) }
-                self.kbDiagLog("[PROBE] 数据指针=" + hex(UInt(bitPattern: dbBase)) + " 引擎存=" + hex(r64(0x8018)) + " 一致=\(r64(0x8018) == UInt(bitPattern: dbBase))")
-                self.kbDiagLog("[PROBE] +8018=" + hex(r64(0x8018)) + " +8020=" + hex(r64(0x8020)) + " +8028=" + hex(r64(0x8028)))
-                self.kbDiagLog("[PROBE] +8030=" + hex(r64(0x8030)) + " +8038=" + hex(r64(0x8038)) + " +8040=" + hex(r64(0x8040)))
-
-                if r64(0x8020) == 0
-                {
-                    self.kbDiagLog("[PROBE] 索引表为空 → 主动调 SLP_Startup 补表")
-                    typealias StartupFn = @convention(c) (UnsafeMutableRawPointer?, UnsafeRawPointer?, Int, Int) -> Int32
-                    if let sp = dlsym(h, "SLP_Startup") ?? dlsym(h, "_SLP_Startup")
-                    {
-                        let f = unsafeBitCast(sp, to: StartupFn.self)
-                        let ret = f(UnsafeMutableRawPointer(mutating: ctx), dbBase, db.count, 8)
-                        self.kbDiagLog("[PROBE] 手动 SLP_Startup ret=\(ret)")
-                        self.kbDiagLog("[PROBE] 补表后 +8018=" + hex(r64(0x8018)) + " +8020=" + hex(r64(0x8020)) + " +8030=" + hex(r64(0x8030)))
-                    }
-                    else { self.kbDiagLog("[PROBE] 找不到 SLP_Startup") }
+            let initCode: Int32 = DWGuardCall({
+                IMEngine.dwimeExit()
+                if let pp = self.stableDBPointer(db) {
+                    self.lastInitCode = IMEngine.dwimeInit(pp, Int32(db.count), nil, 0, nil, 0, kb, mode, lang)
                 }
-                if r64(0x8020) != 0
-                {
-                    let tb = UnsafeRawPointer(bitPattern: Int(r64(0x8020)))!
-                    self.kbDiagLog("[PROBE] 表首 8 条目=" + String((0..<8).map { i in
-                        String(tb.load(fromByteOffset: i*4, as: UInt32.self), radix: 16)
-                    }.joined(separator: " ")))
-                }
-            }
+            })
+            self.kbDiagLog("[GUARD] \(tag) init s=\(initCode) code=\(self.lastInitCode)")
+            if initCode != 0 || self.lastInitCode != 0 { return }
+            if key < 0 { return }
+            let s1: Int32 = DWGuardCall({
+                self.kbDiagLog("[GUARD] \(tag) 按键\(key) 开始")
+                let r = IMEngine.dwimeProcessKey(key, down, param)
+                self.kbDiagLog("[GUARD] \(tag) 按键 ret=\(r) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
+            })
+            if s1 != 0 { self.kbDiagLog("[GUARD] \(tag) 按键崩溃 s=\(s1)") }
         }
-        self.kbDiagLog("[PROBE] C 按键110 开始")
-        let rc = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
-        self.kbDiagLog("[PROBE] C 按键110 ret=\(rc) count=\(IMEngine.dwimeCount())")
-        if IMEngine.dwimeCount() > 0, let c0 = IMEngine.dwimeGetCand(0, false)
-        { self.kbDiagLog("[PROBE] C 首候选=\(String(cString: c0))") }
+        tryOne("T1 kb2/py/8 n",     EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 0)
+        tryOne("T2 kb2/py/8 o",     EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 111, 0, 0)
+        tryOne("T3 kb1/py/8 5",     EST.KBT_DIGIT,   IDouble.piNYIN, EST.SL_Chinese, 53, 0, 0)
+        tryOne("T4 kb2/py/8 n caps",EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 1, 0)
+        tryOne("T5 kb2/py/8 n up",  EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 1)
+        tryOne("T6 kb2/8/1 n",      EST.KBT_QWERTY, EST.SL_Chinese, IDouble.piNYIN, 110, 0, 0)
+        tryOne("T7 kb2/en/13 n",    EST.KBT_QWERTY, EST.IM_LATIN, EST.SL_English, 110, 0, 0)
+        tryOne("T8 only-init",      EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, -1, 0, 0)
 
-        self.kbDiagLog("[PROBE] A 九宫 init 开始")
-        let ca = doInit(EST.KBT_DIGIT)
-        self.kbDiagLog("[PROBE] A 九宫 init code=\(ca) syll=\(IMEngine.dwimeSyllableNum())")
-        self.kbDiagLog("[PROBE] A 九宫 按键50 开始")
-        let ra = IMEngine.dwimeProcessKey(50, EST.SPKT_Down, 0)
-        self.kbDiagLog("[PROBE] A 九宫 按键50 ret=\(ra) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
-        if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false)
-        { self.kbDiagLog("[PROBE] A 九宫 首候选=\(String(cString: c))") }
-
-        self.kbDiagLog("[PROBE] B 全键盘 init 开始")
-        let cb = doInit(EST.KBT_QWERTY)
-        self.kbDiagLog("[PROBE] B 全键盘 init code=\(cb) syll=\(IMEngine.dwimeSyllableNum())")
-        self.kbDiagLog("[PROBE] B 全键盘 按键110 开始")
-        let rb = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
-        self.kbDiagLog("[PROBE] B 全键盘 按键110 ret=\(rb) count=\(IMEngine.dwimeCount())")
-
-        self.kbDiagLog("[PROBE] 恢复正式 init 开始")
-        let cr = doInit(Page2KbType(KbPage.M_Chn))
-        self.kbDiagLog("[PROBE] 恢复 code=\(cr) len=\(db.count) 探针结束")
     }
 
     // 词库常驻缓冲：引擎会长期持有这个指针，绝不能用临时指针（NSData.bytes / withUnsafeBytes 出了作用域就失效）
