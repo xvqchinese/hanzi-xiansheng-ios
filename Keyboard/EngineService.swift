@@ -270,7 +270,7 @@ class EngineService
         // ==== 崩溃隔离批量测试（C 侧接 SIGSEGV，不中断键盘）====
         self.curDB = db
         DWProbeHost.shared.body = { tag in self.runAttempt(tag) }
-        for (tag, kb, mode, lang, key, param, down) in [
+        let cases: [(Int32, Int32, Int32, Int32, Int32, Int32, Int32)] = [
             (1, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 0),
             (2, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 111, 0, 0),
             (3, EST.KBT_DIGIT,  IDouble.piNYIN, EST.SL_Chinese, 53,  0, 0),
@@ -279,7 +279,8 @@ class EngineService
             (6, EST.KBT_QWERTY, EST.SL_Chinese, IDouble.piNYIN, 110, 0, 0),
             (7, EST.KBT_QWERTY, EST.IM_LATIN,  EST.SL_English, 110, 0, 0),
             (8, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, -1,  0, 0)
-        ] {
+        ]
+        for (tag, kb, mode, lang, key, param, down) in cases {
             self.curKB = kb; self.curMode = mode; self.curLang = lang
             self.curKey = key; self.curParam = param; self.curDown = down
             let sg = DWGuardCall(dwProbeEntry, Int32(tag))
@@ -673,6 +674,9 @@ class EngineService
 
 
 // MARK: - 崩溃隔离探针
+@_silgen_name("DWGuardCall")
+func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
+
 final class DWProbeHost {
     static let shared = DWProbeHost()
     var body: ((Int32) -> Void)?
