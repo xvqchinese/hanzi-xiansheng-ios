@@ -55,7 +55,7 @@ static void dw_guard_handler(int sig)
     _exit(139);
 }
 
-int32_t DWGuardCall(void (^blk)(void))
+int DWGuardCall(void (*fn)(int tag), int tag)
 {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
@@ -70,7 +70,7 @@ int32_t DWGuardCall(void (^blk)(void))
     g_dw_sig = 0;
     if (sigsetjmp(g_dw_env, 1) == 0) {
         g_dw_armed = 1;
-        blk();
+        fn(tag);
         g_dw_armed = 0;
         return 0;
     }
