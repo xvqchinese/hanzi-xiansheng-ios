@@ -1,3 +1,4 @@
+import Darwin
 //
 //  EngineService.swift
 //  TastyImitationKeyboard
@@ -265,34 +266,38 @@ class EngineService
         self.kbDiagLog("[PROBE] C dwhwInit ret=\(hw)")
         let cc = doInit(EST.KBT_QWERTY)
         self.kbDiagLog("[PROBE] C 拼音 init code=\(cc) syll=\(IMEngine.dwimeSyllableNum())")
-        // 直接读引擎工作区，看 SLP_Startup 有没有把拼音索引表指针写进去
+        // 用 dlsym 拿引擎全局符号，再看工作区里拼音索引表指针写没写进去
         if let dbBase = db.withUnsafeBytes({ $0.baseAddress })
         {
-            let slide = _dyld_get_image_vmaddr_slide(0)
-            let workAddr = Int(slide) + 0x100665aa0
-            if let work = UnsafeMutableRawPointer(bitPattern: workAddr)
+            let h = dlopen(nil, RTLD_NOW)
+            let gAddr = dlsym(h, "g_SplImeGlobals") ?? dlsym(h, "_g_SplImeGlobals")
+            let sAddr = dlsym(h, "SplImeInit") ?? dlsym(h, "_SplImeInit")
+            self.kbDiagLog("[PROBE] dlsym g=\(String(describing: gAddr)) SplImeInit=\(String(describing: sAddr))")
+            if let g = gAddr
             {
-                func w64(_ off: Int) -> String
+                let base = g.assumingMemoryBound(to: UInt8.self)
+                let want = UInt(bitPattern: dbBase)
+                var hit = -1
+                for off in stride(from: 0, to: 0x9000, by: 8)
                 {
-                    let v = work.load(fromByteOffset: off, as: UInt.self)
-                    return "0x" + String(v, radix: 16)
+                    if base.load(fromByteOffset: off, as: UInt.self) == want { hit = off; break }
                 }
-                self.kbDiagLog("[PROBE] 数据指针=0x" + String(UInt(bitPattern: dbBase), radix: 16) + " len=\(db.count)")
-                self.kbDiagLog("[PROBE] 工作区=0x" + String(UInt(bitPattern: work), radix: 16))
-                self.kbDiagLog("[PROBE] +8018=\(w64(0x8018))  +8020=\(w64(0x8020))  +8028=\(w64(0x8028))")
-                self.kbDiagLog("[PROBE] +8030=\(w64(0x8030))  +8038=\(w64(0x8038))  +8040=\(w64(0x8040))")
-                self.kbDiagLog("[PROBE] +8288=\(w64(0x8288))  +82b8=\(w64(0x82b8))")
-                if work.load(fromByteOffset: 0x8020, as: UInt.self) != 0
+                self.kbDiagLog("[PROBE] 数据指针=0x" + String(want, radix: 16) + " 命中偏移=\(hit)")
+                if hit >= 0
                 {
-                    let tbl = work.load(fromByteOffset: 0x8020, as: UInt.self)
-                    self.kbDiagLog("[PROBE] 表首条目: " + String((0..<6).map { i -> String in
-                        let e = UnsafeRawPointer(bitPattern: Int(tbl) + i*4)!.load(as: UInt32.self)
-                        return String(e, radix: 16)
-                    }.joined(separator: " ")))
+                    let ctx = base + hit
+                    let t = ctx.load(fromByteOffset: 0x08, as: UInt.self)
+                    self.kbDiagLog("[PROBE] 索引表指针=0x" + String(t, radix: 16))
+                    if t != 0
+                    {
+                        let tb = UnsafeRawPointer(bitPattern: Int(t))
+                        self.kbDiagLog("[PROBE] 表首 6 条目=" + String((0..<6).map { i -> String in
+                            tb!.load(fromByteOffset: i*4, as: UInt32.self).description
+                        }.joined(separator: " ")))
+                    }
                 }
             }
         }
-
         self.kbDiagLog("[PROBE] C 按键110 开始")
         let rc = IMEngine.dwimeProcessKey(110, EST.SPKT_Down, 0)
         self.kbDiagLog("[PROBE] C 按键110 ret=\(rc) count=\(IMEngine.dwimeCount())")
