@@ -57,38 +57,49 @@ static void dw_strcat(char *dst, const char *src)
     if (l < 1090) snprintf(dst + l, 1100 - l, "%s", src);
 }
 
+static void dw_sym(unsigned long addr, char *out, int outlen)
+{
+    if (!addr) { snprintf(out, outlen, "0"); return; }
+    Dl_info info;
+    if (dladdr((void *)addr, &info) && info.dli_fbase) {
+        snprintf(out, outlen, "+0x%lx(%s)",
+                 addr - (unsigned long)info.dli_fbase,
+                 info.dli_sname ? info.dli_sname : "?");
+    } else {
+        snprintf(out, outlen, "0x%lx", addr);
+    }
+}
+
 static void dw_guard_handler(int sig, siginfo_t *si, void *uc)
 {
     g_dw_sig = sig;
-    char buf[220];
+    char buf[220], spc[180];
     ucontext_t *u = (ucontext_t *)uc;
-    unsigned long x[30] = {0}, pc = 0, sp = 0, fp = 0;
+    unsigned long x[30] = {0}, pc = 0, fp = 0;
     if (u) {
         for (int i = 0; i < 29; i++) x[i] = (unsigned long)u->uc_mcontext->__ss.__x[i];
         pc = (unsigned long)u->uc_mcontext->__ss.__pc;
-        sp = (unsigned long)u->uc_mcontext->__ss.__sp;
         fp = x[29];
     }
-    snprintf(buf, sizeof(buf), "\n    pc=%lx sp=%lx fault=%p",
-             pc - 0x100000000UL, sp, si ? si->si_addr : (void *)0);
+    dw_sym(pc, spc, sizeof(spc));
+    snprintf(buf, sizeof(buf), "\n    pc=%s fault=%p", spc, si ? si->si_addr : (void *)0);
     dw_strcat(g_dw_detail, buf);
     snprintf(buf, sizeof(buf), "\n    x0=%lx x1=%lx x2=%lx x3=%lx x4=%lx x5=%lx x6=%lx",
              x[0], x[1], x[2], x[3], x[4], x[5], x[6]);
     dw_strcat(g_dw_detail, buf);
-    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x23=%lx x24=%lx x25=%lx",
-             x[19], x[20], x[21], x[22], x[23], x[24], x[25]);
+    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x24=%lx x25=%lx",
+             x[19], x[20], x[21], x[22], x[24], x[25]);
     dw_strcat(g_dw_detail, buf);
-    /* 帧指针链回溯（不调用 backtrace，避免死锁） */
     snprintf(buf, sizeof(buf), "\n    bt:");
     dw_strcat(g_dw_detail, buf);
     unsigned long cur = fp;
-    for (int k = 0; k < 8 && cur; k++) {
+    for (int k = 0; k < 6 && cur; k++) {
         if ((cur & 7) || cur < 0x100000000UL || cur > 0x8000000000UL) break;
         unsigned long *p = (unsigned long *)cur;
-        unsigned long prev = p[0];
-        unsigned long ra = p[1];
-        if (ra > 0x100000000UL && ra < 0x100650000UL) {
-            snprintf(buf, sizeof(buf), " %lx", ra - 0x100000000UL);
+        unsigned long prev = p[0], ra = p[1];
+        if (ra) {
+            dw_sym(ra, spc, sizeof(spc));
+            snprintf(buf, sizeof(buf), " %s", spc);
             dw_strcat(g_dw_detail, buf);
         }
         if (prev <= cur) break;
