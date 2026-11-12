@@ -273,6 +273,8 @@ class EngineService
         DWProbeHost.shared.body = { tag in self.runAttempt(tag) }
         let cases: [(Int32, Int32, Int32, Int32, Int32, Int32, Int32)] = [
             (1, 2, 1, 8, 110, 0, 0),
+            (2, 2, 1, 8, 97, 0, 0),
+            (3, 2, 1, 8, 122, 0, 0),
         ]
         for (tag, kb, mode, lang, key, param, down) in cases {
             self.curKB = kb; self.curMode = mode; self.curLang = lang
@@ -677,6 +679,12 @@ class EngineService
 @_silgen_name("DWLastCrash")
 func DWLastCrash() -> UnsafePointer<CChar>?
 
+@_silgen_name("DWPeekEngine")
+func DWPeekEngine(_ db: UnsafeRawPointer?) -> UnsafePointer<CChar>?
+
+@_silgen_name("DWPeekMore")
+func DWPeekMore(_ db: UnsafeRawPointer?) -> UnsafePointer<CChar>?
+
 @_silgen_name("DWGuardCall")
 func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
 
@@ -698,19 +706,18 @@ extension EngineService {
 
     func runAttempt(_ tag: Int32) {
         IMEngine.dwimeExit()
-        if let pp = self.stableDBPointer(self.curDB) {
-            self.lastInitCode = IMEngine.dwimeInit(pp, Int32(self.curDB.count), nil, 0, nil, 0,
-                                                   self.curKB, self.curMode, self.curLang)
-        }
-        let tagl = "T\(tag) kb=\(self.curKB) m=\(self.curMode) L=\(self.curLang)"
-        if self.lastInitCode != 0 || self.curKey < 0 {
-            EngineService.sumBuf += tagl + " init=\(self.lastInitCode)\n"
-            return
-        }
-        let r = IMEngine.dwimeProcessKey(self.curKey, self.curDown, self.curParam)
-        var line = tagl + " r=\(r) cnt=\(IMEngine.dwimeCount())"
-        if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false) {
-            line += " 首=\(String(cString: c))"
+        guard let pp = self.stableDBPointer(self.curDB) else { return }
+        self.lastInitCode = IMEngine.dwimeInit(pp, Int32(self.curDB.count), nil, 0, nil, 0,
+                                               self.curKB, self.curMode, self.curLang)
+        var line = " init=\(self.lastInitCode)"
+        if let c = DWPeekEngine(pp) { line += String(cString: c) }
+        if self.lastInitCode == 0 {
+            if let m = DWPeekMore(pp) { line += String(cString: m) }
+            let r = IMEngine.dwimeProcessKey(self.curKey, self.curParam, self.curDown)
+            line += " r=\(r) cnt=\(IMEngine.dwimeCount())"
+            if IMEngine.dwimeCount() > 0, let cd = IMEngine.dwimeGetCand(0, false) {
+                line += " 首=\(String(cString: cd))"
+            }
         }
         EngineService.sumBuf += line + "\n"
     }
