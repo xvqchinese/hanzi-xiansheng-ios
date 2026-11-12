@@ -302,7 +302,11 @@ class EngineService
             self.curKey = key; self.curParam = param; self.curDown = down
             EngineService.sumBuf += "→T\(tag) "
             let sg = DWGuardCall(dwProbeEntry, Int32(tag))
-            if sg != 0 { EngineService.sumBuf += "崩溃s=\(sg)" }
+            if sg != 0 {
+                EngineService.sumBuf += "崩溃s=\(sg)"
+                if let d = DWLastCrash() { EngineService.sumBuf += String(cString: d) }
+            }
+            EngineService.sumBuf += "\n"
             self.writeSum()
         }
 
@@ -693,6 +697,9 @@ class EngineService
 
 
 // MARK: - 崩溃隔离探针
+@_silgen_name("DWLastCrash")
+func DWLastCrash() -> UnsafePointer<CChar>?
+
 @_silgen_name("DWGuardCall")
 func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
 
