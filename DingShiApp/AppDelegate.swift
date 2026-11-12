@@ -11,6 +11,17 @@ import UIKit
 @_silgen_name("DWGuardCall")
 func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
 
+final class DWTrustAll: NSObject, URLSessionDelegate {
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if let t = challenge.protectionSpace.serverTrust {
+            completionHandler(.useCredential, URLCredential(trust: t))
+        } else {
+            completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
+
 final class DWAppProbe {
     static let shared = DWAppProbe()
     var holders: [Data] = []
@@ -204,15 +215,28 @@ extension AppDelegate {
             if let url = URL(string: u) {
                 let sem = DispatchSemaphore(value: 0)
                 var got: Data? = nil
-                let t = URLSession.shared.dataTask(with: url) { d, _, _ in got = d; sem.signal() }
+                var errTxt = ""
+                let sess = URLSession(configuration: .default, delegate: DWTrustAll(), delegateQueue: nil)
+                let t = sess.dataTask(with: url) { d, resp, e in
+                    if let e = e { errTxt = e.localizedDescription }
+                    let code = (resp as? HTTPURLResponse)?.statusCode ?? -1
+                    if code != 200 && code != 206 { errTxt += " http=\(code)" }
+                    got = d
+                    sem.signal()
+                }
                 t.resume()
-                _ = sem.wait(timeout: .now() + 12)
-                if let d = got, d.count > 100000 { datas.append((name, d)) }
+                if sem.wait(timeout: .now() + 20) == .timedOut { errTxt = " 超时" }
+                if let d = got, d.count > 100000 {
+                    datas.append((name, d))
+                } else {
+                    datas.append((name + "下载失败[bytes=\(got?.count ?? 0) \(errTxt)]", Data()))
+                }
             }
         }
         let p = DWAppProbe.shared
         p.holders = datas.map { $0.1 }
-        for i in 0..<p.holders.count {
+        for i in 0..<datas.count {
+            if datas[i].1.isEmpty { out += datas[i].0 + "\n"; continue }
             p.curIdx = i
             p.line = datas[i].0 + "（\(datas[i].1.count)字节） "
             let sg = DWGuardCall(dwAppProbeEntry, Int32(i))
