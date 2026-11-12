@@ -237,11 +237,15 @@ extension AppDelegate {
             }
         }
         let p = DWAppProbe.shared
-        p.holders = datas.map { $0.1 }
-        for i in 0..<datas.count {
-            if datas[i].1.isEmpty { out += datas[i].0 + "\n"; continue }
-            p.curIdx = i
-            p.line = datas[i].0 + "（\(datas[i].1.count)字节） "
+        // holders 稍后按 only 设置
+        var only:[(String,Data)] = []
+        if let f = datas.first(where: { !$0.0.contains("下载失败") }) { only.append(f) }
+        else { only = Array(datas.prefix(1)) }
+        for i in 0..<only.count {
+            if only[i].1.isEmpty { out += only[i].0 + "\n"; continue }
+            p.holders = [only[i].1]
+            p.curIdx = 0
+            p.line = only[i].0 + "（\(only[i].1.count)字节） "
             let sg = DWGuardCall(dwAppProbeEntry, Int32(i))
             if sg != 0 {
                 p.line += "崩溃s=\(sg)"
