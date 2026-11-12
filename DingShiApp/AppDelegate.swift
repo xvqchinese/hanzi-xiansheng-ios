@@ -8,6 +8,9 @@
 
 import UIKit
 
+@_silgen_name("DWLastCrash")
+func DWLastCrash() -> UnsafePointer<CChar>?
+
 @_silgen_name("DWGuardCall")
 func DWGuardCall(_ fn: @convention(c) (Int32) -> Void, _ tag: Int32) -> Int32
 
@@ -240,7 +243,10 @@ extension AppDelegate {
             p.curIdx = i
             p.line = datas[i].0 + "（\(datas[i].1.count)字节） "
             let sg = DWGuardCall(dwAppProbeEntry, Int32(i))
-            if sg != 0 { p.line += "崩溃s=\(sg)" }
+            if sg != 0 {
+                p.line += "崩溃s=\(sg)"
+                if let d = DWLastCrash() { p.line += String(cString: d) }
+            }
             out += p.line + "\n"
         }
         return out.isEmpty ? "（无可用词库）\n" : out
