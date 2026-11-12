@@ -41,6 +41,7 @@ extern int OpenVoiceEngine();
 @end
 
 #import <dlfcn.h>
+#include <execinfo.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <sys/ucontext.h>
@@ -49,35 +50,52 @@ extern int OpenVoiceEngine();
 static sigjmp_buf g_dw_env;
 static volatile int g_dw_armed = 0;
 static volatile int g_dw_sig = 0;
-static char g_dw_detail[600] = {0};
+static char g_dw_detail[1200] = {0};
 
-static void dw_sym(unsigned long addr, char *out, int outlen)
+static long dw_off(unsigned long addr)
 {
-    if (!addr) { snprintf(out, outlen, "0"); return; }
+    if (!addr) return -1;
     Dl_info info;
-    if (dladdr((void *)addr, &info) && info.dli_fbase) {
-        unsigned long off = addr - (unsigned long)info.dli_fbase;
-        snprintf(out, outlen, "+0x%lx(%s)", off, info.dli_sname ? info.dli_sname : "?");
-    } else {
-        snprintf(out, outlen, "0x%lx", addr);
-    }
+    if (dladdr((void *)addr, &info) && info.dli_fbase)
+        return (long)(addr - (unsigned long)info.dli_fbase);
+    return -1;
+}
+
+static void dw_strcat(char *dst, const char *src)
+{
+    size_t l = strlen(dst);
+    snprintf(dst + l, 1200 - l, "%s", src);
 }
 
 static void dw_guard_handler(int sig, siginfo_t *si, void *uc)
 {
     g_dw_sig = sig;
-    unsigned long pc = 0, lr = 0, sp = 0;
+    char buf[200];
     ucontext_t *u = (ucontext_t *)uc;
+    unsigned long x[30] = {0}, pc = 0, lr = 0, sp = 0;
     if (u) {
+        for (int i = 0; i < 29; i++) x[i] = (unsigned long)u->uc_mcontext->__ss.__x[i];
         pc = (unsigned long)u->uc_mcontext->__ss.__pc;
         lr = (unsigned long)u->uc_mcontext->__ss.__lr;
         sp = (unsigned long)u->uc_mcontext->__ss.__sp;
     }
-    char spc[160], slr[160];
-    dw_sym(pc, spc, sizeof(spc));
-    dw_sym(lr, slr, sizeof(slr));
-    snprintf(g_dw_detail, sizeof(g_dw_detail), "\n    pc=%s lr=%s sp=0x%lx fault=%p",
-             spc, slr, sp, si ? si->si_addr : (void *)0);
+    snprintf(buf, sizeof(buf), "\n    pc=%ld lr=%ld fault=%p",
+             (long)dw_off(pc), (long)dw_off(lr), si ? si->si_addr : (void *)0);
+    dw_strcat(g_dw_detail, buf);
+    snprintf(buf, sizeof(buf), "\n    x0=%lx x1=%lx x2=%lx x3=%lx x4=%lx x5=%lx x6=%lx x7=%lx",
+             x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+    dw_strcat(g_dw_detail, buf);
+    snprintf(buf, sizeof(buf), "\n    x19=%lx x20=%lx x21=%lx x22=%lx x23=%lx x24=%lx x25=%lx x26=%lx",
+             x[19], x[20], x[21], x[22], x[23], x[24], x[25], x[26]);
+    dw_strcat(g_dw_detail, buf);
+    void *bt[12] = {0};
+    int n = backtrace(bt, 12);
+    snprintf(buf, sizeof(buf), "\n    bt:");
+    dw_strcat(g_dw_detail, buf);
+    for (int i = 0; i < n && i < 8; i++) {
+        snprintf(buf, sizeof(buf), " %ld", (long)dw_off((unsigned long)bt[i]));
+        dw_strcat(g_dw_detail, buf);
+    }
     if (g_dw_armed) { g_dw_armed = 0; siglongjmp(g_dw_env, 1); }
     _exit(139);
 }
