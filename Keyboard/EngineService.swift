@@ -181,6 +181,14 @@ func Page2DataFile(_ page: Int) -> String
 
 class EngineService
 {
+    var curKB: Int32 = 0
+    var curMode: Int32 = 0
+    var curLang: Int32 = 0
+    var curKey: Int32 = 0
+    var curParam: Int32 = 0
+    var curDown: Int32 = 0
+    var curDB = Data()
+
     var mMode: Int32
     var mKbType: Int32
     var mDbMain: Data?
@@ -259,33 +267,24 @@ class EngineService
                                kb, IDouble.piNYIN, EST.SL_Chinese)
         }
 
-        // ==== 崩溃隔离批量测试：每次尝试独立捕获 SIGSEGV ====
-        func tryOne(_ tag: String, _ kb: Int32, _ mode: Int32, _ lang: Int32, _ key: Int32, _ param: Int32, _ down: Int32)
-        {
-            let initCode: Int32 = DWGuardCall({
-                IMEngine.dwimeExit()
-                if let pp = self.stableDBPointer(db) {
-                    self.lastInitCode = IMEngine.dwimeInit(pp, Int32(db.count), nil, 0, nil, 0, kb, mode, lang)
-                }
-            })
-            self.kbDiagLog("[GUARD] \(tag) init s=\(initCode) code=\(self.lastInitCode)")
-            if initCode != 0 || self.lastInitCode != 0 { return }
-            if key < 0 { return }
-            let s1: Int32 = DWGuardCall({
-                self.kbDiagLog("[GUARD] \(tag) 按键\(key) 开始")
-                let r = IMEngine.dwimeProcessKey(key, down, param)
-                self.kbDiagLog("[GUARD] \(tag) 按键 ret=\(r) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
-            })
-            if s1 != 0 { self.kbDiagLog("[GUARD] \(tag) 按键崩溃 s=\(s1)") }
+        // ==== 崩溃隔离批量测试（C 侧接 SIGSEGV，不中断键盘）====
+        self.curDB = db
+        DWProbeHost.shared.body = { tag in self.runAttempt(tag) }
+        for (tag, kb, mode, lang, key, param, down) in [
+            (1, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 0),
+            (2, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 111, 0, 0),
+            (3, EST.KBT_DIGIT,  IDouble.piNYIN, EST.SL_Chinese, 53,  0, 0),
+            (4, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 1, 0),
+            (5, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 1),
+            (6, EST.KBT_QWERTY, EST.SL_Chinese, IDouble.piNYIN, 110, 0, 0),
+            (7, EST.KBT_QWERTY, EST.IM_LATIN,  EST.SL_English, 110, 0, 0),
+            (8, EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, -1,  0, 0)
+        ] {
+            self.curKB = kb; self.curMode = mode; self.curLang = lang
+            self.curKey = key; self.curParam = param; self.curDown = down
+            let sg = DWGuardCall(dwProbeEntry, Int32(tag))
+            if sg != 0 { self.kbDiagLog("[GUARD] T\(tag) 结束 s=\(sg)") }
         }
-        tryOne("T1 kb2/py/8 n",     EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 0)
-        tryOne("T2 kb2/py/8 o",     EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 111, 0, 0)
-        tryOne("T3 kb1/py/8 5",     EST.KBT_DIGIT,   IDouble.piNYIN, EST.SL_Chinese, 53, 0, 0)
-        tryOne("T4 kb2/py/8 n caps",EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 1, 0)
-        tryOne("T5 kb2/py/8 n up",  EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, 110, 0, 1)
-        tryOne("T6 kb2/8/1 n",      EST.KBT_QWERTY, EST.SL_Chinese, IDouble.piNYIN, 110, 0, 0)
-        tryOne("T7 kb2/en/13 n",    EST.KBT_QWERTY, EST.IM_LATIN, EST.SL_English, 110, 0, 0)
-        tryOne("T8 only-init",      EST.KBT_QWERTY, IDouble.piNYIN, EST.SL_Chinese, -1, 0, 0)
 
     }
 
@@ -671,3 +670,34 @@ class EngineService
     }
 }
 
+
+
+// MARK: - 崩溃隔离探针
+final class DWProbeHost {
+    static let shared = DWProbeHost()
+    var body: ((Int32) -> Void)?
+}
+
+func dwProbeEntry(_ tag: Int32) {
+    DWProbeHost.shared.body?(tag)
+}
+
+extension EngineService {
+    func runAttempt(_ tag: Int32) {
+        let initSG = Int32(0)
+        _ = initSG
+        IMEngine.dwimeExit()
+        if let pp = self.stableDBPointer(self.curDB) {
+            self.lastInitCode = IMEngine.dwimeInit(pp, Int32(self.curDB.count), nil, 0, nil, 0,
+                                                   self.curKB, self.curMode, self.curLang)
+        }
+        self.kbDiagLog("[GUARD] T\(tag) init code=\(self.lastInitCode)")
+        if self.lastInitCode != 0 || self.curKey < 0 { return }
+        self.kbDiagLog("[GUARD] T\(tag) 按键\(self.curKey) 开始")
+        let r = IMEngine.dwimeProcessKey(self.curKey, self.curDown, self.curParam)
+        self.kbDiagLog("[GUARD] T\(tag) ret=\(r) count=\(IMEngine.dwimeCount()) syll=\(IMEngine.dwimeSyllableNum())")
+        if IMEngine.dwimeCount() > 0, let c = IMEngine.dwimeGetCand(0, false) {
+            self.kbDiagLog("[GUARD] T\(tag) 首候选=\(String(cString: c))")
+        }
+    }
+}
