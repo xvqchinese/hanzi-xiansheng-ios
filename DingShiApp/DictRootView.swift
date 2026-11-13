@@ -42,7 +42,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         super.viewDidLoad()
         
         self.hidesBottomBarWhenPushed = false
-        self.navigationItem.title = Lang("词典")
+        self.navigationItem.title = Lang("鼎氏词典")
         
         if (true)
         {
