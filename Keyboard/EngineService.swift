@@ -490,6 +490,7 @@ final class LocalPinyin
         }
         func put(_ w: String, _ cd: String)
         {
+            if w.isEmpty || w == "·" { return }
             if seen.contains(w) { return }
             if !ok(cd) { return }
             cands.append(w)

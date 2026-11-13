@@ -128,6 +128,7 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         else
         {
             label?.text = self.candCache[indexPath.row] as String
+            label?.font = self.font
             label?.sizeToFit()
             label?.frame.size.width = cell!.frame.width
             MyLog("cell = " + String(indexPath.row))
@@ -151,9 +152,9 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
     // 定义每个UICollectionView 的大小
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
     {
-        // 一屏固定 7 个候选，左右滑动翻页
+        // 一屏固定 6 个候选，左右滑动翻页
         let usable = collectionView.frame.width - self.moreBt.frame.width
-        let w = max(1, usable / 7)
+        let w = max(1, usable / 6)
         return CGSize(width: w, height: collectionView.frame.height)
     }
     // 返回这个UICollectionView是否可以被选择
@@ -177,6 +178,11 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         self.moreBt.center.y = self.center.y
         self.moreBt.frame.origin.x = self.frame.width - self.moreBt.frame.width
         
+        // 候选字号按格宽与条高取小，保证一屏 6 个放得下
+        let cellW = (self.frame.width - self.moreBt.frame.width) / 6
+        let fsize = min(self.frame.height * 0.52, cellW * 0.92)
+        self.font = UIFont(name: "Arial", size: max(10, fsize))
+        self.collectionView.reloadData()
         self.compLabel.frame = CGRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height/3.3)
         
         let compHeight = self.compLabel.isHidden ? 0 : self.compLabel.frame.height
