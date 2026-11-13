@@ -13,6 +13,7 @@ class UserViewController: UITableViewController
     var userDB: UnsafeMutableRawPointer? = nil
     var userDBLen: Int = 0
     var dataAry: [Int32] = []
+    var items: [(String, String)] = []
     var inputMode: Int32 = 0;
     var cmdbar : UIView!
     var pyBtn : UIButton!
@@ -35,32 +36,14 @@ class UserViewController: UITableViewController
 
     private func loadDB()
     {
-        let db = try? Data(contentsOf: fileUrlFromGroup((self.inputMode == IM_PINYIN) ? "userDB_PY.data" : "userDB_SK.data"))
-        if db != nil
-        {
-            self.userDBLen = db!.count
-            if self.userDB != nil
-            {
-                free(self.userDB!)
-                self.userDB = nil
-            }
-            self.userDB = malloc(Int(db!.count))
-            memmove(self.userDB!, (db! as NSData).bytes, Int(db!.count))
-        }
-
-        self.dataAry.removeAll()
-        if self.userDB != nil
-        {
-            let conut = Int(IMEngine.dwimeUserDBGetCount(self.inputMode, self.userDB!))
-            for i in 0..<conut
-            {
-                if IMEngine.dwimeUserDBIsNewPhr(self.inputMode, self.userDB!, Int32(i))
-                {
-                    // 调频字词不显示
-                    self.dataAry.append(Int32(i))
-                }
-            }
-        }
+        self.items.removeAll()
+        guard let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
+              let d = try? Data(contentsOf: u),
+              let j = try? JSONSerialization.jsonObject(with: d) as? [String: String]
+        else { return }
+        var list = j.map { ($0.key, $0.value) }
+        list.sort { $0.0 < $1.0 }
+        self.items = list
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -144,7 +127,7 @@ class UserViewController: UITableViewController
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
     {
-        return self.dataAry.count
+        return self.items.count
     }
         
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
@@ -197,7 +180,8 @@ class UserViewController: UITableViewController
         }
         let statusLabel:UILabel = cell!.contentView.viewWithTag(1000001) as!  UILabel
         let button:MyButton = cell!.contentView.viewWithTag(1000011) as!  MyButton
-        statusLabel.text = IMEngine.dwimeUserDBGetPhr(self.inputMode, self.userDB!, Int32(self.dataAry[indexPath.row]))
+        let it = self.items[indexPath.row]
+        statusLabel.text = String(format: "%04d  %@  %@", indexPath.row, it.1, it.0)
         statusLabel.sizeToFit()
         statusLabel.frame.origin.y = (cell!.frame.height - statusLabel.frame.height) / 2
         statusLabel.frame.size.width = self.tableView.frame.width - 30
@@ -217,10 +201,22 @@ class UserViewController: UITableViewController
     
     @objc func delete_item(sender: MyButton)
     {
-        if self.userDB != nil
+        if sender.row >= 0 && sender.row < self.items.count
         {
-            IMEngine.imSplImeUserDBDelPhr(self.inputMode, self.userDB!, Int32(self.dataAry[sender.row]))
-            self.saveDB()
+            let key = self.items[sender.row].0
+            var j = [String: String]()
+            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
+               let d = try? Data(contentsOf: u),
+               let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
+            {
+                j = obj
+            }
+            j.removeValue(forKey: key)
+            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
+               let d = try? JSONSerialization.data(withJSONObject: j, options: [])
+            {
+                try? d.write(to: u)
+            }
             self.loadDB()
             self.tableView.reloadData()
             sender.isHidden = true

@@ -598,7 +598,7 @@ final class LocalPinyin
         }
         pending = composed + t
         pendingOn = true
-        if typed.count >= 2 { learn(typed, pending) }
+        if typed.count >= 2 { learn(self.strokeMode ? typed.uppercased() : typed, pending) }
         composed = ""
         input = ""
         typed = ""
