@@ -116,7 +116,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         
         if (true)
         {
-            let topInset: CGFloat = 46
+            let topInset: CGFloat = 72
             let tabH = self.tabBarController?.tabBar.frame.height ?? 0
             self.web = WKWebView(frame: CGRect(x: 0, y: topInset, width: self.view.frame.width, height: max(0, self.view.frame.height - topInset - tabH)))
             self.web.navigationDelegate = self
@@ -127,7 +127,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         if (true)
         {
             let app = UIApplication.shared
-            let y = self.view.frame.origin.y + self.navigationController!.navigationBar.bounds.size.height + app.statusBarFrame.height + 46
+            let y = self.view.frame.origin.y + self.navigationController!.navigationBar.bounds.size.height + app.statusBarFrame.height + 72
             let h = self.view.frame.height - self.navigationController!.navigationBar.bounds.size.height - app.statusBarFrame.height - self.tabBarController!.tabBar.frame.height
             self.showResult = WKWebView(frame: CGRect(x: self.view.frame.origin.x, y: y, width: self.view.frame.size.width, height: h))
             self.showResult.navigationDelegate = self
