@@ -233,6 +233,13 @@ final class LocalPinyin
         return out
     }
 
+    func plainText() -> String?
+    {
+        if pendingOn && !pending.isEmpty { return pending }
+        if !composed.isEmpty { return composed }
+        return cands.first
+    }
+
     func loadLearned()
     {
         guard let u = LocalPinyin.learnedURL, let d = try? Data(contentsOf: u) else { return }
@@ -866,6 +873,10 @@ class EngineService
             if key == EST.SPKEY_Back { lp.back(); return EST.SMR_OK }
             if key == EST.SPKEY_SEPARATOR || key == EST.SPKEY_OK || key == EST.SPKEY_Return
             {
+                if key == EST.SPKEY_Return && lp.isDigitsOnly
+                {
+                    if let t = lp.plainText(), !t.isEmpty { self.dictHook?(t) }
+                }
                 if lp.cands.count > 0 { return lp.select(0) }
                 lp.commitRaw()
                 return EST.SMR_OK

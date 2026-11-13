@@ -216,6 +216,17 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     }
     
     
+    func openInHost(_ url: URL)
+    {
+        let sel = NSSelectorFromString("openURL:")
+        var cur: UIResponder? = self
+        while let c = cur
+        {
+            if c.responds(to: sel) { c.perform(sel, with: url); return }
+            cur = c.next
+        }
+    }
+
     // MARK: - 屏上诊断（临时排障用，正式上架前删除）
     func showDiag()
     {
