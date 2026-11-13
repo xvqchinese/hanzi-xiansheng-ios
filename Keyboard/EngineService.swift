@@ -381,6 +381,12 @@ final class LocalPinyin
         refresh()
     }
 
+    func consumePending()
+    {
+        pendingOn = false
+        pending = ""
+    }
+
     func clear()
     {
         input = ""
@@ -846,7 +852,12 @@ class EngineService
     func UpscreenStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
-        if self.useLocalPY, let lp = self.localPY { return lp.pending as NSString }
+        if self.useLocalPY, let lp = self.localPY
+        {
+            let v = lp.pending
+            lp.consumePending()
+            return v as NSString
+        }
         return (IMEngine.dwimeGetUpScrenn() ?? "") as NSString
     }
     

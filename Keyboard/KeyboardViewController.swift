@@ -220,7 +220,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     func showDiag()
     {
         if self.engine == nil { return }
-        let t = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0)"
+        let t = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0) cand=\(self.engine.CandCount()) in=\(self.engine.inputStr())"
         mDiagText = t
         if mDiagLabel == nil
         {

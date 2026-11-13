@@ -63,33 +63,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         self.window?.addSubview(rootVC.view!)
         self.window!.makeKeyAndVisible()
 
-        // 临时诊断：把键盘落盘日志弹出来（正式上架前删除）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            guard let c = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS") else { return }
-            let u = c.appendingPathComponent("kb_diag.log")
-            guard let t = try? String(contentsOf: u, encoding: .utf8), !t.isEmpty else {
-                let ac0 = UIAlertController(title: "键盘诊断日志", message: "还没有日志：请先在键盘上按一个字母，再回来打开 App", preferredStyle: .alert)
-                ac0.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
-                rootVC.present(ac0, animated: true, completion: nil)
-                return
-            }
-            var extVer = "?"
-            if let plugins = Bundle.main.builtInPlugInsURL {
-                let kb = plugins.appendingPathComponent("Keyboard.appex")
-                if let b = Bundle(url: kb), let v = b.infoDictionary?["CFBundleShortVersionString"] as? String { extVer = v }
-            }
-            let appVer = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "?"
-            let head = "扩展版本=\(extVer)  主App=\(appVer)\n\n"
-            var sum = ""
-            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("kb_sum.log"),
-               let d = try? Data(contentsOf: u), let txt = String(data: d, encoding: .utf8) { sum = txt }
-            let tail = t.count > 700 ? String(t.suffix(700)) : t
-            let dictRes = AppDelegate.probeDictVariants()
-            let ac = UIAlertController(title: "键盘诊断：词库 × 版本测试", message: head + "【词库版本测试（中文 L=8 + 键 n）】\n" + dictRes + "\n\n【键盘汇总】\n" + sum, preferredStyle: .alert)
-            ac.addAction(UIAlertAction(title: "知道了", style: .default, handler: nil))
-            rootVC.present(ac, animated: true, completion: nil)
-        }
-
         return true
     }
 
