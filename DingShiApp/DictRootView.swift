@@ -72,7 +72,8 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
             let segW: CGFloat = 132
             self.fontSeg.frame = CGRect(x: w - 8 - segW, y: segY, width: segW, height: 28)
             self.fontSeg.addTarget(self, action: Selector("onFontSeg"), for: .valueChanged)
-            self.navigationController!.view.addSubview(self.fontSeg)
+            // 大中小只用于键盘占屏比例，词典页不再显示
+            self.fontSeg.isHidden = true
         }
         if (true)
         {
@@ -95,7 +96,9 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         
         if (true)
         {
-            self.web = WKWebView(frame: self.view.frame)
+            let topInset: CGFloat = 46
+            let tabH = self.tabBarController?.tabBar.frame.height ?? 0
+            self.web = WKWebView(frame: CGRect(x: 0, y: topInset, width: self.view.frame.width, height: max(0, self.view.frame.height - topInset - tabH)))
             self.web.navigationDelegate = self
             self.view.addSubview(self.web!)
             self.web.load(URLRequest(url: self.home_url!))
