@@ -100,6 +100,11 @@ extension KeyboardViewController
                         self.deleteBackward()
                         return true
                     }
+                    if self.currentPage == KbPage.M_SK9, Globals.playWav, Globals.accessOpen, let kc = key.keyCode, kc.length == 1
+                    {
+                        let strokeSound: [String: String] = ["d": "dianv", "h": "hengx", "s": "shuq", "p": "piev", "n": "naq", "z": "zhex"]
+                        if let py = strokeSound[String(kc).lowercased()] { playWav(py) }
+                    }
                     // 转入引擎
                     ret = self.engine.SendKey(key, uppercase: self.shiftState.uppercase(), isSwipeDown: isSwipeDown)
                     if ret

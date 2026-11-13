@@ -117,7 +117,9 @@ class SettingView: UIView
         Globals.prefs.set(!Globals.singleHand, forKey: "singleHand")
         Globals.Update()
         self.singleHand.setTitle(Globals.singleHand ? Lang("  取消单手  ") : Lang("  单手模式  "), for: .normal)
-        self.superview?.layoutSubviews()
+        NotificationCenter.default.post(name: Notification.Name("DWRelayout"), object: nil)
+        self.superview?.setNeedsLayout()
+        self.superview?.layoutIfNeeded()
     }
     
     func show()

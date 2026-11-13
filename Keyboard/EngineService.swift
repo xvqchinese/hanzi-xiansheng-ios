@@ -213,22 +213,69 @@ final class LocalPinyin
 
     func segments(_ s: String) -> [String]
     {
-        var out: [String] = []
-        var i = s.startIndex
-        while i < s.endIndex
+        let chars = Array(s)
+        let n = chars.count
+        if n == 0 { return [] }
+        var bestCnt = Array(repeating: Int.max, count: n + 1)
+        var bestSeg: [String?] = Array(repeating: nil, count: n + 1)
+        bestCnt[n] = 0
+        var i = n - 1
+        while i >= 0
         {
-            var best = ""
-            var cur = ""
-            var j = i
-            while j < s.endIndex && cur.count < 6
+            if chars[i] == "j"
             {
-                cur.append(s[j])
-                if LocalPinyin.sySet.contains(cur) { best = cur }
-                j = s.index(after: j)
+                if bestCnt[i + 1] != Int.max
+                {
+                    bestCnt[i] = bestCnt[i + 1]
+                    bestSeg[i] = ""
+                }
             }
-            if best.isEmpty { out.append(String(s[i...])); break }
-            out.append(best)
-            i = s.index(i, offsetBy: best.count)
+            var len = 1
+            while len <= 6 && i + len <= n
+            {
+                let seg = String(chars[i..<(i + len)])
+                if LocalPinyin.sySet.contains(seg)
+                {
+                    var endIdx = i + len
+                    var full = seg
+                    if endIdx < n && "xvq".contains(chars[endIdx])
+                    {
+                        full.append(chars[endIdx])
+                        endIdx += 1
+                    }
+                    else if endIdx + 1 < n && chars[endIdx] == chars[endIdx + 1]
+                    {
+                        full.append(chars[endIdx])
+                        full.append(chars[endIdx + 1])
+                        endIdx += 2
+                    }
+                    if bestCnt[endIdx] != Int.max && bestCnt[endIdx] + 1 < bestCnt[i]
+                    {
+                        bestCnt[i] = bestCnt[endIdx] + 1
+                        bestSeg[i] = full
+                    }
+                    if bestCnt[plainEnd] != Int.max && bestCnt[plainEnd] + 1 < bestCnt[i]
+                    {
+                        bestCnt[i] = bestCnt[plainEnd] + 1
+                        bestSeg[i] = seg
+                    }
+                }
+                len += 1
+            }
+            i -= 1
+        }
+        if bestCnt[0] == Int.max { return [s] }
+        var out: [String] = []
+        var k = 0
+        while k < n
+        {
+            if let seg = bestSeg[k]
+            {
+                if !seg.isEmpty { out.append(seg) }
+                k += seg.count
+                if seg.isEmpty { k += 1 }
+            }
+            else { return [s] }
         }
         return out
     }
