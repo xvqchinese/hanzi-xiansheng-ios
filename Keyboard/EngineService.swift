@@ -284,6 +284,20 @@ final class LocalPinyin
         return 0
     }
 
+    func parseEntries(_ s: String) -> [(String, String)]
+    {
+        var out: [(String, String)] = []
+        for e in s.split(separator: "\u{1f}")
+        {
+            let parts = e.split(separator: "\u{1e}")
+            if parts.isEmpty { continue }
+            let text = String(parts[0])
+            let code = parts.count > 1 ? String(parts[1]) : ""
+            out.append((text, code))
+        }
+        return out
+    }
+
     func refresh()
     {
         cands.removeAll()
@@ -298,8 +312,8 @@ final class LocalPinyin
             if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
         }
         var i = lo
-        var exact: [String] = []
-        var later: [(Int, String, [String])] = []
+        var exact: [(String, String)] = []
+        var later: [(Int, String, [(String, String)])] = []
         var scanned = 0
         while i < count && scanned < 400
         {
@@ -307,28 +321,28 @@ final class LocalPinyin
             let k = keyString(i)
             if k == input
             {
-                exact = wordsString(i).split(separator: "\u{1f}").map { String($0) }
+                exact = parseEntries(wordsString(i))
             }
             else if k.count <= input.count + 12
             {
-                later.append((k.count, k, wordsString(i).split(separator: "\u{1f}").map { String($0) }))
+                later.append((k.count, k, parseEntries(wordsString(i))))
             }
             i += 1
             scanned += 1
         }
-        for w in exact
+        for (w, cd) in exact
         {
             cands.append(w)
-            codes.append(input)
+            codes.append(cd.isEmpty ? input : cd)
             if cands.count >= 30 { return }
         }
         later.sort { $0.0 < $1.0 }
         for item in later
         {
-            for w in item.2
+            for (w, cd) in item.2
             {
                 cands.append(w)
-                codes.append(item.1)
+                codes.append(cd.isEmpty ? item.1 : cd)
                 if cands.count >= 30 { return }
             }
         }
