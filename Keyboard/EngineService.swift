@@ -752,6 +752,7 @@ class EngineService
         }
 
         return ret
+        self.localPY?.clear()
     }
     
     func End()

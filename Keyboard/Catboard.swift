@@ -89,6 +89,17 @@ extension KeyboardViewController
                             return true;
                         }
                     }
+                    if key.type == Key.KeyType.Backspace
+                    {
+                        if self.engine.hasInput()
+                        {
+                            self.engine.Delete()
+                            self.updateCandComp()
+                            return true
+                        }
+                        self.deleteBackward()
+                        return true
+                    }
                     // 转入引擎
                     ret = self.engine.SendKey(key, uppercase: self.shiftState.uppercase(), isSwipeDown: isSwipeDown)
                     if ret
