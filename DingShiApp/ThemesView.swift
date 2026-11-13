@@ -66,7 +66,12 @@ class ThemesView: UIViewController, WKNavigationDelegate
         for one in profile.components(separatedBy: "&")
         {
             let kv = one.components(separatedBy: "=")
-            if kv.count == 2 && kv[0] == "KbBColor" { return string2Color(kv[1]) }
+            if kv.count == 2 && kv[0] == "KbBColor"
+            {
+                let hex = kv[1]
+                let v = UInt32(hex.hasPrefix("0x") ? String(hex.dropFirst(2)) : hex, radix: 16) ?? 0xDDDDDD
+                return UIColor(red: CGFloat((v >> 16) & 0xff)/255, green: CGFloat((v >> 8) & 0xff)/255, blue: CGFloat(v & 0xff)/255, alpha: 1)
+            }
         }
         return UIColor.white
     }
