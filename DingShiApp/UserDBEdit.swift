@@ -42,6 +42,8 @@ class UserViewController: UITableViewController
               let j = try? JSONSerialization.jsonObject(with: d) as? [String: String]
         else { return }
         var list = j.map { ($0.key, $0.value) }
+        if self.inputMode == IM_STROKE { list = list.filter { $0.0.contains(where: { $0.isUppercase }) } }
+        else { list = list.filter { !$0.0.contains(where: { $0.isUppercase }) } }
         list.sort { $0.0 < $1.0 }
         self.items = list
     }
@@ -181,7 +183,7 @@ class UserViewController: UITableViewController
         let statusLabel:UILabel = cell!.contentView.viewWithTag(1000001) as!  UILabel
         let button:MyButton = cell!.contentView.viewWithTag(1000011) as!  MyButton
         let it = self.items[indexPath.row]
-        statusLabel.text = String(format: "%04d  %@  %@", indexPath.row, it.1, it.0)
+        statusLabel.text = String(format: "%04d   %@", indexPath.row, it.1)
         statusLabel.sizeToFit()
         statusLabel.frame.origin.y = (cell!.frame.height - statusLabel.frame.height) / 2
         statusLabel.frame.size.width = self.tableView.frame.width - 30
