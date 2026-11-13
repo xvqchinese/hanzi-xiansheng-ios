@@ -34,8 +34,10 @@ struct Globals
     static func Update()
     {
         //Globals.vibrate = Globals.prefs.bool(forKey: "vibrate")
-        Globals.sound = Globals.prefs.bool(forKey: "sound")
-        Globals.playWav = Globals.prefs.bool(forKey: "playWav")
+        // 语音两项设置写在 App Group，键盘优先读共享设置
+        let shared = UserDefaults(suiteName: "group.DWIME_DS")
+        Globals.sound = shared?.bool(forKey: "keySound") ?? Globals.prefs.bool(forKey: "sound")
+        Globals.playWav = shared?.bool(forKey: "playWav") ?? Globals.prefs.bool(forKey: "playWav")
         Globals.singleHand = Globals.prefs.bool(forKey: "singleHand")
  
         // 全局的
@@ -51,8 +53,8 @@ struct Globals
     {
         Globals.prefs.register(defaults: [
             "vibrate"       : false,
-            "sound"         : false,
-            "playWav"       : false,
+            "sound"         : true,
+            "playWav"       : true,
             "singleHand"    : false,
             "defaultEnIM"   : KbPage.M_Abc,
             "defaultCnIM"   : KbPage.M_Chn,

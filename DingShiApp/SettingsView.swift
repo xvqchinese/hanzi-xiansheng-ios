@@ -125,6 +125,30 @@ func settingsCreateRoot() -> QRootElement
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 语音
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (true)
+    {
+        let voiceRoot = QRootElement()
+        let kbOn = UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "keySound") ?? true
+        let weOn = UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true
+        let kbEl = QBooleanElement(title: Lang("按键声音"), boolValue: kbOn)
+        kbEl.onChange =
+            {
+                UserDefaults(suiteName: "group.DWIME_DS")?.set(kbEl.boolValue, forKey: "keySound")
+            }
+        let weEl = QBooleanElement(title: Lang("上屏朗读"), boolValue: weOn)
+        weEl.onChange =
+            {
+                UserDefaults(suiteName: "group.DWIME_DS")?.set(weEl.boolValue, forKey: "playWav")
+            }
+        let voiceSection = QSection(title: Lang("语音"))
+        voiceSection.addElement(kbEl)
+        voiceSection.addElement(weEl)
+        root!.addSection(voiceSection)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // 手写效果
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (true)
