@@ -452,6 +452,15 @@ class EngineService
         return nil
     }
     
+    // 只读扩展包内的词库（跳过 App Group 里的旧在线词库，避免索引段缺失）
+    func loadBundleDB(_ file: String) -> Data?
+    {
+        let innerPath = (Bundle.main.resourcePath! as NSString).appendingPathComponent(file)
+        guard let d = try? Data(contentsOf: URL(fileURLWithPath: innerPath), options: .mappedIfSafe), d.count > 1024
+        else { return nil }
+        return d
+    }
+
     func kbDiagLog(_ s: String)
     {
         guard let c = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS") else { return }
@@ -473,7 +482,7 @@ class EngineService
     {
         // 不再触碰 C 引擎：用本地索引做一键自检
         var s = "[LOCAL] "
-        if let db = self.loadDB("py.data"), let lp = LocalPinyin(data: db)
+        if let db = self.loadBundleDB("py.data"), let lp = LocalPinyin(data: db)
         {
             for ch in "nihao" { lp.type(ch) }
             s += "索引=就绪 键=\(lp.candCountSign) 输入=nihao 候选=\(lp.cands.count)"
@@ -515,7 +524,7 @@ class EngineService
 
         IMEngine.dwimeExit()
 
-        if page == KbPage.M_Chn, let db = self.loadDB("py.data"), let lp = LocalPinyin(data: db)
+        if page == KbPage.M_Chn, let db = self.loadBundleDB("py.data"), let lp = LocalPinyin(data: db)
         {
             self.localPY = lp
             self.mDbMain = db
