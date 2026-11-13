@@ -411,7 +411,14 @@ final class LocalPinyin
             {
                 for (w, cd) in entries(forKey: segs[0])
                 {
-                    if w.count == 1 { put(w, cd) }
+                    if w.count != 1 { continue }
+                    if cd.isEmpty || cd.hasPrefix(segs[0])
+                    {
+                        if !seen.contains(w)
+                        {
+                            cands.append(w); codes.append(cd.isEmpty ? segs[0] : cd); seen.insert(w)
+                        }
+                    }
                     if cands.count >= 40 { return }
                 }
             }
@@ -688,9 +695,6 @@ class EngineService
             self.lastInitCode = EST.SMR_OK
             self.lastDbLen = db.count
             self.isReady = true
-            var q = "[LOCAL SK] 笔母索引就绪 len=\(db.count) 码=\(lp.candCountSign)"
-            for ch in "pn" { lp.type(ch) }
-            q += " 输入PN 候选=\(lp.cands.count)"
             if lp.cands.count > 0 { q += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
             self.kbDiagLog(q)
             return true
