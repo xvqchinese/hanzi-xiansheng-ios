@@ -634,6 +634,14 @@ class EngineService
     var lastInitCode: Int32 = -1     // dwimeInit 原始返回码
     var lastDbLen: Int = 0           // 实际吃到的词库字节数
     var isReady: Bool = false        // 初始化成功才允许按键
+    func speechCode(_ cd: String) -> String
+    {
+        guard let lp = self.localPY, !lp.strokeMode else { return cd }
+        let segs = lp.segments(cd)
+        if segs.count > 1 { return segs.joined(separator: ",") }
+        return cd
+    }
+
     var localPY: LocalPinyin?        // 本地拼音索引（py.data 尾部 PYIMBIN1 段）
     var useLocalPY: Bool { return (self.mMode == IDouble.piNYIN || self.mMode == EST.IM_STROKE) && self.localPY != nil }
     var dictHook: ((String) -> Void)?
