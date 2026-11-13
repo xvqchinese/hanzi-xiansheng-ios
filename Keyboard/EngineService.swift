@@ -254,6 +254,7 @@ final class LocalPinyin
                         bestCnt[i] = bestCnt[endIdx] + 1
                         bestSeg[i] = full
                     }
+                    let plainEnd = i + len
                     if bestCnt[plainEnd] != Int.max && bestCnt[plainEnd] + 1 < bestCnt[i]
                     {
                         bestCnt[i] = bestCnt[plainEnd] + 1
