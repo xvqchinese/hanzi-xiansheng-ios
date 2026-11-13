@@ -43,7 +43,7 @@ class HZFlashView: UIView
         self.addSubview(self.imageView)
         
         self.close = UIButton()
-        self.close.setTitle(Lang("     关 闭     "), for: .normal)
+        self.close.setTitle(Lang("     返 回     "), for: .normal)
         self.close.setTitleColor(UIColor.white, for: .normal)
         self.close.addTarget(self, action: Selector("onClose"), for: UIControl.Event.touchUpInside)
         self.close.sizeToFit()
@@ -52,6 +52,21 @@ class HZFlashView: UIView
         self.close.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         self.close.layer.cornerRadius = 5
         self.addSubview(self.close)
+
+        let soundSw = UISwitch()
+        let cue = UILabel()
+        cue.text = Lang("有声")
+        cue.textColor = UIColor.white
+        cue.font = UIFont.systemFont(ofSize: 16)
+        cue.sizeToFit()
+        soundSw.frame.origin.x = self.frame.width - soundSw.frame.width - 16
+        soundSw.frame.origin.y = self.frame.origin.y + 8
+        cue.frame.origin.x = soundSw.frame.origin.x - cue.frame.width - 6
+        cue.center.y = soundSw.center.y
+        soundSw.isOn = UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true
+        soundSw.addTarget(self, action: Selector("onSoundSwitch:"), for: .valueChanged)
+        self.addSubview(cue)
+        self.addSubview(soundSw)
         
         //self.skSequence = getStringListByTxt("sk")
         //MyLog("\(self.skSequence)")
@@ -87,8 +102,8 @@ class HZFlashView: UIView
             self.currentWord = word as String
             self.currentSKAry = sk.components(separatedBy: ",")
             ocUtils.drawWordPath(word as String, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, -1)
-            self.currentSKIndex = -1;
-            self.nextTimer = Timer.scheduledTimer(timeInterval: 0.8, target: self, selector: Selector("showNext"), userInfo: nil, repeats: true)
+            self.currentSKIndex = 0;
+            self.nextTimer = Timer.scheduledTimer(timeInterval: 0.6, target: self, selector: Selector("showNext"), userInfo: nil, repeats: true)
         }
         else
         {
@@ -105,7 +120,9 @@ class HZFlashView: UIView
             self.currentSKIndex += 1
             if (self.currentSKIndex >= self.currentSKAry!.count)
             {
-                self.currentSKIndex = -1;
+                self.currentSKIndex = self.currentSKAry!.count - 1
+                self.nextTimer?.invalidate()
+                self.nextTimer = nil
             }
             ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, self.currentSKIndex)
             if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true) && self.currentSKIndex >= 0 && self.currentSKIndex < self.currentSKAry!.count
@@ -123,6 +140,11 @@ class HZFlashView: UIView
         MyLog("showNext = \(self.currentSKIndex)")
     }
     
+    @objc func onSoundSwitch(_ sender: UISwitch)
+    {
+        UserDefaults(suiteName: "group.DWIME_DS")?.set(sender.isOn, forKey: "playWav")
+    }
+
     func show()
     {
         let window  = UIApplication.shared.keyWindow;
