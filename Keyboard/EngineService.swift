@@ -193,9 +193,9 @@ final class LocalPinyin
     private(set) var pending: String = ""
     private(set) var pendingOn: Bool = false
     private(set) var ready: Bool = false
-    private let digitsOnly: Bool
+    private let strokeMode: Bool
     var candCountSign: Int { return self.count }
-    var isDigitsOnly: Bool { return self.digitsOnly }
+    var isDigitsOnly: Bool { return self.strokeMode }
 
     static func readU32(_ b: [UInt8], _ o: Int) -> UInt32
     {
@@ -209,9 +209,9 @@ final class LocalPinyin
         return UInt16(b[o]) | (UInt16(b[o+1]) << 8)
     }
 
-    init?(data: Data, marker: String = "PYIMBIN1", digitsOnly: Bool = false)
+    init?(data: Data, marker: String = "PYIMBIN1", strokeMode: Bool = false)
     {
-        self.digitsOnly = digitsOnly
+        self.strokeMode = strokeMode
         let b = [UInt8](data)
         let m: [UInt8] = Array(marker.utf8)
         var found: Int = -1
@@ -333,7 +333,7 @@ final class LocalPinyin
         for (w, cd) in exact
         {
             cands.append(w)
-            codes.append(cd.isEmpty ? input : cd)
+            codes.append(cd.isEmpty ? (self.strokeMode ? input.uppercased() : input) : cd)
             if cands.count >= 30 { return }
         }
         later.sort { $0.0 < $1.0 }
@@ -342,7 +342,7 @@ final class LocalPinyin
             for (w, cd) in item.2
             {
                 cands.append(w)
-                codes.append(cd.isEmpty ? item.1 : cd)
+                codes.append(cd.isEmpty ? (self.strokeMode ? item.1.uppercased() : item.1) : cd)
                 if cands.count >= 30 { return }
             }
         }
@@ -351,9 +351,9 @@ final class LocalPinyin
     func type(_ c: Character)
     {
         pendingOn = false
-        if self.digitsOnly
+        if self.strokeMode
         {
-            if c >= "1" && c <= "6" { input.append(c) }
+            if "hsppdnz".contains(c) || "HSPPDNZ".contains(c) { input.append(Character(c.lowercased())) }
         }
         else if c >= "a" && c <= "z" { input.append(c) }
         if input.count > 30 { input = String(input.suffix(30)) }
@@ -562,7 +562,7 @@ class EngineService
             self.kbProbePinyin()
             return true
         }
-        if page == KbPage.M_SK9, let db = self.loadBundleDB("sk.data"), let lp = LocalPinyin(data: db, marker: "SKIMBIN1", digitsOnly: true)
+        if page == KbPage.M_SK9, let db = self.loadBundleDB("sk.data"), let lp = LocalPinyin(data: db, marker: "SKIMBIN1", strokeMode: true)
         {
             self.localPY = lp
             self.mDbMain = db
@@ -570,8 +570,8 @@ class EngineService
             self.lastDbLen = db.count
             self.isReady = true
             var q = "[LOCAL SK] 笔母索引就绪 len=\(db.count) 码=\(lp.candCountSign)"
-            for ch in "1" { lp.type(ch) }
-            q += " 输入1 候选=\(lp.cands.count)"
+            for ch in "pn" { lp.type(ch) }
+            q += " 输入PN 候选=\(lp.cands.count)"
             if lp.cands.count > 0 { q += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
             self.kbDiagLog(q)
             return true
@@ -723,29 +723,26 @@ class EngineService
 
         if self.useLocalPY, let lp = self.localPY
         {
-            if key >= 48 && key <= 57, let sc = UnicodeScalar(UInt32(key))
+            if key >= 48 && key <= 57, lp.isDigitsOnly
             {
-                lp.type(Character(sc))
+                var m: Character = "h"
+                switch key
+                {
+                case 49: m = "h"
+                case 50: m = "s"
+                case 51: m = "p"
+                case 52: m = "d"
+                case 53: m = "n"
+                case 54: m = "z"
+                default: return EST.SMR_OK
+                }
+                lp.type(m)
                 return EST.SMR_OK
             }
             if key >= 97 && key <= 122, let sc = UnicodeScalar(UInt32(key))
             {
-                if lp.isDigitsOnly
-                {
-                    var d: Character? = nil
-                    switch key
-                    {
-                    case 104: d = "1"   // h 横
-                    case 115: d = "2"   // s 竖
-                    case 112: d = "3"   // p 撇
-                    case 100: d = "4"   // d 点
-                    case 110: d = "5"   // n 捺
-                    case 122: d = "6"   // z 折
-                    default: d = nil
-                    }
-                    if let dd = d { lp.type(dd) }
-                    return EST.SMR_OK
-                }
+                // 笔母直接用字母 H横 S竖 P撇 D点 N捺 Z折
+
                 lp.type(Character(sc))
                 return EST.SMR_OK
             }
