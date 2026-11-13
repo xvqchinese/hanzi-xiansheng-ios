@@ -236,6 +236,12 @@ class UserViewController: UITableViewController
             try? db.write(to: url, options: [])
         }
     }
+ 
+    @objc func onBackPage()
+    {
+        if let nav = self.navigationController, nav.viewControllers.count > 1 { nav.popViewController(animated: true) }
+        else { self.dismiss(animated: true, completion: nil) }
+    }
 }
 
 
@@ -258,11 +264,4 @@ class MyCell : UITableViewCell
 class MyButton: UIButton
 {
     var row: Int = 0
-
-    @objc func onBackPage()
-    {
-        if let nav = self.navigationController, nav.viewControllers.count > 1 { nav.popViewController(animated: true) }
-        else { self.dismiss(animated: true, completion: nil) }
-    }
-
 }
