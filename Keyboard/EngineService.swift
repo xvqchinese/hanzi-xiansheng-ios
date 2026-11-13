@@ -194,8 +194,70 @@ final class LocalPinyin
     private(set) var pendingOn: Bool = false
     private(set) var ready: Bool = false
     private let strokeMode: Bool
+    private(set) var composed: String = ""
+    private var typed: String = ""
+    private var learned: [String: String] = [:]
+    var displayInput: String { return self.composed + self.input }
+
+    static let syList: String = "a ai an ang ao ba bai ban bao bei ben beng bi bian bie bin bing bo bu cai cang cao ce cen cha chai chan chang chao che chen cheng chi chong chou chu chuan cong cuan cui cun cuo da dai dan dang dao de deng di dian diao ding dong dou du duan dui duo e er fan fang fei feng fo fu gan gang gao ge geng gong gou gu guan gui gun guo ha hai han hang hao he hei heng hong hou hu hua huai huan huang hui huo ji jia jian jiang jiao jie jin jing jiu ju juan jue kai kan kang ke kong ku kuai kuan kuang kui kun lai lan lang lao le lei leng li lian liang liao lin ling liu long lou lu luan lun luo ma mai man mang mao mei men meng mi mian miao min ming mo mou mu na nan nao neng ni nian nie niu nong nu ou p pa pan pang pei peng pi pian piao ping po pu q qi qian qiang qiao qie qin qing qiong qiu qu quan que rang rao ren rong ru ruan rui sa san sang sen sha shan shang shao she shen sheng shi shou shu shua shuai shuang shui shun shuo si song sou su sui sun suo t ta tai tan tang tao teng ti tian tie tong tou tu tuo wa wan wang wei wen weng wu xi xia xian xiang xiao xie xin xing xiong xiu xu xuan xue xun ya yan yang yao ye yi yin ying yong you yu yuan yue yun zan zang zeng zha zhai zhan zhang zhao zhe zhen zheng zhi zhong zhou zhu zhuan zhuang zhui zhuo zi zong zou zu zuo a ai an ang ao ba bai baike baimi baiwa ban bang bao bei ben beng bi bian biang biao bie bin bing bo bu ca cai can cang cao ce cen ceng cha chai chan chang chao che chen cheng chi chong chou chu chua chuai chuan chuang chui chun chuo ci cong cou cu cuan cui cun cuo da dai dan dang dao de den deng di dia dian diao die ding diu dong dou du duan dui dun duo e ei en eng er fa fan fang fei fen feng fenke fenwa fiao fo fou fu ga gai gan gang gao ge gei gen geng gong gou gu gua guai guan guang gui gun guo ha hai han hang hao haoke haowa he hei hen heng hm hong hou hu hua huai huan huang hui hun huo ji jia jian jiang jiao jie jin jing jiong jiu ju juan jue jun ka kai kan kang kao ke kei ken keng kong kou ku kua kuai kuan kuang kui kun kuo la lai lan lang lao le lei leng li lia lian liang liao lie like lin ling liu liwa long lou lu luan lun luo m ma mai man mang mao me mei men meng mi mian miao mie min ming miu mo mou mu na nai nan nang nao ne nei nen ni nian niang niao nie nin ning niu nong nou nu nuan nun nuo o ou pa pai pan pang pao pei pen peng pi pian piao pie pin ping po pou pu qi qia qian qiang qianke qianwa qiao qie qin qing qiong qiu qu quan que qun ran rang rao re ren reng ri rong rou ru rua ruan rui run ruo sa sai san sang sao se sen seng sha shai shan shang shao she shei shen sheng shi shike shiwa shou shu shua shuai shuan shuang shui shun shuo si song sou su suan sui sun suo ta tai tan tang tao te teng ti tian tiao tie ting tong tou tu tuan tui tun tuo w wa wai wan wang wei wen weng wo wu xi xia xian xiang xiao xie xin xing xiong xiu xu xuan xue xun xx ya yan yang yao ye yi yin ying yo yong you yu yuan yue yun za zai zan zang zao ze zei zen zeng zha zhai zhan zhang zhao zhe zhen zheng zhi zhong zhou zhu zhua zhuai zhuan zhuang zhui zhun zhuo zi zong zou zu zuan zui zun zuo"
     var candCountSign: Int { return self.count }
     var isDigitsOnly: Bool { return self.strokeMode }
+
+
+    static let sySet: Set<String> = Set(LocalPinyin.syList.split(separator: " ").map { String($0) })
+
+    static var learnedURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json")
+    }
+
+    func segments(_ s: String) -> [String]
+    {
+        var out: [String] = []
+        var i = s.startIndex
+        while i < s.endIndex
+        {
+            var best = ""
+            var cur = ""
+            var j = i
+            while j < s.endIndex && cur.count < 6
+            {
+                cur.append(s[j])
+                if LocalPinyin.sySet.contains(cur) { best = cur }
+                j = s.index(after: j)
+            }
+            if best.isEmpty { out.append(String(s[i...])); break }
+            out.append(best)
+            i = s.index(i, offsetBy: best.count)
+        }
+        return out
+    }
+
+    func loadLearned()
+    {
+        guard let u = LocalPinyin.learnedURL, let d = try? Data(contentsOf: u) else { return }
+        if let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { learned = j }
+    }
+
+    func saveLearned()
+    {
+        guard let u = LocalPinyin.learnedURL else { return }
+        if let d = try? JSONSerialization.data(withJSONObject: learned, options: []) { try? d.write(to: u) }
+    }
+
+    func learn(_ letters: String, _ text: String)
+    {
+        if letters.count < 2 || text.count < 2 { return }
+        if learned[letters] == text { return }
+        learned[letters] = text
+        let segs = segments(letters)
+        if segs.count > 1
+        {
+            let ini = segs.map { String($0.prefix(1)) }.joined()
+            if ini.count >= 2 { learned[ini] = text }
+        }
+        saveLearned()
+    }
 
     static func readU32(_ b: [UInt8], _ o: Int) -> UInt32
     {
@@ -234,6 +296,7 @@ final class LocalPinyin
         if found < 0 { return nil }
         let cnt = LocalPinyin.readU32(b, found + m.count)
         if cnt == 0 { return nil }
+
         self.bytes = b
         self.base = found + m.count
         self.count = Int(cnt)
@@ -298,11 +361,46 @@ final class LocalPinyin
         return out
     }
 
+    func entries(forKey key: String) -> [(String, String)]
+    {
+        let p = Array(key.utf8)
+        var lo = 0
+        var hi = count
+        while lo < hi
+        {
+            let mid = (lo + hi) / 2
+            if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
+        }
+        if lo < count && cmp(lo, p) == 0 { return parseEntries(wordsString(lo)) }
+        return []
+    }
+
     func refresh()
     {
         cands.removeAll()
         codes.removeAll()
         if input.isEmpty { return }
+        var seen = Set<String>()
+        if let w = learned[input] { cands.append(w); codes.append(input); seen.insert(w) }
+        for (w, cd) in entries(forKey: input)
+        {
+            if seen.contains(w) { continue }
+            cands.append(w); codes.append(cd.isEmpty ? input : cd); seen.insert(w)
+            if cands.count >= 30 { return }
+        }
+        if !self.strokeMode
+        {
+            let segs = segments(input)
+            if segs.count > 1
+            {
+                for (w, cd) in entries(forKey: segs[0])
+                {
+                    if w.count != 1 || seen.contains(w) { continue }
+                    cands.append(w); codes.append(cd.isEmpty ? segs[0] : cd); seen.insert(w)
+                    if cands.count >= 30 { return }
+                }
+            }
+        }
         let p = Array(input.utf8)
         var lo = 0
         var hi = count
@@ -312,37 +410,23 @@ final class LocalPinyin
             if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
         }
         var i = lo
-        var exact: [(String, String)] = []
-        var later: [(Int, String, [(String, String)])] = []
         var scanned = 0
+        var later: [(Int, String, [(String, String)])] = []
         while i < count && scanned < 400
         {
             if cmp(i, p) != 0 { break }
             let k = keyString(i)
-            if k == input
-            {
-                exact = parseEntries(wordsString(i))
-            }
-            else if k.count <= input.count + 12
-            {
-                later.append((k.count, k, parseEntries(wordsString(i))))
-            }
+            if k != input { later.append((k.count, k, parseEntries(wordsString(i)))) }
             i += 1
             scanned += 1
-        }
-        for (w, cd) in exact
-        {
-            cands.append(w)
-            codes.append(cd.isEmpty ? (self.strokeMode ? input.uppercased() : input) : cd)
-            if cands.count >= 30 { return }
         }
         later.sort { $0.0 < $1.0 }
         for item in later
         {
             for (w, cd) in item.2
             {
-                cands.append(w)
-                codes.append(cd.isEmpty ? (self.strokeMode ? item.1.uppercased() : item.1) : cd)
+                if seen.contains(w) { continue }
+                cands.append(w); codes.append(cd.isEmpty ? item.1 : cd); seen.insert(w)
                 if cands.count >= 30 { return }
             }
         }
@@ -353,9 +437,9 @@ final class LocalPinyin
         pendingOn = false
         if self.strokeMode
         {
-            if "hsppdnz".contains(c) || "HSPPDNZ".contains(c) { input.append(Character(c.lowercased())) }
+            if "hspdnz".contains(c) || "HSPDNZ".contains(c) { let l = Character(c.lowercased()); input.append(l); typed.append(l) }
         }
-        else if c >= "a" && c <= "z" { input.append(c) }
+        else if c >= "a" && c <= "z" { input.append(c); typed.append(c) }
         if input.count > 30 { input = String(input.suffix(30)) }
         refresh()
     }
@@ -363,43 +447,54 @@ final class LocalPinyin
     func back()
     {
         pendingOn = false
-        if !input.isEmpty
+        if input.isEmpty
         {
-            input.removeLast()
-            refresh()
-        }
-        else
-        {
+            if !composed.isEmpty { composed.removeLast() }
             pending = ""
+            return
         }
+        input.removeLast()
+        if !typed.isEmpty { typed.removeLast() }
+        refresh()
     }
 
     func select(_ i: Int) -> Int32
     {
         if i < 0 || i >= cands.count { return EST.SMR_Ignored }
-        let word = cands[i]
-        let code = codes[i]
-        pending = word
+        let t = cands[i]
+        if !self.strokeMode && t.count == 1 && input.count > 1
+        {
+            let segs = segments(input)
+            if segs.count > 1
+            {
+                composed += t
+                input = String(input.dropFirst(segs[0].count))
+                pendingOn = false
+                pending = composed + input
+                refresh()
+                return EST.SMR_OK
+            }
+        }
+        pending = composed + t
         pendingOn = true
-        if code.count <= input.count && input.hasPrefix(code)
-        {
-            input = String(input.dropFirst(code.count))
-        }
-        else
-        {
-            input = ""
-        }
-        refresh()
+        if typed.count >= 2 { learn(typed, pending) }
+        composed = ""
+        input = ""
+        typed = ""
+        cands.removeAll()
+        codes.removeAll()
         return EST.SMR_OK
     }
 
     func commitRaw()
     {
         if input.isEmpty { return }
-        pending = input
+        pending = composed + input
         pendingOn = true
+        composed = ""
         input = ""
-        refresh()
+        typed = ""
+        cands.removeAll()
     }
 
     func consumePending()
@@ -554,6 +649,7 @@ class EngineService
         if page == KbPage.M_Chn, let db = self.loadBundleDB("py.data"), let lp = LocalPinyin(data: db)
         {
             self.localPY = lp
+            lp.loadLearned()
             self.mDbMain = db
             self.lastInitCode = EST.SMR_OK
             self.lastDbLen = db.count
@@ -917,7 +1013,7 @@ class EngineService
     func inputStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
-        if self.useLocalPY, let lp = self.localPY { return lp.input as NSString }
+        if self.useLocalPY, let lp = self.localPY { return lp.displayInput as NSString }
         if let input = IMEngine.dwimeGetInput()
         {
             return input as NSString
@@ -928,7 +1024,7 @@ class EngineService
     func compStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
-        if self.useLocalPY, let lp = self.localPY { return lp.input as NSString }
+        if self.useLocalPY, let lp = self.localPY { return lp.displayInput as NSString }
         if (self.mMode == IDouble.piNYIN && self.hasInput() && self.CandCount() > 0)
         {
             return (IMEngine.dwimeGetCandPY9(Int32(0)) ?? "") as NSString
