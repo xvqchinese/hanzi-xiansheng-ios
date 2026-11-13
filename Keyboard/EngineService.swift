@@ -636,7 +636,7 @@ class EngineService
     var isReady: Bool = false        // 初始化成功才允许按键
     func speechCode(_ cd: String) -> String
     {
-        guard let lp = self.localPY, !lp.strokeMode else { return cd }
+        guard let lp = self.localPY else { return cd }
         let segs = lp.segments(cd)
         if segs.count > 1 { return segs.joined(separator: ",") }
         return cd
