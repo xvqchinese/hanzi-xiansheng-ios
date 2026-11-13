@@ -471,39 +471,21 @@ class EngineService
 
     func kbProbePinyin()
     {
-        guard let db = self.mDbMain else { return }
-        let userNS: NSData? = self.mDbUser
-        func doInit(_ kb: Int32) -> Int32
+        // 不再触碰 C 引擎：用本地索引做一键自检
+        var s = "[LOCAL] "
+        if let db = self.loadDB("py.data"), let lp = LocalPinyin(data: db)
         {
-            IMEngine.dwimeExit()
-            guard let p = self.stableDBPointer(db) else { return -1 }
-            return IMEngine.dwimeInit(p, Int32(db.count), nil, 0,
-                               userNS != nil ? userNS!.bytes : nil,
-                               userNS != nil ? Int32(userNS!.count) : 0,
-                               kb, IDouble.piNYIN, EST.SL_Chinese)
+            for ch in "nihao" { lp.type(ch) }
+            s += "索引=就绪 键=\(lp.candCountSign) 输入=nihao 候选=\(lp.cands.count)"
+            if lp.cands.count > 0 { s += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
         }
-
-        // ==== 崩溃隔离批量测试（C 侧接 SIGSEGV，不中断键盘）====
-        self.curDB = db
-        DWProbeHost.shared.body = { tag in self.runAttempt(tag) }
-        let cases: [(Int32, Int32, Int32, Int32, Int32, Int32, Int32)] = [
-            (1, 2, 1, 8, 110, 0, 0),
-            (2, 2, 1, 8, 97, 0, 0),
-            (3, 2, 1, 8, 122, 0, 0),
-        ]
-        for (tag, kb, mode, lang, key, param, down) in cases {
-            self.curKB = kb; self.curMode = mode; self.curLang = lang
-            self.curKey = key; self.curParam = param; self.curDown = down
-            EngineService.sumBuf += "→T\(tag) "
-            let sg = DWGuardCall(dwProbeEntry, Int32(tag))
-            if sg != 0 {
-                EngineService.sumBuf += "崩溃s=\(sg)"
-                if let d = DWLastCrash() { EngineService.sumBuf += String(cString: d) }
-            }
-            EngineService.sumBuf += "\n"
-            self.writeSum()
+        else
+        {
+            s += "索引=未就绪（py.data 缺失或没有 PYIMBIN1 段）"
         }
-
+        EngineService.sumBuf = s + "\n"
+        self.writeSum()
+        self.kbDiagLog(s)
     }
 
     // 词库常驻缓冲：引擎会长期持有这个指针，绝不能用临时指针（NSData.bytes / withUnsafeBytes 出了作用域就失效）

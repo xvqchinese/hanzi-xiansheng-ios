@@ -204,55 +204,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 extension AppDelegate {
     static func probeDictVariants() -> String {
-        var out = ""
-        var datas: [(String, Data)] = []
-        if let u = Bundle.main.url(forResource: "py", withExtension: "data"), let d = try? Data(contentsOf: u) {
-            datas.append(("内置py", d))
-        }
-        let urls: [(String, String)] = [
-            ("2019", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data"),
-            ("2016.08", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data.2016.08"),
-            ("2016.10", "https://www.xvqchinese.com/dsv2/txz/db_update/py.data.2016.10")
-        ]
-        for (name, u) in urls {
-            if let url = URL(string: u) {
-                let sem = DispatchSemaphore(value: 0)
-                var got: Data? = nil
-                var errTxt = ""
-                let sess = URLSession(configuration: .default, delegate: DWTrustAll(), delegateQueue: nil)
-                let t = sess.dataTask(with: url) { d, resp, e in
-                    if let e = e { errTxt = e.localizedDescription }
-                    let code = (resp as? HTTPURLResponse)?.statusCode ?? -1
-                    if code != 200 && code != 206 { errTxt += " http=\(code)" }
-                    got = d
-                    sem.signal()
+        // 改为纯本地校验：不触碰 C 引擎，避免再崩
+        guard let u = Bundle.main.url(forResource: "py", withExtension: "data"),
+              let d = try? Data(contentsOf: u) else { return "内置 py：读取失败" }
+        let b = [UInt8](d)
+        let marker = Array("PYIMBIN1".utf8)
+        var found = false
+        if b.count > marker.count {
+            var i = b.count - marker.count
+            while i >= 0 {
+                var same = true
+                var k = 0
+                while k < marker.count {
+                    if b[i + k] != marker[k] { same = false; break }
+                    k += 1
                 }
-                t.resume()
-                if sem.wait(timeout: .now() + 20) == .timedOut { errTxt = " 超时" }
-                if let d = got, d.count > 100000 {
-                    datas.append((name, d))
-                } else {
-                    datas.append((name + "下载失败[bytes=\(got?.count ?? 0) \(errTxt)]", Data()))
-                }
+                if same { found = true; break }
+                i -= 1
             }
         }
-        let p = DWAppProbe.shared
-        // holders 稍后按 only 设置
-        var only:[(String,Data)] = []
-        if let f = datas.first(where: { !$0.0.contains("下载失败") }) { only.append(f) }
-        else { only = Array(datas.prefix(1)) }
-        for i in 0..<only.count {
-            if only[i].1.isEmpty { out += only[i].0 + "\n"; continue }
-            p.holders = [only[i].1]
-            p.curIdx = 0
-            p.line = only[i].0 + "（\(only[i].1.count)字节） "
-            let sg = DWGuardCall(dwAppProbeEntry, Int32(i))
-            if sg != 0 {
-                p.line += "崩溃s=\(sg)"
-                if let d = DWLastCrash() { p.line += String(cString: d) }
-            }
-            out += p.line + "\n"
-        }
-        return out.isEmpty ? "（无可用词库）\n" : out
+        return "内置 py=\(d.count)字节 / 索引段=" + (found ? "已找到" : "缺失")
     }
 }
