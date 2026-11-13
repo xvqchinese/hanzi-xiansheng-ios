@@ -95,6 +95,8 @@ class UserViewController: UITableViewController
 
         self.loadDB();
         self.navigationItem.title = Lang("user_title")
+        let backItem = UIBarButtonItem(title: Lang("返回"), style: .plain, target: self, action: Selector("onBackPage"))
+        self.navigationItem.setLeftBarButtonItems([backItem], animated: true)
         self.tableView.register(MyCell.self, forCellReuseIdentifier: "TableViewCellIdentifier")
         self.tableView.tableHeaderView = self.cmdbar
         self.setupRefresh()
@@ -256,4 +258,11 @@ class MyCell : UITableViewCell
 class MyButton: UIButton
 {
     var row: Int = 0
+
+    @objc func onBackPage()
+    {
+        if let nav = self.navigationController, nav.viewControllers.count > 1 { nav.popViewController(animated: true) }
+        else { self.dismiss(animated: true, completion: nil) }
+    }
+
 }

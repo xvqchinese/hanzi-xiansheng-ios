@@ -40,6 +40,8 @@ class SettingRootController: UITableViewController, UMSocialUIDelegate {
 
         self.hidesBottomBarWhenPushed = false
         self.navigationItem.title = Lang("home_title")
+        let backItem = UIBarButtonItem(title: Lang("返回"), style: .plain, target: self, action: Selector("onBackPage"))
+        self.navigationItem.setLeftBarButtonItems([backItem], animated: true)
         //self.tableView.separatorStyle = UITableViewCellSeparatorStyle.None
         self.tableView.backgroundColor = UIColor.white
         
@@ -226,4 +228,11 @@ class SettingRootController: UITableViewController, UMSocialUIDelegate {
     
     
     
+
+    @objc func onBackPage()
+    {
+        if let nav = self.navigationController, nav.viewControllers.count > 1 { nav.popViewController(animated: true) }
+        else { self.dismiss(animated: true, completion: nil) }
+    }
+
 }

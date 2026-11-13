@@ -29,6 +29,8 @@ class ThemesView: UIViewController, WKNavigationDelegate
         super.viewDidLoad()
         self.view.backgroundColor = UIColor.white
         self.navigationItem.title = Lang("皮肤")
+        let backItem = UIBarButtonItem(title: Lang("返回"), style: .plain, target: self, action: Selector("onBackPage"))
+        self.navigationItem.setLeftBarButtonItems([backItem], animated: true)
 
         let skins: [(String, String)] = [
             ("白色", ""),
@@ -150,4 +152,11 @@ class ThemesView: UIViewController, WKNavigationDelegate
         decisionHandler(.allow)
     }
     
+
+    @objc func onBackPage()
+    {
+        if let nav = self.navigationController, nav.viewControllers.count > 1 { nav.popViewController(animated: true) }
+        else { self.dismiss(animated: true, completion: nil) }
+    }
+
 }
