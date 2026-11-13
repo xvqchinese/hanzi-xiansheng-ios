@@ -553,6 +553,11 @@ class EngineService
     var localPY: LocalPinyin?        // 本地拼音索引（py.data 尾部 PYIMBIN1 段）
     var useLocalPY: Bool { return (self.mMode == IDouble.piNYIN || self.mMode == EST.IM_STROKE) && self.localPY != nil }
     var dictHook: ((String) -> Void)?
+
+    func DeleteKey()
+    {
+        _ = self.SendKey(EST.SPKEY_Back, param: 0)
+    }
     
     init()
     {

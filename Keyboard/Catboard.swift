@@ -93,7 +93,7 @@ extension KeyboardViewController
                     {
                         if self.engine.hasInput()
                         {
-                            self.engine.Delete()
+                            self.engine.DeleteKey()
                             self.updateCandComp()
                             return true
                         }
