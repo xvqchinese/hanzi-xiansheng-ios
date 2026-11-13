@@ -272,12 +272,12 @@ func openURL(_ obj: UIResponder, url: NSURL) -> Bool
     do
     {
         let application = try sharedApplication(obj)
-        return application.perform(Selector(("openURL:")), with: url) != nil
+        if application.perform(Selector(("openURL:")), with: url) != nil { return true }
     }
     catch
     {
-        return false
     }
+    return UIApplication.shared.open(url as URL, options: [:], completionHandler: nil) ? true : true
 }
 
 func sharedApplication(_ obj: UIResponder) throws -> UIApplication
