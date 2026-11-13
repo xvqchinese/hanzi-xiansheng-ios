@@ -130,15 +130,15 @@ func settingsCreateRoot() -> QRootElement
     if (true)
     {
         let shared = UserDefaults(suiteName: "group.DWIME_DS")
-        let kbEl = QBooleanElement(title: Lang("声音反馈"), boolValue: shared?.bool(forKey: "keySound") ?? true)
-        kbEl.onChange = { UserDefaults(suiteName: "group.DWIME_DS")?.set(kbEl.boolValue, forKey: "keySound") }
-        let weEl = QBooleanElement(title: Lang("上屏朗读"), boolValue: shared?.bool(forKey: "playWav") ?? true)
+        let weEl = QBooleanElement(title: Lang("上屏朗读"), boolValue: shared?.bool(forKey: "playWav") ?? true)!
         weEl.onChange = { UserDefaults(suiteName: "group.DWIME_DS")?.set(weEl.boolValue, forKey: "playWav") }
-        let vibEl = QBooleanElement(title: Lang("振动反馈"), boolValue: shared?.bool(forKey: "vibrate") ?? false)
+        let kbEl = QBooleanElement(title: Lang("声音反馈"), boolValue: shared?.bool(forKey: "keySound") ?? true)!
+        kbEl.onChange = { UserDefaults(suiteName: "group.DWIME_DS")?.set(kbEl.boolValue, forKey: "keySound") }
+        let vibEl = QBooleanElement(title: Lang("振动反馈"), boolValue: shared?.bool(forKey: "vibrate") ?? false)!
         vibEl.onChange = { UserDefaults(suiteName: "group.DWIME_DS")?.set(vibEl.boolValue, forKey: "vibrate") }
-        let assoEl = QBooleanElement(title: Lang("开启联想"), boolValue: shared?.bool(forKey: "association") ?? true)
+        let assoEl = QBooleanElement(title: Lang("开启联想"), boolValue: shared?.bool(forKey: "association") ?? true)!
         assoEl.onChange = { UserDefaults(suiteName: "group.DWIME_DS")?.set(assoEl.boolValue, forKey: "association") }
-        let voiceSection = QSection(title: Lang("常规"))
+        let voiceSection = QSection(title: Lang("常规"))!
         voiceSection.addElement(weEl)
         voiceSection.addElement(kbEl)
         voiceSection.addElement(vibEl)
