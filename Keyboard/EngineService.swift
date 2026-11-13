@@ -388,6 +388,15 @@ final class LocalPinyin
             cands.append(w); codes.append(cd.isEmpty ? input : cd); seen.insert(w)
             if cands.count >= 30 { return }
         }
+        if input.count <= 6
+        {
+            for (w, cd) in entries(forKey: "#" + input)
+            {
+                if seen.contains(w) { continue }
+                cands.append(w); codes.append(self.strokeMode ? input.uppercased() : input); seen.insert(w)
+                if cands.count >= 30 { return }
+            }
+        }
         if !self.strokeMode
         {
             let segs = segments(input)
