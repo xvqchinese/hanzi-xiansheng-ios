@@ -277,8 +277,7 @@ func openURL(_ obj: UIResponder, url: NSURL) -> Bool
     catch
     {
     }
-    UIApplication.shared.open(url as URL, options: [:], completionHandler: nil)
-    return true
+    return false
 }
 
 func sharedApplication(_ obj: UIResponder) throws -> UIApplication
