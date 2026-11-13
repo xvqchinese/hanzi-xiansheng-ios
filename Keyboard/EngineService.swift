@@ -727,6 +727,12 @@ class EngineService
     // 只读扩展包内的词库（跳过 App Group 里的旧在线词库，避免索引段缺失）
     func loadBundleDB(_ file: String) -> Data?
     {
+        // 优先用“词库在线更新”下载到共享区的版本，其次用内置
+        if let c = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
+        {
+            let gp = c.appendingPathComponent(file)
+            if let d = try? Data(contentsOf: gp, options: .mappedIfSafe), d.count > 1024 { return d }
+        }
         let innerPath = (Bundle.main.resourcePath! as NSString).appendingPathComponent(file)
         guard let d = try? Data(contentsOf: URL(fileURLWithPath: innerPath), options: .mappedIfSafe), d.count > 1024
         else { return nil }
