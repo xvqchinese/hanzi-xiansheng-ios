@@ -71,7 +71,13 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
                 tf.backgroundColor = UIColor.white
                 tf.textColor = UIColor.black
             }
-            self.navigationController?.navigationBar.barTintColor = UIColor(red: 0.28, green: 0.32, blue: 0.34, alpha: 1)
+            self.navigationController?.navigationBar.isTranslucent = false
+            self.navigationController?.navigationBar.barTintColor = UIColor(red: 0.24, green: 0.28, blue: 0.30, alpha: 1)
+            self.searchBar.placeholder = Lang("请输入中文或英文进行查询")
+            if let tf = self.searchBar.value(forKey: "searchField") as? UITextField
+            {
+                tf.attributedPlaceholder = NSAttributedString(string: Lang("请输入中文或英文进行查询"), attributes: [NSAttributedString.Key.foregroundColor: UIColor.darkGray])
+            }
             self.navigationController?.navigationBar.tintColor = UIColor.white
             self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
             self.navigationController!.view.addSubview(self.searchBar)
