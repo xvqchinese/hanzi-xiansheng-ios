@@ -462,13 +462,14 @@ final class LocalPinyin
     {
         if i < 0 || i >= cands.count { return EST.SMR_Ignored }
         let t = cands[i]
-        if !self.strokeMode && t.count == 1 && input.count > 1
+        if !self.strokeMode && !t.isEmpty
         {
             let segs = segments(input)
-            if segs.count > 1
+            let used = min(t.count, segs.count)
+            if segs.count > used && used >= 1
             {
                 composed += t
-                input = String(input.dropFirst(segs[0].count))
+                input = String(input.dropFirst(segs.prefix(used).joined().count))
                 pendingOn = false
                 pending = composed + input
                 refresh()
