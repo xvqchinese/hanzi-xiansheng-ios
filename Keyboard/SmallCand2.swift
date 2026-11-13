@@ -151,33 +151,10 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
     // 定义每个UICollectionView 的大小
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
     {
-        //MyLog("SmallCand2 -->> cell size")
-        let cand = self.candCache[indexPath.row]
-        if UInt32(cand.character(at: 0)) > 255
-        {
-            if self.hzLabel == nil
-            {
-                self.hzLabel = self.createCandLabel()
-                self.hzLabel!.text = "我"
-                self.hzLabel!.sizeToFit()
-            }
-            let one = self.hzLabel!.frame.width * CGFloat(cand.length + 1)
-            let width = min(max(one, collectionView.frame.height), self.collectionView.frame.width - self.moreBt.frame.width)
-            return CGSize(width: width, height: collectionView.frame.height)
-        }
-        else
-        {
-            if self.enLabel == nil
-            {
-                self.enLabel = self.createCandLabel()
-            }
-            self.enLabel!.text = cand as String
-            self.enLabel!.sizeToFit()
-
-            let one = self.enLabel!.frame.width + self.enLabel!.font.lineHeight
-            let width = min(max(one, collectionView.frame.height), self.collectionView.frame.width - self.moreBt.frame.width)
-            return CGSize(width: width, height: collectionView.frame.height)
-        }
+        // 一屏固定 7 个候选，左右滑动翻页
+        let usable = collectionView.frame.width - self.moreBt.frame.width
+        let w = max(1, usable / 7)
+        return CGSize(width: w, height: collectionView.frame.height)
     }
     // 返回这个UICollectionView是否可以被选择
     func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool

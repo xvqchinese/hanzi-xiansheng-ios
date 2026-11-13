@@ -234,38 +234,10 @@ class BigCandView2: UIView, UICollectionViewDelegate, UICollectionViewDataSource
     // 定义每个UICollectionView 的大小
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
     {
-        //MyLog("BigCand -->> cell size: \(indexPath.row)")
-        if indexPath.row == 0
-        {
-            self.caluCandWidths()
-        }
-        if (self.widthAry.count > indexPath.row)
-        {
-            return CGSize(width: CGFloat(self.widthAry[indexPath.row]), height: self.rowHeight)
-        }
-        else
-        {
-            let cand = self.candCache[indexPath.row]
-            if UInt32(cand.character(at: 0)) > 255
-            {
-                // 中文
-                let len = cand.length + 1
-                let width = min(max(self.hzLabel!.frame.width * CGFloat(len), self.rowHeight), self.collectionView.frame.width)
-                return CGSize(width: width, height: self.rowHeight)
-            }
-            else
-            {
-                // 英文
-                self.enLabel!.text = cand as String
-                self.enLabel!.sizeToFit()
-                let one = self.enLabel!.frame.width + self.enLabel!.font.lineHeight
-                let width = min(max(one, self.rowHeight), self.collectionView.frame.width)
-                return CGSize(width: width, height: self.rowHeight)
-            }
-        }
+        // 4 行 × 6 列固定网格
+        return CGSize(width: max(1, collectionView.frame.width / 6), height: self.rowHeight)
     }
 
-    // 返回这个UICollectionView是否可以被选择
     func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool
     {
         return true
@@ -481,7 +453,7 @@ class BigCandView2: UIView, UICollectionViewDelegate, UICollectionViewDataSource
             self.symbPage?.contentSize  = CGSize(width: sx, height: 0)
         }
         
-        self.rowHeight = (self.frame.height - btnAreHeight) / 5
+        self.rowHeight = (self.frame.height - btnAreHeight) / 4
         self.collectionView.frame = CGRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height - btnAreHeight)
         MyLog("rowHeight \(self.rowHeight)")
     }
