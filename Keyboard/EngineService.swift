@@ -388,22 +388,22 @@ final class LocalPinyin
         codes.removeAll()
         if input.isEmpty { return }
         var seen = Set<String>()
-        if let w = learned[input] { cands.append(w); codes.append(input); seen.insert(w) }
-        for (w, cd) in entries(forKey: input)
+        func ok(_ cd: String) -> Bool
         {
-            if seen.contains(w) { continue }
-            cands.append(w); codes.append(cd.isEmpty ? input : cd); seen.insert(w)
-            if cands.count >= 30 { return }
+            if self.strokeMode { return true }
+            if cd.isEmpty { return true }
+            return cd.hasPrefix(input)
         }
-        if input.count <= 6
+        func put(_ w: String, _ cd: String)
         {
-            for (w, cd) in entries(forKey: "#" + input)
-            {
-                if seen.contains(w) { continue }
-                cands.append(w); codes.append(self.strokeMode ? input.uppercased() : input); seen.insert(w)
-                if cands.count >= 30 { return }
-            }
+            if seen.contains(w) { return }
+            if !ok(cd) { return }
+            cands.append(w)
+            codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? input : cd))
+            seen.insert(w)
         }
+        if let w = learned[input] { put(w, input) }
+        for (w, cd) in entries(forKey: input) { put(w, cd); if cands.count >= 40 { return } }
         if !self.strokeMode
         {
             let segs = segments(input)
@@ -411,11 +411,14 @@ final class LocalPinyin
             {
                 for (w, cd) in entries(forKey: segs[0])
                 {
-                    if w.count != 1 || seen.contains(w) { continue }
-                    cands.append(w); codes.append(cd.isEmpty ? segs[0] : cd); seen.insert(w)
-                    if cands.count >= 30 { return }
+                    if w.count == 1 { put(w, cd) }
+                    if cands.count >= 40 { return }
                 }
             }
+        }
+        if input.count <= 6
+        {
+            for (w, cd) in entries(forKey: "#" + input) { put(w, cd); if cands.count >= 40 { return } }
         }
         let p = Array(input.utf8)
         var lo = 0
@@ -427,29 +430,20 @@ final class LocalPinyin
         }
         var i = lo
         var scanned = 0
-        var later: [(Int, String, [(String, String)])] = []
         while i < count && scanned < 400
         {
             if cmp(i, p) != 0 { break }
             let k = keyString(i)
-            if k != input { later.append((k.count, k, parseEntries(wordsString(i)))) }
+            if k != input
+            {
+                for (w, cd) in parseEntries(wordsString(i)) { put(w, cd); if cands.count >= 40 { return } }
+            }
             i += 1
             scanned += 1
         }
-        later.sort { $0.0 < $1.0 }
-        for item in later
-        {
-            for (w, cd) in item.2
-            {
-                if seen.contains(w) { continue }
-                cands.append(w); codes.append(cd.isEmpty ? item.1 : cd); seen.insert(w)
-                if cands.count >= 30 { return }
-            }
-        }
         for (k, v) in learned where k.hasPrefix(input) && k.count > input.count
         {
-            if seen.contains(v) { continue }
-            cands.append(v); codes.append(input); seen.insert(v)
+            put(v, k)
             if cands.count >= 40 { return }
         }
     }
