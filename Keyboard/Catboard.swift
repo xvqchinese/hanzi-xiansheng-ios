@@ -462,7 +462,7 @@ extension KeyboardViewController
             if (self.currentPage == KbPage.M_Chn)
             {
                 // 拼音（多音节用逗号分开，发音引擎才认）
-                playWav(self.engine.speechCode(code as String, word: cand));
+                playWav(self.engine.speechCode(code as String, word: cand as String));
             }
             else if (self.currentPage == KbPage.M_SK9)
             {
