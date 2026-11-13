@@ -291,7 +291,14 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
 
     @objc func onBackBtn()
     {
-        _ = self.navigationController?.popViewController(animated: true)
+        if let nav = self.navigationController, nav.viewControllers.count > 1
+        {
+            nav.popViewController(animated: true)
+        }
+        else
+        {
+            self.dismiss(animated: true, completion: nil)
+        }
     }
 
     func applyFontTo(_ webView: WKWebView)

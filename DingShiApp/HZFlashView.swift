@@ -108,6 +108,12 @@ class HZFlashView: UIView
                 self.currentSKIndex = -1;
             }
             ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, self.currentSKIndex)
+            if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true) && self.currentSKIndex >= 0 && self.currentSKIndex < self.currentSKAry!.count
+            {
+                let sk = self.currentSKAry![self.currentSKIndex].uppercased()
+                let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
+                if let py = strokeSound[String(sk.prefix(1))] { playWav(py) }
+            }
         }
         else
         {
