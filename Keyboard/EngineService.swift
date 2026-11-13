@@ -382,6 +382,12 @@ final class LocalPinyin
         if input.isEmpty { return }
         var seen = Set<String>()
         if let w = learned[input] { cands.append(w); codes.append(input); seen.insert(w) }
+        for (k, v) in learned where k.hasPrefix(input) && k.count > input.count
+        {
+            if seen.contains(v) { continue }
+            cands.append(v); codes.append(input); seen.insert(v)
+            if cands.count >= 10 { break }
+        }
         for (w, cd) in entries(forKey: input)
         {
             if seen.contains(w) { continue }

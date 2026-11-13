@@ -219,26 +219,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     // MARK: - 屏上诊断（临时排障用，正式上架前删除）
     func showDiag()
     {
-        if self.engine == nil { return }
-        let t = "诊断 init=\(self.engine.lastInitCode) len=\(self.engine.lastDbLen) ready=\(self.engine.isReady ? 1 : 0) cand=\(self.engine.CandCount()) in=\(self.engine.inputStr())"
-        mDiagText = t
-        if mDiagLabel == nil
-        {
-            let lab = UILabel()
-            lab.backgroundColor = UIColor(red: 0.85, green: 0.1, blue: 0.1, alpha: 0.95)
-            lab.textColor = UIColor.white
-            lab.font = UIFont.boldSystemFont(ofSize: 13)
-            lab.textAlignment = .center
-            lab.numberOfLines = 1
-            lab.isUserInteractionEnabled = false
-            lab.autoresizingMask = [.flexibleWidth, .flexibleTopMargin]
-            lab.tag = 9001
-            self.view.addSubview(lab)
-            self.view.bringSubviewToFront(lab)
-            mDiagLabel = lab
-        }
-        mDiagLabel!.text = t
-        self.layoutDiag()
+        // 诊断条已下线（送审版不再显示）
     }
     
     func layoutDiag()
