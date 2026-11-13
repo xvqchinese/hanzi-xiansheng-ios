@@ -26,29 +26,61 @@ class ThemesView: UIViewController, WKNavigationDelegate
     
     override func viewDidLoad()
     {
-        self.web = WKWebView(frame: self.view.frame)
-        self.view.addSubview(self.web!)
-        self.web?.navigationDelegate = self
-        self.web?.backgroundColor = UIColor.white
-        
-        self.edit = UITextView(frame: CGRect(x: 1, y: 1, width: self.view.frame.size.width, height: 30))
-        self.edit?.layer.zPosition = 100;
-        self.view.addSubview(self.edit!)
-        
+        super.viewDidLoad()
+        self.view.backgroundColor = UIColor.white
         self.navigationItem.title = Lang("皮肤")
-        
-        // 原皮肤页挂在第三方服务器（dwhand.com），已确认非自有服务器，摘除
-        let html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='text-align:center;padding-top:60px;color:#666;font-family:-apple-system,sans-serif;'><h2 style='font-size:18px;'>皮肤功能调整中</h2><p style='font-size:14px;'>该功能正在维护，请稍后再试。</p></body></html>"
-        self.web?.loadHTMLString(html, baseURL: nil)
 
-        // wait...
-        activityIndicatorView = UIActivityIndicatorView(style: .white)
-        activityIndicatorView.frame = CGRect(x: self.view.frame.size.width/2 - 50, y: self.view.frame.size.height/2 - 30, width: 100, height: 60)
-        activityIndicatorView.hidesWhenStopped = true
-        activityIndicatorView.backgroundColor = UIColor.black.withAlphaComponent(0.7)
-        activityIndicatorView.color = UIColor.white
-        activityIndicatorView.layer.cornerRadius = 5.0
-        self.view.addSubview(activityIndicatorView)
+        let skins: [(String, String)] = [
+            ("白色", ""),
+            ("绿色", "KbBColor=0xffc8e6c9&CommandBColor=0xffaed581&CandBColor=0xffaed581&CandDownBColor=0xff8bc34a&KeyColor=0xffffffff&KeyTxtColor=0xff333333&FunKeyColor=0xff8bc34a&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff"),
+            ("粉色", "KbBColor=0xfff8bbd0&CommandBColor=0xfff06292&CandBColor=0xfff06292&CandDownBColor=0xffe91e63&KeyColor=0xfffce4ec&KeyTxtColor=0xff333333&FunKeyColor=0xffe91e63&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff"),
+            ("黄色", "KbBColor=0xffe6d48c&CommandBColor=0xfff7dc6f&CandBColor=0xfff7dc6f&CandDownBColor=0xffe67e22&KeyColor=0xfff9e79f&KeyTxtColor=0xff333333&FunKeyColor=0xffe67e22&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff")
+        ]
+        let w: CGFloat = self.view.frame.width
+        let cols: CGFloat = 2
+        let cellW = (w - 24) / cols
+        let cellH = cellW * 1.25
+        var i = 0
+        for (name, profile) in skins
+        {
+            let btn = UIButton(type: .custom)
+            let x = 8 + CGFloat(i % 2) * (cellW + 8)
+            let y = 90 + CGFloat(i / 2) * (cellH + 46)
+            btn.frame = CGRect(x: x, y: y, width: cellW, height: cellH)
+            btn.backgroundColor = profile.isEmpty ? UIColor(red: 0.88, green: 0.88, blue: 0.88, alpha: 1) : ThemesView.colorFromProfile(profile)
+            btn.layer.cornerRadius = 8
+            btn.layer.borderWidth = 1
+            btn.layer.borderColor = UIColor.lightGray.cgColor
+            btn.setTitle(name, for: .normal)
+            btn.setTitleColor(UIColor.black, for: .normal)
+            btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+            btn.tag = i
+            btn.addTarget(self, action: Selector("onSkin:"), for: .touchUpInside)
+            self.view.addSubview(btn)
+            i += 1
+        }
+    }
+
+    static func colorFromProfile(_ profile: String) -> UIColor
+    {
+        for one in profile.components(separatedBy: "&")
+        {
+            let kv = one.components(separatedBy: "=")
+            if kv.count == 2 && kv[0] == "KbBColor" { return string2Color(kv[1]) }
+        }
+        return UIColor.white
+    }
+
+    @objc func onSkin(_ sender: UIButton)
+    {
+        let profiles: [String] = ["", "KbBColor=0xffc8e6c9&CommandBColor=0xffaed581&CandBColor=0xffaed581&CandDownBColor=0xff8bc34a&KeyColor=0xffffffff&KeyTxtColor=0xff333333&FunKeyColor=0xff8bc34a&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff", "KbBColor=0xfff8bbd0&CommandBColor=0xfff06292&CandBColor=0xfff06292&CandDownBColor=0xffe91e63&KeyColor=0xfffce4ec&KeyTxtColor=0xff333333&FunKeyColor=0xffe91e63&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff", "KbBColor=0xffe6d48c&CommandBColor=0xfff7dc6f&CandBColor=0xfff7dc6f&CandDownBColor=0xffe67e22&KeyColor=0xfff9e79f&KeyTxtColor=0xff333333&FunKeyColor=0xffe67e22&FunKeyTxtColor=0xffffffff&FunKeyGraColor=0xffffffff"]
+        let idx = max(0, min(3, sender.tag))
+        if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("colorProfile")
+        {
+            if profiles[idx].isEmpty { try? FileManager.default.removeItem(at: u) }
+            else { try? profiles[idx].data(using: .utf8)?.write(to: u) }
+        }
+        NotificationCenter.default.post(name: Notification.Name("DWRelayout"), object: nil)
     }
     
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!)
