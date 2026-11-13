@@ -695,8 +695,7 @@ class EngineService
             self.lastInitCode = EST.SMR_OK
             self.lastDbLen = db.count
             self.isReady = true
-            if lp.cands.count > 0 { q += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
-            self.kbDiagLog(q)
+            self.kbDiagLog("[LOCAL SK] 笔母索引就绪 len=\(db.count)")
             return true
         }
         self.localPY = nil
