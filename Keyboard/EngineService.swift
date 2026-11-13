@@ -193,7 +193,9 @@ final class LocalPinyin
     private(set) var pending: String = ""
     private(set) var pendingOn: Bool = false
     private(set) var ready: Bool = false
+    private let digitsOnly: Bool
     var candCountSign: Int { return self.count }
+    var isDigitsOnly: Bool { return self.digitsOnly }
 
     static func readU32(_ b: [UInt8], _ o: Int) -> UInt32
     {
@@ -207,10 +209,11 @@ final class LocalPinyin
         return UInt16(b[o]) | (UInt16(b[o+1]) << 8)
     }
 
-    init?(data: Data)
+    init?(data: Data, marker: String = "PYIMBIN1", digitsOnly: Bool = false)
     {
+        self.digitsOnly = digitsOnly
         let b = [UInt8](data)
-        let m: [UInt8] = Array("PYIMBIN1".utf8)
+        let m: [UInt8] = Array(marker.utf8)
         var found: Int = -1
         if b.count >= m.count
         {
@@ -334,7 +337,11 @@ final class LocalPinyin
     func type(_ c: Character)
     {
         pendingOn = false
-        if c >= "a" && c <= "z" { input.append(c) }
+        if self.digitsOnly
+        {
+            if c >= "1" && c <= "6" { input.append(c) }
+        }
+        else if c >= "a" && c <= "z" { input.append(c) }
         if input.count > 30 { input = String(input.suffix(30)) }
         refresh()
     }
@@ -418,7 +425,7 @@ class EngineService
     var lastDbLen: Int = 0           // 实际吃到的词库字节数
     var isReady: Bool = false        // 初始化成功才允许按键
     var localPY: LocalPinyin?        // 本地拼音索引（py.data 尾部 PYIMBIN1 段）
-    var useLocalPY: Bool { return self.mMode == IDouble.piNYIN && self.localPY != nil }
+    var useLocalPY: Bool { return (self.mMode == IDouble.piNYIN || self.mMode == EST.IM_STROKE) && self.localPY != nil }
     
     init()
     {
@@ -539,6 +546,20 @@ class EngineService
             self.isReady = true
             self.kbDiagLog("[LOCAL] 本地拼音索引就绪 len=\(db.count) 条目=\(lp.candCountSign)")
             self.kbProbePinyin()
+            return true
+        }
+        if page == KbPage.M_SK9, let db = self.loadBundleDB("sk.data"), let lp = LocalPinyin(data: db, marker: "SKIMBIN1", digitsOnly: true)
+        {
+            self.localPY = lp
+            self.mDbMain = db
+            self.lastInitCode = EST.SMR_OK
+            self.lastDbLen = db.count
+            self.isReady = true
+            var q = "[LOCAL SK] 笔母索引就绪 len=\(db.count) 码=\(lp.candCountSign)"
+            for ch in "1" { lp.type(ch) }
+            q += " 输入1 候选=\(lp.cands.count)"
+            if lp.cands.count > 0 { q += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
+            self.kbDiagLog(q)
             return true
         }
         self.localPY = nil
@@ -688,9 +709,31 @@ class EngineService
 
         if self.useLocalPY, let lp = self.localPY
         {
-            if key >= 97 && key <= 122, let sc = UnicodeScalar(UInt32(key))
+            if key >= 48 && key <= 57, let sc = UnicodeScalar(UInt32(key))
             {
                 lp.type(Character(sc))
+                return EST.SMR_OK
+            }
+            if key >= 97 && key <= 122, let sc = UnicodeScalar(UInt32(key))
+            {
+                if lp.isDigitsOnly
+                {
+                    var d: Character? = nil
+                    switch key
+                    {
+                    case 104: d = "1"   // h 横
+                    case 115: d = "2"   // s 竖
+                    case 112: d = "3"   // p 撇
+                    case 100: d = "4"   // d 点
+                    case 110: d = "5"   // n 捺
+                    case 122: d = "6"   // z 折
+                    default: d = nil
+                    }
+                    if let dd = d { lp.type(dd) }
+                    return EST.SMR_OK
+                }
+                lp.type(Character(sc))
+            {
                 return EST.SMR_OK
             }
             if key >= 65 && key <= 90, let sc = UnicodeScalar(UInt32(key + 32))
