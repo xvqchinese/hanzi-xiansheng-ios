@@ -523,6 +523,7 @@ class EngineService
             self.lastDbLen = db.count
             self.isReady = true
             self.kbDiagLog("[LOCAL] 本地拼音索引就绪 len=\(db.count) 条目=\(lp.candCountSign)")
+            self.kbProbePinyin()
             return true
         }
         self.localPY = nil
