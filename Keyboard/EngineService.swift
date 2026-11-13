@@ -229,7 +229,7 @@ final class LocalPinyin
             }
         }
         if found < 0 { return nil }
-        let cnt = LocalPinyin.readU32(b, found + m.count + 4)
+        let cnt = LocalPinyin.readU32(b, found + m.count)
         if cnt == 0 { return nil }
         self.bytes = b
         self.base = found + m.count
@@ -239,7 +239,7 @@ final class LocalPinyin
 
     private func entry(_ i: Int) -> (ko: Int, kl: Int, bo: Int, bl: Int)
     {
-        let t = base + 12 + 14 * i
+        let t = base + 8 + 14 * i
         return (Int(LocalPinyin.readU32(bytes, t)),
                 Int(LocalPinyin.readU16(bytes, t + 4)),
                 Int(LocalPinyin.readU32(bytes, t + 6)),
@@ -485,7 +485,7 @@ class EngineService
         if let db = self.loadBundleDB("py.data"), let lp = LocalPinyin(data: db)
         {
             for ch in "nihao" { lp.type(ch) }
-            s += "索引=就绪 键=\(lp.candCountSign) 输入=nihao 候选=\(lp.cands.count)"
+            s += "索引=就绪 v238 键=\(lp.candCountSign) 输入=nihao 候选=\(lp.cands.count)"
             if lp.cands.count > 0 { s += " 首=" + Array(lp.cands.prefix(6)).joined(separator: ",") }
         }
         else
