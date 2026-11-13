@@ -194,6 +194,7 @@ final class LocalPinyin
     private(set) var pendingOn: Bool = false
     private(set) var ready: Bool = false
     private let strokeMode: Bool
+    var isStrokeMode: Bool { return strokeMode }
     private(set) var composed: String = ""
     private var typed: String = ""
     private var learned: [String: String] = [:]
@@ -634,9 +635,38 @@ class EngineService
     var lastInitCode: Int32 = -1     // dwimeInit 原始返回码
     var lastDbLen: Int = 0           // 实际吃到的词库字节数
     var isReady: Bool = false        // 初始化成功才允许按键
-    func speechCode(_ cd: String) -> String
+    private var charPyMap: [Character: String]? = nil
+
+    func buildCharPy()
     {
-        guard let lp = self.localPY else { return cd }
+        guard let lp = self.localPY else { return }
+        var m: [Character: String] = [:]
+        var i = 0
+        while i < lp.count
+        {
+            let k = lp.keyString(i)
+            if !k.hasPrefix("#")
+            {
+                for (w, cd) in lp.parseEntries(lp.wordsString(i))
+                {
+                    if w.count == 1, let c = w.first, m[c] == nil { m[c] = cd.isEmpty ? k : cd }
+                }
+            }
+            i += 1
+        }
+        self.charPyMap = m
+    }
+
+    func speechCode(_ cd: String, word: String? = nil) -> String
+    {
+        guard let lp = self.localPY, !lp.isStrokeMode else { return cd }
+        if let w = word, w.count > 1
+        {
+            if self.charPyMap == nil { self.buildCharPy() }
+            var parts: [String] = []
+            for c in w { if let py = self.charPyMap?[c] { parts.append(py) } }
+            if parts.count == w.count { return parts.joined(separator: ",") }
+        }
         let segs = lp.segments(cd)
         if segs.count > 1 { return segs.joined(separator: ",") }
         return cd
