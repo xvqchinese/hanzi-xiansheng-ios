@@ -24,8 +24,7 @@ class DBUpdate: UITableViewController, XMLParserDelegate, NSURLConnectionDataDel
         
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "TableViewCellIdentifier")
         
-        let myThread = Thread(target: self, selector: Selector("checkUpdate"), object: nil)
-        myThread.start()
+        DispatchQueue.global().async { self.checkUpdate() }
         self.setupRefresh()
     }
     
@@ -33,8 +32,7 @@ class DBUpdate: UITableViewController, XMLParserDelegate, NSURLConnectionDataDel
     {
         self.tableView.addHeaderWithCallback({
             self.xmlContent.removeAll(keepingCapacity: false)
-            let myThread = Thread(target: self, selector: Selector("checkUpdate"), object: nil)
-            myThread.start()
+            DispatchQueue.global().async { self.checkUpdate() }
             self.tableView.headerEndRefreshing()
         })
     }
@@ -56,7 +54,7 @@ class DBUpdate: UITableViewController, XMLParserDelegate, NSURLConnectionDataDel
         xml.delegate = self
         xml.parse()
         
-        self.tableView.reloadData()
+        DispatchQueue.main.async { self.tableView.reloadData() }
         /**
         let content: NSString = String(data: xmlData, encoding: String.Encoding.utf8)!
         let alert = UIAlertView()
