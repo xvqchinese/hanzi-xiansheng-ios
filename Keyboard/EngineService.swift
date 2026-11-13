@@ -430,31 +430,68 @@ final class LocalPinyin
         return []
     }
 
+    private var iniIndex: [String: [String]]? = nil
+
+    func buildIniIndex()
+    {
+        var m: [String: [String]] = [:]
+        var i = 0
+        while i < self.count
+        {
+            let k = keyString(i)
+            if !k.hasPrefix("#")
+            {
+                for (w, cd) in parseEntries(wordsString(i))
+                {
+                    if w.count < 2 { continue }
+                    let segs = segments(cd.isEmpty ? k : cd)
+                    let ini = segs.map { String($0.prefix(1)) }.joined()
+                    if ini.count >= 2 && ini.count <= 5 { m[ini, default: []].append(w) }
+                }
+            }
+            i += 1
+        }
+        self.iniIndex = m
+    }
+
     func refresh()
     {
         cands.removeAll()
         codes.removeAll()
         if input.isEmpty { return }
+        let keys = input.contains("j") ? [input, input.replacingOccurrences(of: "j", with: "")] : [input]
         var seen = Set<String>()
         func ok(_ cd: String) -> Bool
         {
             if self.strokeMode { return true }
             if cd.isEmpty { return true }
-            return cd.hasPrefix(input)
+            for k in keys { if cd.hasPrefix(k) { return true } }
+            return false
         }
         func put(_ w: String, _ cd: String)
         {
             if seen.contains(w) { return }
             if !ok(cd) { return }
             cands.append(w)
-            codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? input : cd))
+            codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
         if let w = learned[input] { put(w, input) }
-        for (w, cd) in entries(forKey: input) { put(w, cd); if cands.count >= 40 { return } }
+        if !self.strokeMode && input.count >= 2 && input.count <= 5
+        {
+            if self.iniIndex == nil { self.buildIniIndex() }
+            if let arr = self.iniIndex?[input]
+            {
+                for w in arr { put(w, input); if cands.count >= 40 { return } }
+            }
+        }
+        for k in keys
+        {
+            for (w, cd) in entries(forKey: k) { put(w, cd); if cands.count >= 40 { return } }
+        }
         if !self.strokeMode
         {
-            let segs = segments(input)
+            let segs = segments(keys[0])
             if segs.count > 1
             {
                 for (w, cd) in entries(forKey: segs[0])
@@ -462,20 +499,17 @@ final class LocalPinyin
                     if w.count != 1 { continue }
                     if cd.isEmpty || cd.hasPrefix(segs[0])
                     {
-                        if !seen.contains(w)
-                        {
-                            cands.append(w); codes.append(cd.isEmpty ? segs[0] : cd); seen.insert(w)
-                        }
+                        if !seen.contains(w) { cands.append(w); codes.append(cd.isEmpty ? segs[0] : cd); seen.insert(w) }
                     }
                     if cands.count >= 40 { return }
                 }
             }
         }
-        if input.count <= 6
+        if keys[0].count <= 6
         {
-            for (w, cd) in entries(forKey: "#" + input) { put(w, cd); if cands.count >= 40 { return } }
+            for (w, cd) in entries(forKey: "#" + keys[0]) { put(w, cd); if cands.count >= 40 { return } }
         }
-        let p = Array(input.utf8)
+        let p = Array(keys[0].utf8)
         var lo = 0
         var hi = count
         while lo < hi
@@ -489,17 +523,12 @@ final class LocalPinyin
         {
             if cmp(i, p) != 0 { break }
             let k = keyString(i)
-            if k != input
+            if k != keys[0] && k != "#" + keys[0]
             {
                 for (w, cd) in parseEntries(wordsString(i)) { put(w, cd); if cands.count >= 40 { return } }
             }
             i += 1
             scanned += 1
-        }
-        for (k, v) in learned where k.hasPrefix(input) && k.count > input.count
-        {
-            put(v, k)
-            if cands.count >= 40 { return }
         }
     }
 
@@ -925,9 +954,13 @@ class EngineService
             if key == EST.SPKEY_Back { lp.back(); return EST.SMR_OK }
             if key == EST.SPKEY_SEPARATOR || key == EST.SPKEY_OK || key == EST.SPKEY_Return
             {
-                if key == EST.SPKEY_Return && lp.isDigitsOnly
+                if key == EST.SPKEY_Return
                 {
-                    if let t = lp.plainText(), !t.isEmpty { self.dictHook?(t) }
+                    if let t = lp.plainText(), !t.isEmpty
+                    {
+                        self.dictHook?(t)
+                        return EST.SMR_OK
+                    }
                 }
                 if lp.cands.count > 0 { return lp.select(0) }
                 lp.commitRaw()

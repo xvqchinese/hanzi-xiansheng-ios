@@ -28,6 +28,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     var activityIndicatorView: UIActivityIndicatorView!
     var searchBarFrame1: CGRect!
     var fontSeg: UISegmentedControl!
+    var backBtn: UIBarButtonItem!
     var dictFontIdx: Int = 1
     var historyTable: UITableView!
     var cancelBtn: UIButton!
@@ -81,7 +82,8 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
             self.meBtn = UIBarButtonItem(image: UIImage(named: "tabbar_me"), style: UIBarButtonItem.Style.plain, target: self, action: Selector("onMeInfoBtn"))
             
             self.navigationItem.setRightBarButton(self.voiceBtn, animated: true)
-            self.navigationItem.setLeftBarButton(self.meBtn, animated: true)
+            self.backBtn = UIBarButtonItem(title: Lang("返回"), style: .plain, target: self, action: Selector("onBackBtn"))
+            self.navigationItem.setLeftBarButtonItems([self.backBtn, self.meBtn], animated: true)
         }
         
         if (true)
@@ -107,7 +109,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         if (true)
         {
             let app = UIApplication.shared
-            let y = self.view.frame.origin.y + self.navigationController!.navigationBar.bounds.size.height + app.statusBarFrame.height
+            let y = self.view.frame.origin.y + self.navigationController!.navigationBar.bounds.size.height + app.statusBarFrame.height + 46
             let h = self.view.frame.height - self.navigationController!.navigationBar.bounds.size.height - app.statusBarFrame.height - self.tabBarController!.tabBar.frame.height
             self.showResult = WKWebView(frame: CGRect(x: self.view.frame.origin.x, y: y, width: self.view.frame.size.width, height: h))
             self.showResult.navigationDelegate = self
@@ -285,6 +287,11 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         let base: CGFloat = self.dictFontIdx == 0 ? 15 : (self.dictFontIdx == 1 ? 18 : 21)
         let scale = min(max(UIScreen.main.bounds.width / 390.0, 0.9), 1.25)
         return Int(base * scale)
+    }
+
+    @objc func onBackBtn()
+    {
+        _ = self.navigationController?.popViewController(animated: true)
     }
 
     func applyFontTo(_ webView: WKWebView)
