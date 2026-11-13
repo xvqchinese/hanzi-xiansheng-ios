@@ -179,6 +179,219 @@ func Page2DataFile(_ page: Int) -> String
 }
 
 
+// MARK: - 本地拼音引擎（自建索引，不依赖内置 C 引擎）
+// 数据来自 py.data 尾部追加的 PYIMBIN1 段：拼音(无调) -> 候选词表
+final class LocalPinyin
+{
+    private let bytes: [UInt8]
+    private let base: Int
+    private let count: Int
+
+    private(set) var input: String = ""
+    private(set) var cands: [String] = []
+    private(set) var codes: [String] = []
+    private(set) var pending: String = ""
+    private(set) var pendingOn: Bool = false
+    private(set) var ready: Bool = false
+    var candCountSign: Int { return self.count }
+
+    static func readU32(_ b: [UInt8], _ o: Int) -> UInt32
+    {
+        if o + 3 >= b.count { return 0 }
+        return UInt32(b[o]) | (UInt32(b[o+1]) << 8) | (UInt32(b[o+2]) << 16) | (UInt32(b[o+3]) << 24)
+    }
+
+    static func readU16(_ b: [UInt8], _ o: Int) -> UInt16
+    {
+        if o + 1 >= b.count { return 0 }
+        return UInt16(b[o]) | (UInt16(b[o+1]) << 8)
+    }
+
+    init?(data: Data)
+    {
+        let b = [UInt8](data)
+        let m: [UInt8] = Array("PYIMBIN1".utf8)
+        var found: Int = -1
+        if b.count >= m.count
+        {
+            var i = b.count - m.count
+            while i >= 0
+            {
+                var same = true
+                var k = 0
+                while k < m.count
+                {
+                    if b[i + k] != m[k] { same = false; break }
+                    k += 1
+                }
+                if same { found = i; break }
+                i -= 1
+            }
+        }
+        if found < 0 { return nil }
+        let cnt = LocalPinyin.readU32(b, found + m.count + 4)
+        if cnt == 0 { return nil }
+        self.bytes = b
+        self.base = found + m.count
+        self.count = Int(cnt)
+        self.ready = true
+    }
+
+    private func entry(_ i: Int) -> (ko: Int, kl: Int, bo: Int, bl: Int)
+    {
+        let t = base + 12 + 14 * i
+        return (Int(LocalPinyin.readU32(bytes, t)),
+                Int(LocalPinyin.readU16(bytes, t + 4)),
+                Int(LocalPinyin.readU32(bytes, t + 6)),
+                Int(LocalPinyin.readU32(bytes, t + 10)))
+    }
+
+    private func keyString(_ i: Int) -> String
+    {
+        let e = entry(i)
+        let s = base + e.ko
+        if s + e.kl > bytes.count { return "" }
+        return String(decoding: bytes[s..<(s + e.kl)], as: UTF8.self)
+    }
+
+    private func wordsString(_ i: Int) -> String
+    {
+        let e = entry(i)
+        let s = base + e.bo
+        if s + e.bl > bytes.count { return "" }
+        return String(decoding: bytes[s..<(s + e.bl)], as: UTF8.self)
+    }
+
+    // 比较第 i 条 key 与前缀 p：key 小于前缀返回 -1，相等（即 key 以 p 开头）返回 0，大于返回 1
+    private func cmp(_ i: Int, _ p: [UInt8]) -> Int
+    {
+        let e = entry(i)
+        let s = base + e.ko
+        let l = e.kl < p.count ? e.kl : p.count
+        var k = 0
+        while k < l
+        {
+            let a = bytes[s + k]
+            let c = p[k]
+            if a < c { return -1 }
+            if a > c { return 1 }
+            k += 1
+        }
+        if e.kl < p.count { return -1 }
+        return 0
+    }
+
+    func refresh()
+    {
+        cands.removeAll()
+        codes.removeAll()
+        if input.isEmpty { return }
+        let p = Array(input.utf8)
+        var lo = 0
+        var hi = count
+        while lo < hi
+        {
+            let mid = (lo + hi) / 2
+            if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
+        }
+        var i = lo
+        var exact: [String] = []
+        var later: [(Int, String, [String])] = []
+        var scanned = 0
+        while i < count && scanned < 400
+        {
+            if cmp(i, p) != 0 { break }
+            let k = keyString(i)
+            if k == input
+            {
+                exact = wordsString(i).split(separator: "\u{1f}").map { String($0) }
+            }
+            else if k.count <= input.count + 12
+            {
+                later.append((k.count, k, wordsString(i).split(separator: "\u{1f}").map { String($0) }))
+            }
+            i += 1
+            scanned += 1
+        }
+        for w in exact
+        {
+            cands.append(w)
+            codes.append(input)
+            if cands.count >= 30 { return }
+        }
+        later.sort { $0.0 < $1.0 }
+        for item in later
+        {
+            for w in item.2
+            {
+                cands.append(w)
+                codes.append(item.1)
+                if cands.count >= 30 { return }
+            }
+        }
+    }
+
+    func type(_ c: Character)
+    {
+        pendingOn = false
+        if c >= "a" && c <= "z" { input.append(c) }
+        if input.count > 30 { input = String(input.suffix(30)) }
+        refresh()
+    }
+
+    func back()
+    {
+        pendingOn = false
+        if !input.isEmpty
+        {
+            input.removeLast()
+            refresh()
+        }
+        else
+        {
+            pending = ""
+        }
+    }
+
+    func select(_ i: Int) -> Int32
+    {
+        if i < 0 || i >= cands.count { return EST.SMR_Ignored }
+        let word = cands[i]
+        let code = codes[i]
+        pending = word
+        pendingOn = true
+        if code.count <= input.count && input.hasPrefix(code)
+        {
+            input = String(input.dropFirst(code.count))
+        }
+        else
+        {
+            input = ""
+        }
+        refresh()
+        return EST.SMR_OK
+    }
+
+    func commitRaw()
+    {
+        if input.isEmpty { return }
+        pending = input
+        pendingOn = true
+        input = ""
+        refresh()
+    }
+
+    func clear()
+    {
+        input = ""
+        pending = ""
+        pendingOn = false
+        cands.removeAll()
+        codes.removeAll()
+    }
+}
+
+
 class EngineService
 {
     var curKB: Int32 = 0
@@ -198,6 +411,8 @@ class EngineService
     var lastInitCode: Int32 = -1     // dwimeInit 原始返回码
     var lastDbLen: Int = 0           // 实际吃到的词库字节数
     var isReady: Bool = false        // 初始化成功才允许按键
+    var localPY: LocalPinyin?        // 本地拼音索引（py.data 尾部 PYIMBIN1 段）
+    var useLocalPY: Bool { return self.mMode == IDouble.piNYIN && self.localPY != nil }
     
     init()
     {
@@ -317,6 +532,18 @@ class EngineService
         self.mKbType = Page2KbType(page)
 
         IMEngine.dwimeExit()
+
+        if page == KbPage.M_Chn, let db = self.loadDB("py.data"), let lp = LocalPinyin(data: db)
+        {
+            self.localPY = lp
+            self.mDbMain = db
+            self.lastInitCode = EST.SMR_OK
+            self.lastDbLen = db.count
+            self.isReady = true
+            self.kbDiagLog("[LOCAL] 本地拼音索引就绪 len=\(db.count) 条目=\(lp.candCountSign)")
+            return true
+        }
+        self.localPY = nil
         
         if IsNeedEngine(page)
         {
@@ -382,11 +609,13 @@ class EngineService
     
     func End()
     {
+        self.localPY?.clear()
         IMEngine.dwimeExit()
     }
     
     func Reset()
     {
+        if self.useLocalPY, let lp = self.localPY { lp.clear(); return }
         IMEngine.dwimeReset()
     }
     
@@ -458,6 +687,29 @@ class EngineService
     func SendKey(_ key: Int32, param: Int32) ->Int32
     {
         if !self.isReady { MyLog("[KEY] 引擎未就绪，忽略按键"); return EST.SMR_Ignored }
+
+        if self.useLocalPY, let lp = self.localPY
+        {
+            if key >= 97 && key <= 122, let sc = UnicodeScalar(UInt32(key))
+            {
+                lp.type(Character(sc))
+                return EST.SMR_OK
+            }
+            if key >= 65 && key <= 90, let sc = UnicodeScalar(UInt32(key + 32))
+            {
+                lp.type(Character(sc))
+                return EST.SMR_OK
+            }
+            if key == EST.SPKEY_Back { lp.back(); return EST.SMR_OK }
+            if key == EST.SPKEY_SEPARATOR || key == EST.SPKEY_OK || key == EST.SPKEY_Return
+            {
+                if lp.cands.count > 0 { return lp.select(0) }
+                lp.commitRaw()
+                return EST.SMR_OK
+            }
+            if key == EST.SPKEY_API_RESET { lp.clear(); return EST.SMR_OK }
+            return EST.SMR_OK
+        }
         if self.mMode == IDouble.piNYIN ||
            self.mMode == EST.IM_STROKE ||
            self.mMode == EST.IM_LATIN
@@ -532,6 +784,7 @@ class EngineService
     func CandCount() -> Int32
     {
         if !self.isReady { return 0 }
+        if self.useLocalPY, let lp = self.localPY { return Int32(lp.cands.count) }
         return IMEngine.dwimeCount()
     }
     
@@ -539,6 +792,7 @@ class EngineService
     func GetCand(_ index: Int32) -> NSString
     {
         if !self.isReady { return "" as NSString }
+        if self.useLocalPY, let lp = self.localPY { let i = Int(index); return (i >= 0 && i < lp.cands.count ? lp.cands[i] : "nil") as NSString }
         let cand = IMEngine.dwimeGetCand(index, false)
         if (cand != nil && cand!.count > 0)
         {
@@ -550,6 +804,7 @@ class EngineService
     func GetCandCode(_ index: Int32) -> NSString
     {
         if !self.isReady { return "" as NSString }
+        if self.useLocalPY, let lp = self.localPY { let i = Int(index); return (i >= 0 && i < lp.codes.count ? lp.codes[i] : "") as NSString }
         let code = IMEngine.dwimeGetCandCode(index);
         return (code ?? "") as NSString;
     }
@@ -557,6 +812,7 @@ class EngineService
     func Select(_ index: Int32) -> Int32
     {
         if !self.isReady { return EST.SMR_Ignored }
+        if self.useLocalPY, let lp = self.localPY { return lp.select(Int(index)) }
         let count1 = IMEngine.dwimeUserDBGetCount(self.mMode, nil)
         let ret = IMEngine.dwimeSelect(index)
         let count2 = IMEngine.dwimeUserDBGetCount(self.mMode, nil)
@@ -571,6 +827,7 @@ class EngineService
     func hasInput() -> Bool
     {
         if !self.isReady { return false }
+        if self.useLocalPY, let lp = self.localPY { return !lp.input.isEmpty }
         let input = IMEngine.dwimeGetInput()
         
         if input != nil && input!.count > 0
@@ -583,24 +840,28 @@ class EngineService
     func showIMWin() -> Bool
     {
         if !self.isReady { return false }
+        if self.useLocalPY, let lp = self.localPY { return lp.cands.count > 0 }
         return IMEngine.dwimeisShowIM()
     }
 
     func canUpscreen() -> Bool
     {
         if !self.isReady { return false }
+        if self.useLocalPY, let lp = self.localPY { return lp.pendingOn }
         return IMEngine.dwimeCanUpScrenn()
     }
     
     func UpscreenStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
+        if self.useLocalPY, let lp = self.localPY { return lp.pending as NSString }
         return (IMEngine.dwimeGetUpScrenn() ?? "") as NSString
     }
     
     func inputStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
+        if self.useLocalPY, let lp = self.localPY { return lp.input as NSString }
         if let input = IMEngine.dwimeGetInput()
         {
             return input as NSString
@@ -611,6 +872,7 @@ class EngineService
     func compStr() -> NSString
     {
         if !self.isReady { return "" as NSString }
+        if self.useLocalPY, let lp = self.localPY { return lp.input as NSString }
         if (self.mMode == IDouble.piNYIN && self.hasInput() && self.CandCount() > 0)
         {
             return (IMEngine.dwimeGetCandPY9(Int32(0)) ?? "") as NSString
@@ -635,6 +897,7 @@ class EngineService
     func syllableNum() -> Int
     {
         if !self.isReady { return 0 }
+        if self.useLocalPY { return 0 }
         return Int(IMEngine.dwimeSyllableNum())
     }
 
