@@ -733,7 +733,6 @@ class EngineService
                     return EST.SMR_OK
                 }
                 lp.type(Character(sc))
-            {
                 return EST.SMR_OK
             }
             if key >= 65 && key <= 90, let sc = UnicodeScalar(UInt32(key + 32))
