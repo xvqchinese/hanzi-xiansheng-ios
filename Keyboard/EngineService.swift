@@ -558,6 +558,7 @@ class EngineService
     var isReady: Bool = false        // 初始化成功才允许按键
     var localPY: LocalPinyin?        // 本地拼音索引（py.data 尾部 PYIMBIN1 段）
     var useLocalPY: Bool { return (self.mMode == IDouble.piNYIN || self.mMode == EST.IM_STROKE) && self.localPY != nil }
+    var dictHook: ((String) -> Void)?
     
     init()
     {
