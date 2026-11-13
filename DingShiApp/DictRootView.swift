@@ -27,6 +27,8 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     var showResult: WKWebView!
     var activityIndicatorView: UIActivityIndicatorView!
     var searchBarFrame1: CGRect!
+    var fontSeg: UISegmentedControl!
+    var dictFontIdx: Int = 1
     var historyTable: UITableView!
     var cancelBtn: UIButton!
     var historyAry: [String] = []
@@ -47,7 +49,9 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         if (true)
         {
             let mainViewBounds = self.navigationController!.view.bounds
-            self.searchBarFrame1 = CGRect(x: mainViewBounds.minX + 40, y: mainViewBounds.minY + 20, width: self.navigationController!.view.bounds.size.width - 80, height: 40)
+            let navBottom = self.navigationController!.navigationBar.frame.maxY
+            let w = min(mainViewBounds.width, UIScreen.main.bounds.width)
+            self.searchBarFrame1 = CGRect(x: 8, y: navBottom + 4, width: w - 16, height: 36)
             self.searchBar = UISearchBar(frame: self.searchBarFrame1)
             
             let clearImg = imageWithColor(UIColor.clear, width: 1, height: 40)
@@ -59,6 +63,16 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
             self.searchBar.placeholder = Lang("请输入中文或英文进行查询")
             self.searchBar.isTranslucent = true
             self.navigationController!.view.addSubview(self.searchBar)
+
+            if let v = prefs.object(forKey: "dictFontSize") as? Int { self.dictFontIdx = max(0, min(2, v)) }
+            self.fontSeg = UISegmentedControl(items: [Lang("小"), Lang("中"), Lang("大")])
+            self.fontSeg.selectedSegmentIndex = self.dictFontIdx
+            self.fontSeg.tintColor = UIColor.black
+            let segY = self.searchBarFrame1.maxY + 4
+            let segW: CGFloat = 132
+            self.fontSeg.frame = CGRect(x: w - 8 - segW, y: segY, width: segW, height: 28)
+            self.fontSeg.addTarget(self, action: Selector("onFontSeg"), for: .valueChanged)
+            self.navigationController!.view.addSubview(self.fontSeg)
         }
         if (true)
         {
@@ -260,6 +274,29 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!)
     {
         self.activityIndicatorView.stopAnimating()
+        self.applyFontTo(webView)
+    }
+
+    func dictFontPx() -> Int
+    {
+        let base: CGFloat = self.dictFontIdx == 0 ? 15 : (self.dictFontIdx == 1 ? 18 : 21)
+        let scale = min(max(UIScreen.main.bounds.width / 390.0, 0.9), 1.25)
+        return Int(base * scale)
+    }
+
+    func applyFontTo(_ webView: WKWebView)
+    {
+        let px = self.dictFontPx()
+        let js = "(function(){var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.setAttribute('name','viewport');document.head.appendChild(m);}m.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0');document.documentElement.style.fontSize='__PX__px';if(document.body){document.body.style.fontSize='__PX__px';}})();"
+        webView.evaluateJavaScript(js.replacingOccurrences(of: "__PX__", with: String(px), options: .literal, range: nil), completionHandler: nil)
+    }
+
+    @objc func onFontSeg()
+    {
+        self.dictFontIdx = self.fontSeg.selectedSegmentIndex
+        prefs.set(self.dictFontIdx, forKey: "dictFontSize")
+        if let w = self.web { self.applyFontTo(w) }
+        if let r = self.showResult { self.applyFontTo(r) }
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error)
