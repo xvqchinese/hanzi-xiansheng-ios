@@ -282,6 +282,25 @@ final class LocalPinyin
         return out
     }
 
+    func makeCharPinyinMap() -> [Character: String]
+    {
+        var m: [Character: String] = [:]
+        var i = 0
+        while i < count
+        {
+            let k = keyString(i)
+            if !k.hasPrefix("#")
+            {
+                for (w, cd) in parseEntries(wordsString(i))
+                {
+                    if w.count == 1, let c = w.first, m[c] == nil { m[c] = cd.isEmpty ? k : cd }
+                }
+            }
+            i += 1
+        }
+        return m
+    }
+
     func plainText() -> String?
     {
         if pendingOn && !pending.isEmpty { return pending }
@@ -640,21 +659,7 @@ class EngineService
     func buildCharPy()
     {
         guard let lp = self.localPY else { return }
-        var m: [Character: String] = [:]
-        var i = 0
-        while i < lp.count
-        {
-            let k = lp.keyString(i)
-            if !k.hasPrefix("#")
-            {
-                for (w, cd) in lp.parseEntries(lp.wordsString(i))
-                {
-                    if w.count == 1, let c = w.first, m[c] == nil { m[c] = cd.isEmpty ? k : cd }
-                }
-            }
-            i += 1
-        }
-        self.charPyMap = m
+        self.charPyMap = lp.makeCharPinyinMap()
     }
 
     func speechCode(_ cd: String, word: String? = nil) -> String
