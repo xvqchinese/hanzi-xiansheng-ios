@@ -738,6 +738,12 @@ final class LocalPinyin
     func type(_ c: Character)
     {
         pendingOn = false
+        // 距上次上屏超过 5 秒视为新词，重置整词累计
+        if let lt = self.lastSelTime, Date().timeIntervalSince(lt) > 5
+        {
+            self.wordBuf = ""
+            self.typedAll = ""
+        }
         if self.strokeMode
         {
             if "hspdnz".contains(c) || "HSPDNZ".contains(c) { let l = Character(c.lowercased()); input.append(l); typed.append(l) }
@@ -760,6 +766,8 @@ final class LocalPinyin
         if !typed.isEmpty { typed.removeLast() }
         refresh()
     }
+
+    var lastSelTime: Date? = nil
 
     func select(_ i: Int) -> Int32
     {
@@ -794,11 +802,11 @@ final class LocalPinyin
         {
             learn(self.strokeMode ? typed.uppercased() : typed, wordBuf)
         }
+        self.lastSelTime = Date()
         composed = ""
         input = ""
         typed = ""
-        typedAll = ""
-        wordBuf = ""
+        // typedAll / wordBuf 要跨字累计，不能每次都清空，否则整词永远学不到
         cands.removeAll()
         codes.removeAll()
         return EST.SMR_OK
