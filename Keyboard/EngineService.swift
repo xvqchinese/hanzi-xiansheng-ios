@@ -812,6 +812,8 @@ final class LocalPinyin
         func put(_ w: String, _ cd: String)
         {
             if w.isEmpty || w == "·" { return }
+            // 只打一个字母（单音节声母）时，只出单字，不出词组
+            if self.input.count == 1 && w.count > 1 { return }
             if !toneOK(w, cd) { return }
             if seen.contains(w) { return }
             if !ok(cd) { return }
