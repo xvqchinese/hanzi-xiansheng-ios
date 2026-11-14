@@ -32,17 +32,12 @@ extension KeyboardViewController
                 // 空格
                 if (self.engine.hasInput())
                 {
-                    // 命中“已学词组”时，取词由回车负责，空格只上屏一个空格
-                    if self.engine.CandCount() > 0 && self.engine.GetCand(0).length >= 2
-                    {
-                        self.out(" ", sendCand: false)
-                        self.engine.Reset()
-                        self.catBreak()
-                        self.closeCand()
-                    }
-                    else if self.engine.CandCount() > 0
+                    // 空格=取第一个候选（词组优先），同时完成学词与发声
+                    if self.engine.CandCount() > 0
                     {
                         self.selectCand(0, str: nil)
+                        self.catBreak()
+                        self.closeCand()
                     }
                     else
                     {
