@@ -821,9 +821,11 @@ final class LocalPinyin
                 }
                 plain += t.lowercased()
             }
-            let list = hasTone ? LocalPinyin.wordsForPyTone(toned) : LocalPinyin.wordsForPy(plain)
+            var list = hasTone ? LocalPinyin.wordsForPyTone(toned) : LocalPinyin.wordsForPy(plain)
+            if hasTone && list.isEmpty { list = LocalPinyin.wordsForPy(plain) }
             for w in list
             {
+                if w.count != 2 { continue }   // 全拼只出二字词，不做多字联想
                 put(w, "")
                 if cands.count >= 30 { break }
             }
@@ -837,15 +839,15 @@ final class LocalPinyin
             let inSegs = segments(input)
             for (w, code) in pm
             {
-                if w.count < 2 { continue }
+                if w.count != 2 { continue }   // 全拼只出二字词
                 let cdSegs = code.components(separatedBy: ",").filter { !$0.isEmpty }
-                if cdSegs.count != inSegs.count || cdSegs.count < w.count { continue }
+                if cdSegs.count != inSegs.count { continue }
                 var okSeg = true
                 for i in 0..<inSegs.count
                 {
                     let a = inSegs[i], b = cdSegs[i]
-                    // 声调字母可能差一个，按前缀包含判断，宽松匹配
-                    if !(a == b || b.hasPrefix(a) || a.hasPrefix(b)) { okSeg = false; break }
+                    // 必须整段完全相等，不联想、不前缀
+                    if a != b { okSeg = false; break }
                 }
                 if okSeg { put(w, "") }
                 if cands.count >= 40 { return }
