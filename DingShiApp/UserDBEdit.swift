@@ -185,7 +185,7 @@ class UserViewController: UITableViewController
         let statusLabel:UILabel = cell!.contentView.viewWithTag(1000001) as!  UILabel
         let button:MyButton = cell!.contentView.viewWithTag(1000011) as!  MyButton
         let it = self.items[indexPath.row]
-        statusLabel.text = String(format: "%04d   %@", indexPath.row, it.1)
+        statusLabel.text = String(format: "%05d   %@", indexPath.row, it.1)
         statusLabel.sizeToFit()
         statusLabel.frame.origin.y = (cell!.frame.height - statusLabel.frame.height) / 2
         statusLabel.frame.size.width = self.tableView.frame.width - 30
