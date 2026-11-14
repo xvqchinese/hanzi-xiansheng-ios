@@ -3,6 +3,7 @@ import UIKit
 var gCatWord: String = ""
 var gCatLetters: String = ""
 var gCatCodes: String = ""
+var gCatLast: Double = 0
 //
 //  Catboard.swift
 //  TransliteratingKeyboard
@@ -36,6 +37,7 @@ extension KeyboardViewController
                     {
                         self.out(" ", sendCand: false)
                         self.engine.Reset()
+                        self.catBreak()
                         self.closeCand()
                     }
                     else if self.engine.CandCount() > 0
@@ -62,6 +64,7 @@ extension KeyboardViewController
                     if self.engine.CandCount() > 0
                     {
                         self.selectCand(0, str: nil)
+                        self.catBreak()
                     }
                     else
                     {
@@ -540,10 +543,22 @@ extension KeyboardViewController
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_pinyin.json")
     }
 
+    // 上屏取词或停顿 8 秒，都算一个词结束，累计清零，避免两个词被粘成一个
+    func catBreak()
+    {
+        gCatWord = ""
+        gCatLetters = ""
+        gCatCodes = ""
+        gCatLast = 0
+    }
+
     private func catLearn(_ typedNow: String, _ up: String)
     {
         let t = typedNow.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if t.isEmpty || t.count >= 30 { gCatWord = ""; gCatLetters = ""; gCatCodes = ""; return }
+        let now = Date().timeIntervalSince1970
+        if gCatLast > 0 && now - gCatLast > 8 { catBreak() }
+        gCatLast = now
+        if t.isEmpty || t.count >= 30 { catBreak(); return }
         gCatLetters += t
         gCatWord += up
         if gCatWord.count < 2 { return }
