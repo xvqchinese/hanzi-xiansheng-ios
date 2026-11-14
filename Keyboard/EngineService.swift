@@ -368,6 +368,18 @@ final class LocalPinyin
             let ini = segs.map { String($0.prefix(1)) }.joined()
             if ini.count >= 2 { learned[ini] = text; learnedIni[ini] = text }
         }
+        // 再按“词本身的字首字母”建一条，确保简拼必定命中（即使整串输入被切分异常）
+        var wordIni = ""
+        let cm = makeCharPinyinMap()
+        for c in text
+        {
+            if let py = cm[c], let f = py.first { wordIni.append(f) }
+        }
+        if wordIni.count >= 2 && wordIni.count == text.count
+        {
+            learned[wordIni] = text
+            learnedWordIni[wordIni] = text
+        }
         saveLearned()
     }
 
