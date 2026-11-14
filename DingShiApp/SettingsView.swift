@@ -45,8 +45,8 @@ class SettingsView: QuickDialogController
         
         switch(sender.index)
         {
-        case 0: gprefs.set(CGFloat(1.15), forKey: "kbheight")
-        case 1: gprefs.set(CGFloat(0.85), forKey: "kbheight")
+        case 0: gprefs.set(CGFloat(1.35), forKey: "kbheight")
+        case 1: gprefs.set(CGFloat(0.75), forKey: "kbheight")
         case 2: gprefs.set(CGFloat(1.0), forKey: "kbheight")
         default:break
         }

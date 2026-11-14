@@ -22,7 +22,7 @@ extension KeyboardViewController {
     func banner_cand() -> SmallCand2 { return SmallCand2(frame: self.candBounds!, handler: self) } // 候选条
     
     func view_selectKB() -> SelectKBView { return SelectKBView() }
-    func view_setting() -> SettingView { return SettingView() }
+    func view_setting() -> SettingView { return SettingView(frame: self.view.bounds) }
 
     func view_bigCand() -> BigCandView2 { return BigCandView2(handler: self) }
 

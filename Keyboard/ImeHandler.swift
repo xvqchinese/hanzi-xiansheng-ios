@@ -98,6 +98,8 @@ extension KeyboardViewController
         if self.mSettingPanel == nil
         {
             self.mSettingPanel = self.view_setting()
+            self.mSettingPanel!.frame = self.view.bounds
+            self.mSettingPanel!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             self.view.addSubview(self.mSettingPanel!)
         }
         if self.mSettingPanel != nil

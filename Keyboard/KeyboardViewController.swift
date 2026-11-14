@@ -416,8 +416,11 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         {
             self.heightConstraint.constant = getKbHeight(getOrientation())
         }
-            self.inputView!.addConstraint(self.heightConstraint)
-            self.heightConstraintAdd = true
+            if !self.heightConstraintAdd
+            {
+                self.inputView!.addConstraint(self.heightConstraint)
+                self.heightConstraintAdd = true
+            }
         //}
         //else
         //{
@@ -462,7 +465,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     
     func getKbHeight(_ toInterfaceOrientation: UIInterfaceOrientation) -> CGFloat
     {
-        //MyLog("------->> getKbHeight")
+        Globals.Load()   // 每次取高度前重读设置，改了大中小立刻生效
         let h = max(UIScreen.main.bounds.height, UIScreen.main.bounds.width)
         let w = min(UIScreen.main.bounds.height, UIScreen.main.bounds.width)
         let r = h / w
@@ -493,9 +496,9 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         
         if self.currentPage == KbPage.M_HW
         {
-            return CGFloat(Int(ret * Globals.kbHeight)) * 1.1 /*放大倍数*/
+            return ret * Globals.kbHeight * 1.1 /*放大倍数*/
         }
-        return CGFloat(Int(ret * Globals.kbHeight)) /*放大倍数*/
+        return ret * Globals.kbHeight /*放大倍数*/
     }
     
     func setupKey(_ remove:Bool, _ key: Key)
