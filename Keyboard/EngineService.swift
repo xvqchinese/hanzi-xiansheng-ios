@@ -425,7 +425,7 @@ final class LocalPinyin
                 b[base, default: []].append(contentsOf: v)
             }
             // 文件里的顺序是按字频排的，合并后仍要按“首次出现的位次”重排
-            var pos: [Character: Int] = [:]
+            var pos: [String: Int] = [:]
             var p = 0
             for (k, v) in m
             {
