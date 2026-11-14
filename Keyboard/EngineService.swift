@@ -895,10 +895,13 @@ final class LocalPinyin
         let fq = LocalPinyin.wordFreq()
         let lt = LocalPinyin.learnTimes()
         let segCnt = segments(input).count
+        let lvv = levels
         let pairs = zip(cands, codes).map { ($0, $1) }
         let sorted = pairs.sorted { a, b in
             let wa = a.0, wb = b.0
             let ca = wa.count, cb = wb.count
+            let la = lvv[wa] ?? 2, lb = lvv[wb] ?? 2
+            if la != lb { return la < lb }
             let ga = ca > 1 ? 0 : 1, gb = cb > 1 ? 0 : 1
             if ga != gb { return ga < gb }
             let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
@@ -962,6 +965,8 @@ final class LocalPinyin
         if input.isEmpty { return }
         let keys = input.contains("j") ? [input, input.replacingOccurrences(of: "j", with: "")] : [input]
         var seen = Set<String>()
+        var levels: [String: Int] = [:]
+        var lv = 0   // 0=带调整音节全对  1=混合（首字母放宽）  2=纯首字母  3=单字
         // 音与字/词必须严格对应：音节数与每个音节都要相等（忽略末尾调母标记），
         // 绝不允许“前缀命中”，前缀命中就是联想。
         func stripTone(_ seg: String) -> String
@@ -1024,6 +1029,7 @@ final class LocalPinyin
             cands.append(w)
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
+            if levels[w] == nil || levels[w]! > lv { levels[w] = lv }
         }
         // 单音节输入（d、xiongx、dingv…）只出同音同调单字，音调必须完全一致
         if !self.strokeMode
@@ -1044,6 +1050,7 @@ final class LocalPinyin
                     tone = "n"; key.removeLast()
                 }
                 else if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
+                lv = 3
                 for c in LocalPinyin.charsFor(base: key, tone: tone)
                 {
                     if seen.contains(c) { continue }
@@ -1098,6 +1105,7 @@ final class LocalPinyin
             }
         }
 
+        lv = 1
         // 混合输入：一段带调完整音节 + 一段首字母（hanqz），首字母那半不限声调
         if !self.strokeMode
         {
@@ -1133,6 +1141,7 @@ final class LocalPinyin
             }
         }
 
+        lv = 0
         // 最高优先级 0：整词全拼匹配（学过“汉字先生”，打 hanqziqxiansheng 也要出）
         if !self.strokeMode && input.count >= 4, let pu = LocalPinyin.wordPyURL,
            let d = try? Data(contentsOf: pu),
@@ -1155,6 +1164,7 @@ final class LocalPinyin
                 if cands.count >= 40 { return }
             }
         }
+        lv = 2
         // 内置词库：简拼字母完全相同的词，按词频顺序取前若干
         if !self.strokeMode && input.count >= 2
         {
