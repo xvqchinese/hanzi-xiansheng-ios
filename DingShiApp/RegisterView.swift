@@ -168,7 +168,7 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
     func alert(_ msg: String)
     {
         let a = UIAlertController(title: "提示", message: msg, preferredStyle: .alert)
-        a.addAction(UIAlertAction(title: "好", style: .default, completion: nil))
+        a.addAction(UIAlertAction(title: "好", style: .default, handler: nil))
         self.present(a, animated: true, completion: nil)
     }
 }
