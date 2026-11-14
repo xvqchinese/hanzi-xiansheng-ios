@@ -978,8 +978,15 @@ final class LocalPinyin
             // 单音节输入（一个字母或一个完整音节，如 d、xiongx）只出单字，不出词组
             if w.count > 1
             {
+                // 只有“含韵母的单音节”才禁词组；ds/dsx 这类简拼必须能出词
                 let segs = segments(self.input)
-                if self.input.count == 1 || segs.count == 1 { return }
+                let hasV = { (x: String) -> Bool in
+                    let l = x.lowercased()
+                    return l.contains("a") || l.contains("e") || l.contains("i")
+                        || l.contains("o") || l.contains("u") || l.contains("v")
+                }
+                if self.input.count == 1 { return }
+                if segs.count == 1 && hasV(segs[0]) { return }
             }
             if !toneOK(w, cd) { return }
             if seen.contains(w) { return }
