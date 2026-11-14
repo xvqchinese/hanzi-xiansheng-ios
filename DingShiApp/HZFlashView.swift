@@ -63,7 +63,7 @@ class HZFlashView: UIView
         soundSw.frame.origin.y = self.frame.origin.y + 8
         cue.frame.origin.x = soundSw.frame.origin.x - cue.frame.width - 6
         cue.center.y = soundSw.center.y
-        soundSw.isOn = UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true
+        soundSw.isOn = UserDefaults(suiteName: "group.DWIME_DS")?.object(forKey: "skSound") == nil ? true : (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "skSound") ?? true)
         soundSw.addTarget(self, action: Selector("onSoundSwitch:"), for: .valueChanged)
         self.addSubview(cue)
         self.addSubview(soundSw)
@@ -122,7 +122,7 @@ class HZFlashView: UIView
         }
         if (self.currentSKIndex >= ary.count) { self.currentSKIndex = 0 }
         ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, ary, self.currentSKIndex)
-        if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true)
+        if (UserDefaults(suiteName: "group.DWIME_DS")?.object(forKey: "skSound") == nil ? true : (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "skSound") ?? true))
         {
             let sk = ary[self.currentSKIndex].uppercased()
             let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
@@ -134,7 +134,7 @@ class HZFlashView: UIView
     
     @objc func onSoundSwitch(_ sender: UISwitch)
     {
-        UserDefaults(suiteName: "group.DWIME_DS")?.set(sender.isOn, forKey: "playWav")
+        UserDefaults(suiteName: "group.DWIME_DS")?.set(sender.isOn, forKey: "skSound")
     }
 
     func show()
