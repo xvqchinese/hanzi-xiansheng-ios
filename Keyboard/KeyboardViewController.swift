@@ -23,6 +23,8 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     
     var heightConstraint: NSLayoutConstraint!
     var heightConstraintAdd: Bool = false
+    var mResizeGrip: UIView?
+    var mResizeStart: CGFloat?
 
     var engine: EngineService!
     var layout: KeyboardLayout!
@@ -206,6 +208,24 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         
         self.heightConstraint = NSLayoutConstraint(item:self.inputView!, attribute:.height,
                                     relatedBy:.equal, toItem:nil, attribute:.notAnAttribute, multiplier:0.0, constant:height)
+
+        // 照安卓 KbResizeView：拖键盘上沿自由调整高度
+        self.mResizeGrip = UIView(frame: CGRect(x: 0, y: 0, width: 120, height: 26))
+        if let g = self.mResizeGrip
+        {
+            g.backgroundColor = UIColor.clear
+            g.isUserInteractionEnabled = true
+            let lab = UILabel(frame: g.bounds)
+            lab.text = "︿"
+            lab.textColor = UIColor(white: 0.55, alpha: 1)
+            lab.font = UIFont.systemFont(ofSize: 12)
+            lab.textAlignment = .center
+            lab.tag = 999
+            g.addSubview(lab)
+            let pan = UIPanGestureRecognizer(target: self, action: #selector(KeyboardViewController.doResizeKb(_:)))
+            g.addGestureRecognizer(pan)
+            self.view.addSubview(g)
+        }
         self.heightConstraint.priority = UILayoutPriority(999)
         // 键盘内面板改“大/中/小”后立刻重算高度
         NotificationCenter.default.addObserver(forName: Notification.Name("DWKbResize"), object: nil, queue: OperationQueue.main)
@@ -361,6 +381,11 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         super.viewDidLayoutSubviews()
         let kbHeight = getKbHeight(getOrientation())
         MyLog("[KBDBG] view=\(self.view.frame) input=\(String(describing: self.inputView?.frame)) kbH=\(kbHeight) gkb=\(String(describing: Globals.kbHeight))")
+        if let g = self.mResizeGrip
+        {
+            g.frame = CGRect(x: self.view.frame.width/2 - 60, y: 0, width: 120, height: 26)
+            g.layer.zPosition = 5000
+        }
         let topBanner = (self.currentPage == KbPage.M_HW) ? (kbHeight / 6) : (kbHeight / 5)
         let kbWidth = Globals.singleHand ? (self.view.frame.width/5*4) : self.view.frame.width
         let fullRect = CGRect(x: self.view.frame.origin.x, y: self.view.frame.origin.y, width: kbWidth, height: self.view.frame.height)
@@ -484,6 +509,35 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         self.mForwardingView.reset()
     }
     
+    @objc func doResizeKb(_ g: UIPanGestureRecognizer)
+    {
+        let screenH = UIScreen.main.bounds.height
+        let cur = getKbHeight(getOrientation())
+        switch g.state
+        {
+        case .began:
+            self.mResizeStart = cur
+        case .changed:
+            let move = g.translation(in: self.view).y
+            var h = (self.mResizeStart ?? cur) - move
+            // 照安卓：竖屏 25%~60%（安卓默认 35%）
+            let lo = screenH * 0.25, hi = screenH * 0.60
+            h = min(max(h, lo), hi)
+            self.heightConstraint.constant = h
+            self.preferredContentSize = CGSize(width: self.view.bounds.width, height: h)
+            self.view.setNeedsLayout()
+            self.view.layoutIfNeeded()
+        case .ended, .cancelled:
+            let frac = Double(self.heightConstraint.constant / screenH)
+            let gp = UserDefaults(suiteName: "group.DWIME_DS") ?? UserDefaults.standard
+            gp.set(CGFloat(frac), forKey: "kbheight")
+            gp.synchronize()
+            Globals.Update()
+        default:
+            break
+        }
+    }
+
     func getKbHeight(_ toInterfaceOrientation: UIInterfaceOrientation) -> CGFloat
     {
         Globals.Load()   // 每次取高度前重读设置，改了大中小立刻生效

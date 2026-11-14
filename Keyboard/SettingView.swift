@@ -67,9 +67,9 @@ with something (or leave it blank if you like.)
             self.setsList.addSubview(self.gps)
             self.setsList.addSubview(self.singleHand)
             self.setsList.addSubview(self.more)
-            self.setsList.addSubview(self.kbBig)
-            self.setsList.addSubview(self.kbMid)
-            self.setsList.addSubview(self.kbSml)
+            self.kbBig.isHidden = true
+            self.kbMid.isHidden = true
+            self.kbSml.isHidden = true
         }
         else
         {

@@ -61,7 +61,7 @@ struct Globals
             ])
         // 全局的
         Globals.gprefs.register(defaults: [
-            "kbheight" : 0.50,           // 键盘高度
+            "kbheight" : 0.35,           // 键盘高度
             "cnOutConv"  : 0,
             "enOutConv" : 0,
             "hwBrush" : true,
