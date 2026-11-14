@@ -1,3 +1,7 @@
+import UIKit
+
+var gCatWord: String = ""
+var gCatLetters: String = ""
 //
 //  Catboard.swift
 //  TransliteratingKeyboard
@@ -6,7 +10,6 @@
 //  Copyright (c) 2014 Apple. All rights reserved.
 //
 
-import UIKit
 
 /*
 This is the demo keyboard. If you're implementing your own keyboard, simply follow the example here and then
@@ -485,8 +488,6 @@ extension KeyboardViewController
     }
     
     
-    private var catWord: String = ""
-    private var catLetters: String = ""
 
     private static var catIniURL: URL?
     {
@@ -496,22 +497,22 @@ extension KeyboardViewController
     private func catLearn(_ typedNow: String, _ up: String)
     {
         let t = typedNow.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if t.isEmpty || t.count >= 30 { self.catWord = ""; self.catLetters = ""; return }
-        self.catLetters += t
-        self.catWord += up
-        if self.catWord.count < 2 { return }
+        if t.isEmpty || t.count >= 30 { gCatWord = ""; gCatLetters = ""; return }
+        gCatLetters += t
+        gCatWord += up
+        if gCatWord.count < 2 { return }
         guard let u = Catboard.catIniURL else { return }
         var m: [String: String] = [:]
         if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
         var ini = ""
-        for c in self.catWord
+        for c in gCatWord
         {
             if let f = LocalPinyin.charIni(c) { ini.append(f) } else { return }
         }
-        if ini.count == self.catWord.count && ini.count >= 2
+        if ini.count == gCatWord.count && ini.count >= 2
         {
-            m[ini] = self.catWord
-            if self.catWord.count >= 3 && ini.count >= 3 { m[ini] = self.catWord }
+            m[ini] = gCatWord
+            if gCatWord.count >= 3 && ini.count >= 3 { m[ini] = gCatWord }
             if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
         }
     }
