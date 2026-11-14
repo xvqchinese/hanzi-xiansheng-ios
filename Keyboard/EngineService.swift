@@ -244,7 +244,15 @@ final class LocalPinyin
     private var learnedWordIni: [String: String] = [:]
     var displayInput: String
     {
-        if self.input.count >= 2 { return self.composed + self.input + " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)/选\(selCalls)" }
+        if self.input.count >= 2
+        {
+            var dbg = " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)/选\(selCalls)"
+            // 诊断：把首字母里命中的键值显出来（临时）
+            let m = loadUserIni()
+            let hit = m.first(where: { $0.key.hasPrefix(self.input) })
+            dbg += hit == nil ? " 无命中" : " [\(hit!.key)=\(hit!.value)]"
+            return self.composed + self.input + dbg
+        }
         return self.composed + self.input
     }
 

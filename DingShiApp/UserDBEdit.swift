@@ -213,27 +213,29 @@ class UserViewController: UITableViewController
     
     @objc func delete_item(sender: MyButton)
     {
-        if sender.row >= 0 && sender.row < self.items.count
+        let row = sender.row
+        guard row >= 0, row < self.items.count else { return }
+        let word = self.items[row].1
+        // 1) 删学习库
+        if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
+           let d = try? Data(contentsOf: u),
+           let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
         {
-            let word = self.items[sender.row].1
-            var j = [String: String]()
-            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
-               let d = try? Data(contentsOf: u),
-               let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
-            {
-                j = obj
-            }
-            let deadKeys = j.filter { $0.value == word }.map { $0.key }
-            for k in deadKeys { j.removeValue(forKey: k) }
-            if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
-               let d = try? JSONSerialization.data(withJSONObject: j, options: [])
-            {
-                try? d.write(to: u)
-            }
-            self.loadDB()
-            self.tableView.reloadData()
-            sender.isHidden = true
+            var j = obj
+            for k in j.filter({ $0.value == word }).map({ $0.key }) { j.removeValue(forKey: k) }
+            if let nd = try? JSONSerialization.data(withJSONObject: j, options: []) { try? nd.write(to: u) }
         }
+        // 2) 删简拼首字母索引（否则删了学习库还会被召回）
+        if let u2 = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json"),
+           let d2 = try? Data(contentsOf: u2),
+           let obj2 = try? JSONSerialization.jsonObject(with: d2) as? [String: String]
+        {
+            var j2 = obj2
+            for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
+            if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
+        }
+        self.loadDB()
+        self.tableView.reloadData()
     }
     
     func saveDB()
