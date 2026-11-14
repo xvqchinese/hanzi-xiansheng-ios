@@ -1110,7 +1110,7 @@ final class LocalPinyin
         if !self.strokeMode
         {
             let segs = segments(input)
-            if segs.count == 2 || segs.count == 3
+            if segs.count >= 2 && segs.count <= 6
             {
                 var parts: [String] = []
                 var bad = false
@@ -1273,13 +1273,14 @@ final class LocalPinyin
             if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
         }
         // 整串没有候选时，先按音节分段凑词组（汉字 + 溪），再兜底单字
-        if cands.isEmpty
+        // 精准优先：整串无词就空着，不再分段凑字（杜绝“汉字仙”这类联想拼凑）
+        if false && cands.isEmpty
         {
             greedyFill()
             if !cands.isEmpty { return }
         }
         // 兜底：整串没有候选时，按每个字母各出单字（避免候选条全空只剩一排点）
-        if cands.isEmpty && !self.strokeMode && input.count >= 2
+        if false && cands.isEmpty && !self.strokeMode && input.count >= 2
         {
             for ch in input
             {
