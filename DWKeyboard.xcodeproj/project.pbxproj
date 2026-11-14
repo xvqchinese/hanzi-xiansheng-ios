@@ -244,6 +244,7 @@
 		9D73922A1D1E85C300E1C0B6 /* PlaceholderTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D7392291D1E85C300E1C0B6 /* PlaceholderTextView.m */; };
 		9D77AACE1D6BFA2F00E761EE /* about_v2.htm in Resources */ = {isa = PBXBuildFile; fileRef = 9D77AACD1D6BFA2F00E761EE /* about_v2.htm */; };
 		9D7BBF4D1D293F4800E9FAF2 /* UserDBEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7BBF4C1D293F4800E9FAF2 /* UserDBEdit.swift */; };
+		9D7BBF4E1D293F4800E9FAF2 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7BBF4F1D293F4800E9FAF2 /* RegisterView.swift */; };
 		9D7DFA521D2299F900094378 /* CADebugMacros.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D7DFA4B1D2299F900094378 /* CADebugMacros.cpp */; };
 		9D7DFA531D2299F900094378 /* CAStreamBasicDescription.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D7DFA4E1D2299F900094378 /* CAStreamBasicDescription.cpp */; };
 		9D7DFA541D2299F900094378 /* CAXException.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D7DFA501D2299F900094378 /* CAXException.cpp */; };
@@ -696,6 +697,7 @@
 		9D7392291D1E85C300E1C0B6 /* PlaceholderTextView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PlaceholderTextView.m; path = 3rd/PlaceholderTextView.m; sourceTree = "<group>"; };
 		9D77AACD1D6BFA2F00E761EE /* about_v2.htm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = about_v2.htm; sourceTree = "<group>"; };
 		9D7BBF4C1D293F4800E9FAF2 /* UserDBEdit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserDBEdit.swift; sourceTree = "<group>"; };
+		9D7BBF4F1D293F4800E9FAF2 /* RegisterView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
 		9D7DFA4B1D2299F900094378 /* CADebugMacros.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CADebugMacros.cpp; path = "baidu/Third-party/CoreAudioUtility/CADebugMacros.cpp"; sourceTree = "<group>"; };
 		9D7DFA4C1D2299F900094378 /* CADebugMacros.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CADebugMacros.h; path = "baidu/Third-party/CoreAudioUtility/CADebugMacros.h"; sourceTree = "<group>"; };
 		9D7DFA4D1D2299F900094378 /* CAMath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CAMath.h; path = "baidu/Third-party/CoreAudioUtility/CAMath.h"; sourceTree = "<group>"; };
@@ -1044,6 +1046,7 @@
 				0497D1C61A80847C00887055 /* DBUpdate.swift */,
 				9D42F23F1D223D2E00F57816 /* VoiceInputView.swift */,
 				9D7BBF4C1D293F4800E9FAF2 /* UserDBEdit.swift */,
+				9D7BBF4F1D293F4800E9FAF2 /* RegisterView.swift */,
 				9D42F2411D223DB200F57816 /* UserInfoView.swift */,
 				9DFFBEF51D24E2ED00F62850 /* CommonWebView.swift */,
 				9D0F05DE1D0D4F3E00697855 /* AboutView.swift */,
@@ -1853,6 +1856,7 @@
 				9D0F05C01D0D4C4900697855 /* QImageElement.m in Sources */,
 				9D0F05A31D0D4C4900697855 /* DOAutocompleteTextField.m in Sources */,
 				9D7BBF4D1D293F4800E9FAF2 /* UserDBEdit.swift in Sources */,
+				9D7BBF4E1D293F4800E9FAF2 /* RegisterView.swift in Sources */,
 				9D0F05A91D0D4C4900697855 /* QBadgeElement.m in Sources */,
 				9DB9F4BE1D23A14900AD5BB6 /* BDVRClientUIManager.m in Sources */,
 				9D0F05C61D0D4C4900697855 /* QProgressElement.m in Sources */,

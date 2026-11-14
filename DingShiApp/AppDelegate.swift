@@ -56,11 +56,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         UINavigationBar.appearance().barStyle = .blackTranslucent
         
-        let rootVC = XFMAppViewController(nibName: nil, bundle: nil)
-      
         self.window = UIWindow(frame: UIScreen.main.bounds)
-        self.window!.rootViewController = rootVC
-        self.window?.addSubview(rootVC.view!)
+
+        func showMain()
+        {
+            let rootVC = XFMAppViewController(nibName: nil, bundle: nil)
+            self.window!.rootViewController = rootVC
+        }
+
+        if KeychainLogin.isDone()
+        {
+            showMain()
+        }
+        else
+        {
+            let reg = RegisterView()
+            reg.onDone = { showMain() }
+            self.window!.rootViewController = reg
+        }
         self.window!.makeKeyAndVisible()
 
         return true
