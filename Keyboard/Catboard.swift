@@ -115,7 +115,22 @@ extension KeyboardViewController
                     {
                         if self.engine.canUpscreen()
                         {
-                            self.out(self.engine.UpscreenStr() as String, sendCand: false)
+                            let upStr = self.engine.UpscreenStr() as String
+                            self.out(upStr, sendCand: false)
+                            // 简拼整词自动上屏时，按记忆的逐字拼音码发声
+                            if self.currentPage == KbPage.M_Chn && upStr.count > 1
+                            {
+                                var soundCode = ""
+                                if let pu = Catboard.catPyURL,
+                                   let d = try? Data(contentsOf: pu),
+                                   let j = try? JSONSerialization.jsonObject(with: d) as? [String: String],
+                                   let sc = j[upStr] { soundCode = sc }
+                                if Globals.playWav && Globals.accessOpen
+                                {
+                                    let code = self.engine.speechCode(soundCode, word: upStr)
+                                    if !code.isEmpty { playWav(code) }
+                                }
+                            }
                         }
                         self.updateCandComp()
                     }
