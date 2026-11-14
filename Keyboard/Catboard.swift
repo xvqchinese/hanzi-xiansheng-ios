@@ -585,6 +585,12 @@ extension KeyboardViewController
             m[ini] = gCatWord
             LocalPinyin.markLearned(gCatWord)
             if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: uu) }
+            if self.currentPage != KbPage.M_SK9,
+               let d = try? JSONSerialization.data(withJSONObject: m, options: []),
+               let str = String(data: d, encoding: .utf8)
+            {
+                UserDefaults(suiteName: "group.DWIME_DS")?.set(str, forKey: "userWords")
+            }
         }
         // 同时记住这个词的逐字拼音码，供上屏发声用
         if let pu = Catboard.catPyURL, !gCatCodes.isEmpty

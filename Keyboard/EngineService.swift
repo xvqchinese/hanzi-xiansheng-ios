@@ -351,6 +351,11 @@ final class LocalPinyin
         if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
         m[ini] = w
         if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+        if let d = try? JSONSerialization.data(withJSONObject: m, options: []),
+           let str = String(data: d, encoding: .utf8)
+        {
+            UserDefaults(suiteName: "group.DWIME_DS")?.set(str, forKey: "userWords")
+        }
         markLearned(w)
     }
 
@@ -618,8 +623,15 @@ final class LocalPinyin
 
     func loadUserIni() -> [String: String]
     {
+        // 先读 App Group 的 UserDefaults（更可靠），再回落到文件
+        if let s = UserDefaults(suiteName: "group.DWIME_DS")?.string(forKey: "userWords"),
+           let d = s.data(using: .utf8),
+           let j = (try? JSONSerialization.jsonObject(with: d)) as? [String: String], !j.isEmpty
+        {
+            userIniCache = j
+            return userIniCache
+        }
         guard let u = LocalPinyin.userIniURL else { return userIniCache }
-        // 不缓存：键盘随时可能新增词组，缓存会读到旧内容导致刚学的词召不回
         if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String]
         {
             userIniCache = j

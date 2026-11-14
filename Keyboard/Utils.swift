@@ -190,7 +190,7 @@ func playWav(_ tune: String)
     // 键盘扩展里必须自己激活音频会话，否则 AVAudioPlayer 无声
     do {
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.ambient, options: [.duckOthers, .mixWithOthers])
+        try session.setCategory(.playback, options: [.duckOthers, .mixWithOthers])
         try session.setActive(true)
     } catch _ {}
     //if tune != nil
