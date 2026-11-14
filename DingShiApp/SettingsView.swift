@@ -45,8 +45,8 @@ class SettingsView: QuickDialogController
         
         switch(sender.index)
         {
-        case 0: gprefs.set(CGFloat(1.2), forKey: "kbheight")
-        case 1: gprefs.set(CGFloat(1.1), forKey: "kbheight")
+        case 0: gprefs.set(CGFloat(1.15), forKey: "kbheight")
+        case 1: gprefs.set(CGFloat(0.85), forKey: "kbheight")
         case 2: gprefs.set(CGFloat(1.0), forKey: "kbheight")
         default:break
         }
@@ -99,13 +99,9 @@ func settingsCreateRoot() -> QRootElement
     if (true)
     {
         let kbHeight = gprefs.float(forKey: "kbheight")
-        switch(kbHeight)
-        {
-        case 1.0 : selectedIndex = 2;
-        case 1.1 : selectedIndex = 1;
-        case 1.2 : selectedIndex = 0;
-        default: break;
-        }
+        if kbHeight >= 1.10 { selectedIndex = 0 }
+        else if kbHeight >= 0.95 { selectedIndex = 1 }
+        else { selectedIndex = 2 }
         // kbHeight
         let kbHeightSection: QRadioSection! = QRadioSection(items: [Lang("大"), Lang("中"), Lang("小")], selectedIndexes: [selectedIndex], title: Lang("键盘高度"))
         

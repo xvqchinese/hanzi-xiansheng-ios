@@ -410,9 +410,12 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         MyLog("------->> viewWillAppear")
         super.viewWillAppear(animated)
         
-        //if self.interfaceOrientation.isPortrait
-        //{
+        // 每次出现都重读设置，保证 App 里改“键盘高度”后即时生效
+        Globals.Load()
+        if self.heightConstraint != nil
+        {
             self.heightConstraint.constant = getKbHeight(getOrientation())
+        }
             self.inputView!.addConstraint(self.heightConstraint)
             self.heightConstraintAdd = true
         //}

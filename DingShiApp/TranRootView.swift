@@ -47,6 +47,22 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
         
         //self.hidesBottomBarWhenPushed = false
         self.navigationItem.title = Lang("翻译")
+        // 顶栏统一白底黑字（否则按钮为白色，看不见）
+        if #available(iOS 13.0, *) {
+            let ap = UINavigationBarAppearance()
+            ap.configureWithOpaqueBackground()
+            ap.backgroundColor = UIColor.white
+            ap.titleTextAttributes = [.foregroundColor: UIColor.black]
+            ap.largeTitleTextAttributes = [.foregroundColor: UIColor.black]
+            self.navigationController?.navigationBar.standardAppearance = ap
+            self.navigationController?.navigationBar.scrollEdgeAppearance = ap
+            self.navigationController?.navigationBar.compactAppearance = ap
+            self.navigationController?.navigationBar.tintColor = UIColor.black
+        } else {
+            self.navigationController?.navigationBar.barTintColor = UIColor.white
+            self.navigationController?.navigationBar.barStyle = .default
+            self.navigationController?.navigationBar.tintColor = UIColor.black
+        }
 
         // 下拉菜单
         if (true)
@@ -65,6 +81,8 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
             let frameT = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: 45)
             self.toolBar = UIToolbar(frame: frameT)
             self.toolBar.barStyle = UIBarStyle.default;
+            self.toolBar.tintColor = UIColor(red: 0.1, green: 0.45, blue: 0.85, alpha: 1.0)
+            self.toolBar.backgroundColor = UIColor.white
             let btn1 = UIBarButtonItem(title: Lang("清空"), style: UIBarButtonItem.Style.plain, target: self, action: Selector("doClear"))
             let btn2 = UIBarButtonItem(title: Lang("取消"), style: UIBarButtonItem.Style.plain, target: self, action: Selector("doCancel"))
             let btn3 = UIBarButtonItem(title: Lang("翻译"), style: UIBarButtonItem.Style.plain, target: self, action: Selector("doTran"))
