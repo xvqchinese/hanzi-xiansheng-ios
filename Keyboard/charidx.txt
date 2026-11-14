@@ -1054,7 +1054,7 @@ zhui	追 锥 椎 揣 骓 隹 萑 錐 騅 鵻
 luo	落 捋 啰 頱 囉
 huox	和 活 越 佸 姡 萿 趏 咊 惒
 zhaox	著 蚤
-zhee	著 嗻
+zhee	著 嗻 着
 qia	掐 袷 葜 抲 揢
 paiq	派 湃 哌 蒎 泒 鎃 沠
 luanv	卵
@@ -1063,7 +1063,7 @@ xux	余 徐 邪 鉏 蒣 俆
 kuaiv	蒯 擓
 en	恩 蒽 煾 奀
 qing	清 请 青 庆 倾 顷 卿 氢 氫 蜻 鲭 鑋 頃 淸 埥 寈 請 圊 庼 軽 輕 郬 靑 鯖 鶄 廎 慶 棈 傾 漀
-laa	蓝 喇 鞡 嚹
+laa	蓝 喇 鞡 嚹 啦
 langv	朗 狼 閬 阆 烺 蓢 塱 崀 悢 朖 朤
 tui	推 讉 焞 蓷 藬 啍
 changv	场 厂 敞 淌 氅 厰 惝 鋹 僘 場 廠 塲
@@ -1241,7 +1241,7 @@ tou	偷 愈 愉 媮 鋀 鍮 婾 偸
 ox	哦
 oq	哦 喔
 li	哩
-lii	哩
+lii	哩 里
 naa	哪
 tunv	氽 錪
 gg	嗯 哽
@@ -1458,3 +1458,10 @@ tunwav	瓲
 baiwav	瓸
 liwav	瓼 甅
 myeonn	丆
+menn	们
+err	儿
+miann	面
+shann	上
+xiae	下
+qii	起
+laii	来
