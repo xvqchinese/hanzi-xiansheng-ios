@@ -119,33 +119,30 @@ class BigCandView2: UIView, UICollectionViewDelegate, UICollectionViewDataSource
     {
         let cell : UICollectionViewCell? = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as UICollectionViewCell?
         
-        let label : UILabel? = cell!.contentView.viewWithTag(1000001) as! UILabel?
-        
+        var label : UILabel? = cell!.contentView.viewWithTag(1000001) as! UILabel?
         if label == nil
         {
-            let label = createCandLabel()
+            label = createCandLabel()
             cell!.backgroundColor = self.cellBackColor
-            cell!.contentView.addSubview(label)
-            label.tag = 1000001
-            label.text = self.candCache[indexPath.row] as String
-            label.lineBreakMode = NSLineBreakMode.byTruncatingMiddle
-            label.sizeToFit()
-            label.frame.origin.y = (cell!.frame.height - label.frame.height) / 2
-            label.frame.size.width = cell!.frame.width
-            //label.backgroundColor = UIColor.yellow
-            //MyLog("cell new = " + String(indexPath.row))
+            cell!.contentView.addSubview(label!)
+            label!.tag = 1000001
         }
-        else
-        {
-            label?.text = self.candCache[indexPath.row] as String
-            label?.sizeToFit()
-            label?.frame.size.width = cell!.frame.width
-            //MyLog("cell = " + String(indexPath.row))
-        }
-
+        let txt = self.candCache[indexPath.row] as String
+        label!.text = txt
+        label!.adjustsFontSizeToFitWidth = true
+        label!.minimumScaleFactor = 0.3
+        label!.lineBreakMode = NSLineBreakMode.byClipping
+        label!.textAlignment = .center
+        // 字号按格子宽度和字数算，长词自动缩小，绝不出省略号
+        let base = self.rowHeight * 0.45
+        let fit = cell!.frame.width / CGFloat(max(txt.count, 1))
+        label!.font = UIFont.systemFont(ofSize: min(base, fit))
+        label!.sizeToFit()
+        label!.frame.origin.y = (cell!.frame.height - label!.frame.height) / 2
+        label!.frame.size.width = cell!.frame.width
         return cell!
     }
-    
+
     func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool
     {
         return true
