@@ -99,8 +99,17 @@ class CommonWebView: UIViewController, WKNavigationDelegate
         self.activityIndicatorView.startAnimating()
     }
     
+    let bigFontCSS = "var s=document.createElement('style');s.type='text/css';s.innerHTML=\"html,body,p,div,span,td,li,dd,dt,section,article,blockquote,h1,h2,h3,h4,h5,font{font-size:26px !important;line-height:1.55 !important;max-width:100% !important;overflow-wrap:break-word !important;word-break:break-word !important;white-space:normal !important;}img{max-width:100% !important;height:auto !important;}\";document.head.appendChild(s);document.documentElement.setAttribute('style','font-size:26px !important');if(document.body){document.body.setAttribute('style',(document.body.getAttribute('style')||'')+';font-size:26px !important');}"
+
+    func injectBigFont(_ webView: WKWebView)
+    {
+        if self.url.contains("reg_ios") || self.url.contains("login_ui") || self.url.contains("apple_login") { return }
+        webView.evaluateJavaScript(bigFontCSS, completionHandler: nil)
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!)
     {
+        self.injectBigFont(webView)
         self.activityIndicatorView.stopAnimating()
     }
     

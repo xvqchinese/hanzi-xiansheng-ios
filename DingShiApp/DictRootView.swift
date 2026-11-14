@@ -302,7 +302,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
 
     func dictFontPx() -> Int
     {
-        let base: CGFloat = self.dictFontIdx == 0 ? 15 : (self.dictFontIdx == 1 ? 18 : 21)
+        let base: CGFloat = self.dictFontIdx == 0 ? 20 : (self.dictFontIdx == 1 ? 26 : 32)
         let scale = min(max(UIScreen.main.bounds.width / 390.0, 0.9), 1.25)
         return Int(base * scale)
     }
@@ -322,7 +322,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     func applyFontTo(_ webView: WKWebView)
     {
         let px = self.dictFontPx()
-        let js = "(function(){var m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.setAttribute('name','viewport');document.head.appendChild(m);}m.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0');document.documentElement.style.fontSize='__PX__px';if(document.body){document.body.style.fontSize='__PX__px';}})();"
+        let js = "(function(){var m=document.querySelector(\"meta[name=viewport]\");if(!m){m=document.createElement(\"meta\");m.setAttribute(\"name\",\"viewport\");document.head.appendChild(m);}m.setAttribute(\"content\",\"width=device-width, initial-scale=1.0, maximum-scale=1.0\");var s=document.createElement(\"style\");s.type=\"text/css\";s.innerHTML=\"body,p,div,span,td,li,dd,dt,section,article,blockquote,h1,h2,h3,h4,h5,font,a{font-size:__PX__px !important;line-height:1.55 !important;max-width:100% !important;overflow-wrap:break-word !important;word-break:break-word !important;white-space:normal !important;}img{max-width:100% !important;height:auto !important;}\";document.head.appendChild(s);})();"
         webView.evaluateJavaScript(js.replacingOccurrences(of: "__PX__", with: String(px), options: .literal, range: nil), completionHandler: nil)
     }
 
