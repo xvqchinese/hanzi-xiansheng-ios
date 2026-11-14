@@ -292,6 +292,27 @@ final class LocalPinyin
         return out
     }
 
+    // 学词时间（刚学的词排最前）
+    static var learnTimeURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_learn_time.json")
+    }
+
+    static func learnTimes() -> [String: Double]
+    {
+        guard let u = learnTimeURL, let d = try? Data(contentsOf: u),
+              let m = (try? JSONSerialization.jsonObject(with: d)) as? [String: Double] else { return [:] }
+        return m
+    }
+
+    static func markLearned(_ w: String)
+    {
+        guard !w.isEmpty, w.count > 1, let u = learnTimeURL else { return }
+        var m = learnTimes()
+        m[w] = Date().timeIntervalSince1970
+        if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+    }
+
     // 使用频率（上屏过的词，次数越多越靠前）
     static var wordFreqURL: URL?
     {
@@ -913,10 +934,12 @@ final class LocalPinyin
             var order = Array(0..<cands.count)
             let snapshot = cands
             let fr = LocalPinyin.wordFreq()
+            let lt = LocalPinyin.learnTimes()
             order.sort { a, b in
                 let wa = snapshot[a], wb = snapshot[b]
-                let fa = fr[wa] ?? 0, fb2 = fr[wb] ?? 0
-                if fa != fb2 { return fa > fb2 }
+                // 刚学的词永远第一（越新越前）
+                let ta = lt[wa] ?? 0, tb2 = lt[wb] ?? 0
+                if ta != tb2 { return ta > tb2 }
                 // 词组永远排在单字前面；词组里字数与字母数相等的再优先
                 let ga = (wa.count >= 2 ? 0 : 1), gb = (wb.count >= 2 ? 0 : 1)
                 if ga != gb { return ga < gb }

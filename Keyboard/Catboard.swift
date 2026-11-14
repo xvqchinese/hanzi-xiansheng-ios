@@ -574,6 +574,7 @@ extension KeyboardViewController
         if ini.count == gCatWord.count && ini.count >= 2
         {
             m[ini] = gCatWord
+            LocalPinyin.markLearned(gCatWord)
             if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
         }
         // 同时记住这个词的逐字拼音码，供上屏发声用
