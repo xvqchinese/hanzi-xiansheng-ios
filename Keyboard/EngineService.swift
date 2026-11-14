@@ -340,6 +340,20 @@ final class LocalPinyin
         return m
     }
 
+    // 上屏词组时直接写入用户词库（键=词首字母，另存一份拼音），保证简拼一定召回
+    static func learnWord(_ w: String, typed: String)
+    {
+        guard w.count >= 2, let u = userIniURL else { return }
+        var ini = ""
+        for c in w { if let f = LocalPinyin.charIni(c) { ini.append(f) } else { return } }
+        guard ini.count == w.count else { return }
+        var m: [String: String] = [:]
+        if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
+        m[ini] = w
+        if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+        markLearned(w)
+    }
+
     static func markLearned(_ w: String)
     {
         guard !w.isEmpty, w.count > 1, let u = learnTimeURL else { return }

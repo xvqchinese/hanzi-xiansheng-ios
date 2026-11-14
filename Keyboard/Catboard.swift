@@ -486,7 +486,12 @@ extension KeyboardViewController
                 self.updateCandComp()   // 使现在的候选条隐藏
                 return
             }
-            if conved.count > 1 { LocalPinyin.bumpFreq(conved) }
+            if conved.count > 1
+            {
+                LocalPinyin.bumpFreq(conved)
+                // 直接学词：按词的首字母做键，保证简拼能召回
+                LocalPinyin.learnWord(conved, typed: typedNow)
+            }
             self.out(conved, sendCand: false)
             if self.currentPage == KbPage.M_Chn
             {

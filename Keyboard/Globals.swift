@@ -38,9 +38,11 @@ struct Globals
         let shared = UserDefaults(suiteName: "group.DWIME_DS")
         // 注意：shared 里没这个键时 bool() 会返回 false，必须先用 object 判断有没有
         if let v = shared?.object(forKey: "keySound") as? Bool { Globals.sound = v }
-        else { Globals.sound = Globals.prefs.bool(forKey: "sound") }
+        else if let v = Globals.prefs.object(forKey: "sound") as? Bool { Globals.sound = v }
+        else { Globals.sound = true }          // 默认开
         if let v = shared?.object(forKey: "playWav") as? Bool { Globals.playWav = v }
-        else { Globals.playWav = Globals.prefs.bool(forKey: "playWav") }
+        else if let v = Globals.prefs.object(forKey: "playWav") as? Bool { Globals.playWav = v }
+        else { Globals.playWav = true }
         Globals.singleHand = Globals.prefs.bool(forKey: "singleHand")
  
         // 全局的
