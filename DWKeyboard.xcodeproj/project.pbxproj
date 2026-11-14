@@ -11,6 +11,7 @@
 		CC0000000000000000000A01 /* wordidx.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A02 /* wordidx.txt */; };
 		CC0000000000000000000A03 /* wordpy2.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A04 /* wordpy2.txt */; };
 		CC0000000000000000000A05 /* wordpy3.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A06 /* wordpy3.txt */; };
+		CC0000000000000000000A07 /* charidx.txt in Resources */ = {isa = PBXBuildFile; fileRef= CC0000000000000000000A08 /* charidx.txt */; };
 		AA0000000000000000000A02 /* sk.data in Resources */ = {isa = PBXBuildFile; fileRef = 049F0EA119FE1EBC00F4B694 /* sk.data */; };
 		AA0000000000000000000A03 /* en.data in Resources */ = {isa = PBXBuildFile; fileRef = 049F0E9D19FE1EAF00F4B694 /* en.data */; };
 		AA0000000000000000000A04 /* cn2en.data in Resources */ = {isa = PBXBuildFile; fileRef = 9D6BA7DD1D0FB95A00E03FEA /* cn2en.data */; };
@@ -341,6 +342,7 @@
 		0411C4471A106C1B00838FC6 /* book_closed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = book_closed.png; sourceTree = "<group>"; };
 		0411C4491A106C7300838FC6 /* book_open.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = book_open.png; sourceTree = "<group>"; };
 		CC0000000000000000000A06 /* wordpy3.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = wordpy3.txt; sourceTree = "<group>"; };
+		CC0000000000000000000A08 /* charidx.txt */ = {isa = PBXFileReference; lastKnownFileType= text; path= charidx.txt; sourceTree= "<group>"; };
 		CC0000000000000000000A04 /* wordpy2.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = wordpy2.txt; sourceTree = "<group>"; };
 		CC0000000000000000000A02 /* wordidx.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = wordidx.txt; sourceTree = "<group>"; };
 		0432F9FD19FD23C6004D4E8E /* py.data */ = {isa = PBXFileReference; lastKnownFileType = file; path = py.data; sourceTree = "<group>"; };
@@ -868,6 +870,7 @@
 				049F0E9D19FE1EAF00F4B694 /* en.data */,
 				0432F9FD19FD23C6004D4E8E /* py.data */,
 				CC0000000000000000000A02 /* wordidx.txt */,
+				CC0000000000000000000A08 /* charidx.txt */,
 				CC0000000000000000000A04 /* wordpy2.txt */,
 				CC0000000000000000000A06 /* wordpy3.txt */,
 			);
@@ -1792,6 +1795,7 @@
 				CC0000000000000000000A01 /* wordidx.txt in Resources */,
 				CC0000000000000000000A03 /* wordpy2.txt in Resources */,
 				CC0000000000000000000A05 /* wordpy3.txt in Resources */,
+				CC0000000000000000000A07 /* charidx.txt in Resources */,
 				049F0E9E19FE1EAF00F4B694 /* en.data in Resources */,
 				9D546E9E1D1BE70E00919D4C /* toolbar_icon_logo_press@2x.png in Resources */,
 				0411C4481A106C1B00838FC6 /* book_closed.png in Resources */,

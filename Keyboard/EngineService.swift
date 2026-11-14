@@ -392,6 +392,39 @@ final class LocalPinyin
     static var idxText: String?
     static var idxCache: [String: [String]] = [:]
 
+    // ===== 带调单字索引（charidx.txt：调号键 → 全部同音同调单字）=====
+    private static var charIdx: [String: [String]]? = nil
+    private static var charIdxBase: [String: [String]]? = nil
+
+    static func charsFor(base: String, tone: String) -> [String]
+    {
+        if charIdx == nil
+        {
+            var m: [String: [String]] = [:]
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: "charidx", ofType: "txt"),
+               let txt = try? String(contentsOfFile: path, encoding: .utf8)
+            {
+                for line in txt.split(separator: "\n")
+                {
+                    guard let tab = line.firstIndex(of: "\t") else { continue }
+                    let k = String(line[line.startIndex..<tab])
+                    m[k] = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                }
+            }
+            charIdx = m
+            var b: [String: [String]] = [:]
+            for (k, v) in m
+            {
+                var base = k
+                if let l = base.last, "xvq".contains(l) { base.removeLast() }
+                b[base, default: []].append(contentsOf: v)
+            }
+            charIdxBase = b
+        }
+        if tone.isEmpty { return charIdxBase?[base] ?? [] }
+        return charIdx?[base + tone] ?? []
+    }
+
     static func wordsForIni(_ key: String) -> [String]
     {
         if let c = idxCache[key] { return c }
@@ -852,6 +885,27 @@ final class LocalPinyin
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
+        // 单音节输入（d、xiongx、dingv…）只出同音同调单字，音调必须完全一致
+        if !self.strokeMode
+        {
+            let segs0 = segments(input)
+            if segs0.count == 1
+            {
+                var key = segs0[0].lowercased()
+                var tone = ""
+                if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
+                for c in LocalPinyin.charsFor(base: key, tone: tone)
+                {
+                    if seen.contains(c) { continue }
+                    cands.append(c)
+                    codes.append(segs0[0].lowercased())
+                    seen.insert(c)
+                    if cands.count >= 60 { break }
+                }
+                return
+            }
+        }
+
         // 最高优先级 -1：全拼取词库词组
         // 带调母（dingvshiq）走带声调索引，准；不带调母（dingshi）走宽松索引
         if !self.strokeMode && input.count >= 4
