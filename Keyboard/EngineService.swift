@@ -399,7 +399,7 @@ final class LocalPinyin
 
     // ===== 带调单字索引（charidx.txt：调号键 → 全部同音同调单字）=====
     private static var charIdx: [String: [String]]? = nil
-    private static var charIdxBase: [String: [String]]? = nil
+    private static var charIdxBest: [String: String]? = nil
 
     static func charsFor(base: String, tone: String) -> [String]
     {
@@ -417,28 +417,33 @@ final class LocalPinyin
                 }
             }
             charIdx = m
-            var b: [String: [String]] = [:]
-            for (k, v) in m
-            {
-                var base = k
-                if let l = base.last, "xvq".contains(l) { base.removeLast() }
-                b[base, default: []].append(contentsOf: v)
-            }
-            // 文件里的顺序是按字频排的，合并后仍要按“首次出现的位次”重排
+            // 每个基础音节只认“最常用那个字所在声调”这一组：调不同的一律不出
+            var best: [String: String] = [:]
             var pos: [String: Int] = [:]
             var p = 0
             for (k, v) in m
             {
-                _ = k
                 for c in v { if pos[c] == nil { pos[c] = p; p += 1 } }
             }
-            for (k, v) in b
+            for (k, v) in m
             {
-                b[k] = v.sorted { (pos[$0] ?? Int.max) < (pos[$1] ?? Int.max) }
+                var base = k
+                if let l = base.last, "xvq".contains(l) { base.removeLast() }
+                if let cur = best[base]
+                {
+                    let cp = pos[m[cur]?.first ?? ""] ?? Int.max
+                    let np = pos[v.first ?? ""] ?? Int.max
+                    if np < cp { best[base] = k }
+                }
+                else { best[base] = k }
             }
-            charIdxBase = b
+            charIdxBest = best
         }
-        if tone.isEmpty { return charIdxBase?[base] ?? [] }
+        if tone.isEmpty
+        {
+            guard let k = charIdxBest?[base] else { return [] }
+            return charIdx?[k] ?? []
+        }
         return charIdx?[base + tone] ?? []
     }
 
