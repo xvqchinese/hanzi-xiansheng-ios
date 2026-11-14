@@ -72,7 +72,7 @@ class CommonWebView: UIViewController, WKNavigationDelegate
                 let script = WKUserScript(source: css, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
                 self.web?.configuration.userContentController.addUserScript(script)
             }
-            var u = self.url
+            var u: String = self.url ?? ""
             // 词条页强刷缓存：每次都带一个时间戳，否则 WKWebView 会一直用旧页面（旧字号）
             if u.contains("show.php")
             {
