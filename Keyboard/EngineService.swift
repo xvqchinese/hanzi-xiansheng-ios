@@ -441,9 +441,14 @@ final class LocalPinyin
             }
             charIdxBest = best
         }
+        if tone == "n"
+        {
+            // 轻声：末字母双写
+            return charIdx?[base + String(base.last ?? "e")] ?? []
+        }
         if tone.isEmpty
         {
-            // 不带调母时按第一声出（x/v/q 分别是二/三/四声）；没有第一声的字才回落到最常用组
+            // 不加调母＝第一声，只出一声
             return charIdx?[base] ?? []
         }
         return charIdx?[base + tone] ?? []
@@ -996,7 +1001,12 @@ final class LocalPinyin
             {
                 var key = segs0[0].lowercased()
                 var tone = ""
-                if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
+                let lk = key
+                if lk.count >= 3, lk.last == lk.dropLast().last, "aeiou".contains(lk.last!)
+                {
+                    tone = "n"; key.removeLast()
+                }
+                else if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
                 for c in LocalPinyin.charsFor(base: key, tone: tone)
                 {
                     if seen.contains(c) { continue }
@@ -1019,7 +1029,15 @@ final class LocalPinyin
             for seg in segments(input)
             {
                 var t = seg
-                if let last = t.last, "xvq".contains(last)
+                let low = t.lowercased()
+                let isNeutral = low.count >= 3 && low.last == low.dropLast().last && "aeiou".contains(low.last!)
+                if isNeutral
+                {
+                    toned += low            // 轻声：末字母双写，原样进键
+                    hasTone = true
+                    t.removeLast()
+                }
+                else if let last = t.last, "xvq".contains(last)
                 {
                     let tone = String(last)
                     t.removeLast()
