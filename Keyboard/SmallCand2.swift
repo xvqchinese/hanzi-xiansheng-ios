@@ -120,7 +120,7 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         // 每次统一字号，避免同一排里有大有小
         label!.font = self.font
         label!.textColor = KeyboardColor.mCandTxtColor
-        label!.textAlignment = .center
+        label!.textAlignment = .left
         label!.adjustsFontSizeToFitWidth = true
         label!.minimumScaleFactor = 0.5
         label!.lineBreakMode = NSLineBreakMode.byClipping
@@ -148,10 +148,13 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
     // 定义每个UICollectionView 的大小
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
     {
-        // 一屏固定 6 个候选，左右滑动翻页
+        // 按词的长度给格子宽度，长词（四个字）也能完整显示，左右可滑动翻页
+        let txt = (self.candCache[indexPath.row] as String)
+        let f = self.font ?? UIFont.systemFont(ofSize: 18)
+        let need = (txt as NSString).size(withAttributes: [NSAttributedString.Key.font: f]).width + 18
         let usable = collectionView.frame.width
-        let w = max(1, usable / 6)
-        return CGSize(width: w, height: collectionView.frame.height)
+        let minW = max(44, usable / 6)
+        return CGSize(width: min(max(need, minW), usable - 30), height: collectionView.frame.height)
     }
     // 返回这个UICollectionView是否可以被选择
     func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool
