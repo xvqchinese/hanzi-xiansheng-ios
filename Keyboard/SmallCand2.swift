@@ -109,37 +109,29 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
     {
         let cell : UICollectionViewCell? = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as UICollectionViewCell?
         
-        let label : UILabel? = cell!.contentView.viewWithTag(1000001) as! UILabel?
-        
+        var label : UILabel? = cell!.contentView.viewWithTag(1000001) as! UILabel?
         if label == nil
         {
-            let label = createCandLabel()
+            label = createCandLabel()
             cell!.backgroundColor = UIColor.clear
-            cell!.contentView.addSubview(label)
-            label.tag = 1000001
-            label.text = self.candCache[indexPath.row] as String
-            label.adjustsFontSizeToFitWidth = true
-            label.minimumScaleFactor = 0.6
-            label.lineBreakMode = NSLineBreakMode.byClipping
-            label.sizeToFit()
-            label.frame.origin.y = (cell!.frame.height - label.frame.height) / 2
-            label.frame.size.width = cell!.frame.width
-            //label.backgroundColor = UIColor.yellow
-            MyLog("cell new = " + String(indexPath.row))
+            cell!.contentView.addSubview(label!)
+            label!.tag = 1000001
         }
-        else
-        {
-            label?.text = self.candCache[indexPath.row] as String
-            label?.font = self.font
-            label?.adjustsFontSizeToFitWidth = true
-            label?.minimumScaleFactor = 0.6
-            label?.sizeToFit()
-            label?.frame.size.width = cell!.frame.width
-            MyLog("cell = " + String(indexPath.row))
-        }
+        // 每次统一字号，避免同一排里有大有小
+        label!.font = self.font
+        label!.textColor = KeyboardColor.mCandTxtColor
+        label!.textAlignment = .center
+        label!.adjustsFontSizeToFitWidth = true
+        label!.minimumScaleFactor = 0.5
+        label!.lineBreakMode = NSLineBreakMode.byClipping
+        label!.text = self.candCache[indexPath.row] as String
+        label!.sizeToFit()
+        label!.frame.origin.y = (cell!.frame.height - label!.frame.height) / 2
+        label!.frame.size.width = cell!.frame.width
         
         return cell!
     }
+
     func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool
     {
         return true
