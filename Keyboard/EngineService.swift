@@ -250,7 +250,7 @@ final class LocalPinyin
             // 诊断：把首字母里命中的键值显出来（临时）
             let m = loadUserIni()
             let hit = m.first(where: { $0.key.hasPrefix(self.input) })
-            dbg += hit == nil ? " 无命中" : " [\(hit!.key)=\(hit!.value)]"
+            dbg += hit == nil ? " 无命中 " + m.keys.sorted().prefix(3).joined(separator: ",") : " [\(hit!.key)=\(hit!.value)]"
             return self.composed + self.input + dbg
         }
         return self.composed + self.input
