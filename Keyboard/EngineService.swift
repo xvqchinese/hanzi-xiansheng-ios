@@ -653,11 +653,20 @@ final class LocalPinyin
            let d = try? Data(contentsOf: pu),
            let pm = (try? JSONSerialization.jsonObject(with: d)) as? [String: String]
         {
+            let inSegs = segments(input)
             for (w, code) in pm
             {
                 if w.count < 2 { continue }
-                let flat = code.replacingOccurrences(of: ",", with: "")
-                if flat.hasPrefix(input) { put(w, "") }
+                let cdSegs = code.components(separatedBy: ",").filter { !$0.isEmpty }
+                if cdSegs.count != inSegs.count || cdSegs.count < w.count { continue }
+                var okSeg = true
+                for i in 0..<inSegs.count
+                {
+                    let a = inSegs[i], b = cdSegs[i]
+                    // 声调字母可能差一个，按前缀包含判断，宽松匹配
+                    if !(a == b || b.hasPrefix(a) || a.hasPrefix(b)) { okSeg = false; break }
+                }
+                if okSeg { put(w, "") }
                 if cands.count >= 40 { return }
             }
         }
