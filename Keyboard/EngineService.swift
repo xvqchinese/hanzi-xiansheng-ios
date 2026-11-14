@@ -258,6 +258,11 @@ final class LocalPinyin
 
     static let sySet: Set<String> = Set(LocalPinyin.syList.split(separator: " ").map { String($0) })
 
+    static var wordPyURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_pinyin.json")
+    }
+
     static var userIniURL: URL?
     {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json")
@@ -642,6 +647,19 @@ final class LocalPinyin
             cands.append(w)
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
+        }
+        // 最高优先级 0：整词全拼匹配（学过“汉字先生”，打 hanqziqxiansheng 也要出）
+        if !self.strokeMode && input.count >= 4, let pu = LocalPinyin.wordPyURL,
+           let d = try? Data(contentsOf: pu),
+           let pm = (try? JSONSerialization.jsonObject(with: d)) as? [String: String]
+        {
+            for (w, code) in pm
+            {
+                if w.count < 2 { continue }
+                let flat = code.replacingOccurrences(of: ",", with: "")
+                if flat.hasPrefix(input) { put(w, "") }
+                if cands.count >= 40 { return }
+            }
         }
         // 最高优先级：不看库里的键，直接按“词本身的字首字母”匹配（键写错也不影响召回）
         if !self.strokeMode && input.count >= 2
