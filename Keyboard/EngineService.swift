@@ -258,6 +258,32 @@ final class LocalPinyin
 
     static let sySet: Set<String> = Set(LocalPinyin.syList.split(separator: " ").map { String($0) })
 
+    // 使用频率（上屏过的词，次数越多越靠前）
+    static var wordFreqURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_freq.json")
+    }
+
+    static func wordFreq() -> [String: Int]
+    {
+        guard let u = wordFreqURL, let d = try? Data(contentsOf: u),
+              let m = (try? JSONSerialization.jsonObject(with: d)) as? [String: Int] else { return [:] }
+        return m
+    }
+
+    static func bumpFreq(_ w: String)
+    {
+        guard !w.isEmpty, w.count > 1, let u = wordFreqURL else { return }
+        var m = wordFreq()
+        m[w] = (m[w] ?? 0) + 1
+        if m.count > 3000
+        {
+            let sorted = m.sorted { $0.value > $1.value }.prefix(2000)
+            m = Dictionary(uniqueKeysWithValues: sorted.map { ($0.key, $0.value) })
+        }
+        if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+    }
+
     // 内置词库索引（key=简拼字母 → 高频词），按需查询，不整体建字典
     static var idxText: String?
     static var idxCache: [String: [String]] = [:]
@@ -835,8 +861,11 @@ final class LocalPinyin
             let n = input.count
             var order = Array(0..<cands.count)
             let snapshot = cands
+            let fr = LocalPinyin.wordFreq()
             order.sort { a, b in
                 let wa = snapshot[a], wb = snapshot[b]
+                let fa = fr[wa] ?? 0, fb2 = fr[wb] ?? 0
+                if fa != fb2 { return fa > fb2 }
                 let ka = (wa.count == n ? 0 : 1), kb = (wb.count == n ? 0 : 1)
                 if ka != kb { return ka < kb }
                 if wa.count != wb.count { return wa.count < wb.count }
