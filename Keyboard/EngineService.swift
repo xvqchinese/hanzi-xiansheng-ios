@@ -784,6 +784,23 @@ final class LocalPinyin
             i += 1
             scanned += 1
         }
+        // 排序：字数与输入字母数相等的词优先（打 ds 先出两字词“鼎氏”），再短词在前
+        if cands.count > 1
+        {
+            let n = input.count
+            var order = Array(0..<cands.count)
+            let snapshot = cands
+            order.sort { a, b in
+                let wa = snapshot[a], wb = snapshot[b]
+                let ka = (wa.count == n ? 0 : 1), kb = (wb.count == n ? 0 : 1)
+                if ka != kb { return ka < kb }
+                if wa.count != wb.count { return wa.count < wb.count }
+                return a < b
+            }
+            cands = order.map { snapshot[$0] }
+            let oldCodes = codes
+            codes = order.map { oldCodes[$0] }
+        }
     }
 
     func type(_ c: Character)
