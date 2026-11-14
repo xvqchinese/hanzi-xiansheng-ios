@@ -244,7 +244,7 @@ final class LocalPinyin
     private var learnedWordIni: [String: String] = [:]
     var displayInput: String
     {
-        if self.input.count >= 2 { return self.composed + self.input + " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)" }
+        if self.input.count >= 2 { return self.composed + self.input + " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)/选\(selCalls)" }
         return self.composed + self.input
     }
 
@@ -770,9 +770,11 @@ final class LocalPinyin
 
     var lastSelTime: Date? = nil
     var learnCalls: Int = 0
+    var selCalls: Int = 0
 
     func select(_ i: Int) -> Int32
     {
+        self.selCalls += 1
         if i < 0 || i >= cands.count { return EST.SMR_Ignored }
         let t = cands[i]
         if !self.strokeMode && !t.isEmpty

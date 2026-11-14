@@ -442,6 +442,8 @@ extension KeyboardViewController
     {
         let code = self.engine.GetCandCode(Int32(index))
         let cand = self.engine.GetCand(Int32(index))
+        // 键盘侧独立学词：记录“这一字打了什么拼音”，跨字累计整词
+        let typedNow = self.engine.inputStr() as String
         
         self.engine.Select(Int32(index))
         if self.engine.canUpscreen()
@@ -454,6 +456,7 @@ extension KeyboardViewController
                 return
             }
             self.out(conved, sendCand: false)
+            if self.currentPage == KbPage.M_Chn { self.catLearn(typedNow, conved) }
         }
         
         // 发音
@@ -482,6 +485,37 @@ extension KeyboardViewController
     }
     
     
+    private var catWord: String = ""
+    private var catLetters: String = ""
+
+    private static var catIniURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json")
+    }
+
+    private func catLearn(_ typedNow: String, _ up: String)
+    {
+        let t = typedNow.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if t.isEmpty || t.count >= 30 { self.catWord = ""; self.catLetters = ""; return }
+        self.catLetters += t
+        self.catWord += up
+        if self.catWord.count < 2 { return }
+        guard let u = Catboard.catIniURL else { return }
+        var m: [String: String] = [:]
+        if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
+        var ini = ""
+        for c in self.catWord
+        {
+            if let f = LocalPinyin.charIni(c) { ini.append(f) } else { return }
+        }
+        if ini.count == self.catWord.count && ini.count >= 2
+        {
+            m[ini] = self.catWord
+            if self.catWord.count >= 3 && ini.count >= 3 { m[ini] = self.catWord }
+            if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+        }
+    }
+
     func doSelectCoinciding(_ sender: UIButton)
     {
         if sender.tag == -1
