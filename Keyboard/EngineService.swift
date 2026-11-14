@@ -258,6 +258,40 @@ final class LocalPinyin
 
     static let sySet: Set<String> = Set(LocalPinyin.syList.split(separator: " ").map { String($0) })
 
+    // 内置词库索引（key=简拼字母 → 高频词），按需查询，不整体建字典
+    static var idxText: String?
+    static var idxCache: [String: [String]] = [:]
+
+    static func wordsForIni(_ key: String) -> [String]
+    {
+        if let c = idxCache[key] { return c }
+        if idxText == nil
+        {
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: "wordidx", ofType: "txt"),
+               let txt = try? String(contentsOfFile: path, encoding: .utf8)
+            {
+                idxText = txt
+            }
+            else { idxText = "" }
+        }
+        var out: [String] = []
+        if let txt = idxText, !txt.isEmpty
+        {
+            for line in txt.split(separator: "\n")
+            {
+                guard let tab = line.firstIndex(of: "\t") else { continue }
+                if line[line.startIndex..<tab] == Substring(key)
+                {
+                    out = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                    break
+                }
+            }
+        }
+        if idxCache.count > 200 { idxCache.removeAll() }
+        idxCache[key] = out
+        return out
+    }
+
     static var wordPyURL: URL?
     {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_pinyin.json")
@@ -670,6 +704,17 @@ final class LocalPinyin
                 if cands.count >= 40 { return }
             }
         }
+        // 内置词库：简拼字母完全相同的词，按词频顺序取前若干
+        if !self.strokeMode && input.count >= 2
+        {
+            let base = input.contains("j") ? input.replacingOccurrences(of: "j", with: "") : input
+            for w in LocalPinyin.wordsForIni(base)
+            {
+                put(w, "")
+                if cands.count >= 40 { break }
+            }
+        }
+
         // 最高优先级：不看库里的键，直接按“词本身的字首字母”匹配（键写错也不影响召回）
         if !self.strokeMode && input.count >= 2
         {
