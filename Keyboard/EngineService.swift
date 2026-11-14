@@ -262,6 +262,41 @@ final class LocalPinyin
     static var pyText: String?
     static var pyCache: [String: [String]] = [:]
 
+    static var pyToneText: String?
+    static var pyToneCache: [String: [String]] = [:]
+
+    static func lookup(_ key: String, text: inout String?, cache: inout [String: [String]], name: String) -> [String]
+    {
+        if let c = cache[key] { return c }
+        if text == nil
+        {
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: name, ofType: "txt"),
+               let t = try? String(contentsOfFile: path, encoding: .utf8)
+            { text = t } else { text = "" }
+        }
+        var out: [String] = []
+        if let t = text, !t.isEmpty
+        {
+            for line in t.split(separator: "\n")
+            {
+                guard let tab = line.firstIndex(of: "\t") else { continue }
+                if line[line.startIndex..<tab] == Substring(key)
+                {
+                    out = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                    break
+                }
+            }
+        }
+        if cache.count > 300 { cache.removeAll() }
+        cache[key] = out
+        return out
+    }
+
+    static func wordsForPyTone(_ key: String) -> [String]
+    {
+        return lookup(key, text: &pyToneText, cache: &pyToneCache, name: "wordpy3")
+    }
+
     static func wordsForPy(_ key: String) -> [String]
     {
         if let c = pyCache[key] { return c }
@@ -763,17 +798,31 @@ final class LocalPinyin
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
-        // 最高优先级 -1：全拼（带调母也行）直接取词库里的词，如 dingvshiq → 鼎世
+        // 最高优先级 -1：全拼取词库词组
+        // 带调母（dingvshiq）走带声调索引，准；不带调母（dingshi）走宽松索引
         if !self.strokeMode && input.count >= 4
         {
             var plain = ""
+            var toned = ""
+            var hasTone = false
             for seg in segments(input)
             {
                 var t = seg
-                if let last = t.last, "xvq".contains(last) { t.removeLast() }
+                if let last = t.last, "xvq".contains(last)
+                {
+                    let tone = String(last)
+                    t.removeLast()
+                    toned += t.lowercased() + tone
+                    hasTone = true
+                }
+                else
+                {
+                    toned += t.lowercased()
+                }
                 plain += t.lowercased()
             }
-            for w in LocalPinyin.wordsForPy(plain)
+            let list = hasTone ? LocalPinyin.wordsForPyTone(toned) : LocalPinyin.wordsForPy(plain)
+            for w in list
             {
                 put(w, "")
                 if cands.count >= 30 { break }
