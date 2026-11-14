@@ -244,7 +244,7 @@ final class LocalPinyin
     private var learnedWordIni: [String: String] = [:]
     var displayInput: String
     {
-        if self.input.count >= 2 { return self.composed + self.input + " 学\(learned.count)/词\(loadUserIni().count)" }
+        if self.input.count >= 2 { return self.composed + self.input + " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)" }
         return self.composed + self.input
     }
 
@@ -450,7 +450,8 @@ final class LocalPinyin
 
     func learn(_ letters: String, _ text: String)
     {
-        if letters.count < 2 || text.count < 2 { return }
+        self.learnCalls += 1
+        if letters.count < 2 || text.count < 1 { return }
         if learned[letters] == text { return }
         learned[letters] = text
         let segs = segments(letters)
@@ -739,7 +740,7 @@ final class LocalPinyin
     {
         pendingOn = false
         // 距上次上屏超过 5 秒视为新词，重置整词累计
-        if let lt = self.lastSelTime, Date().timeIntervalSince(lt) > 5
+        if let lt = self.lastSelTime, Date().timeIntervalSince(lt) > 60
         {
             self.wordBuf = ""
             self.typedAll = ""
@@ -768,6 +769,7 @@ final class LocalPinyin
     }
 
     var lastSelTime: Date? = nil
+    var learnCalls: Int = 0
 
     func select(_ i: Int) -> Int32
     {
