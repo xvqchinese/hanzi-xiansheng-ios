@@ -117,15 +117,21 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
         let body = "token=\(token.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")&name=\(name.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")&user=\(user.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "")"
         req.httpBody = body.data(using: .utf8)
         let t = URLSession.shared.dataTask(with: req) { d, _, e in
+            let bodyText = d.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            print("apple_login resp: \(bodyText) err: \(String(describing: e))")
             DispatchQueue.main.async {
-                if let d = d, let s = String(data: d, encoding: .utf8), s.contains("\"ok\":1")
+                if bodyText.contains("\"ok\":1")
                 {
                     KeychainLogin.save(userId: user, name: name, kind: "apple")
                     self.finish()
                 }
+                else if let e = e
+                {
+                    self.alert("苹果登录提交失败：\(e.localizedDescription)")
+                }
                 else
                 {
-                    self.alert("苹果登录提交失败，请检查网络后重试")
+                    self.alert("苹果登录提交失败，服务器返回：\(bodyText.prefix(120))")
                 }
             }
         }
