@@ -414,7 +414,11 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         Globals.Load()
         if self.heightConstraint != nil
         {
-            self.heightConstraint.constant = getKbHeight(getOrientation())
+            let h = getKbHeight(getOrientation())
+            self.heightConstraint.constant = h
+            self.preferredContentSize = CGSize(width: self.view.bounds.width, height: h)
+            self.view.setNeedsLayout()
+            self.view.layoutIfNeeded()
         }
             if !self.heightConstraintAdd
             {

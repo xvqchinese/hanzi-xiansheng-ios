@@ -272,6 +272,18 @@ func imageWithColor(_ color: UIColor, width: CGFloat, height: CGFloat) -> UIImag
 
 func openURL(_ obj: UIResponder, url: NSURL) -> Bool
 {
+    // 1) 扩展里唯一官方允许的方式：extensionContext.open
+    var responder: UIResponder? = obj
+    while let r = responder
+    {
+        if let vc = r as? UIViewController
+        {
+            vc.extensionContext?.open(url as URL, completionHandler: nil)
+            return true
+        }
+        responder = r.next
+    }
+    // 2) 兜底：老办法
     do
     {
         let application = try sharedApplication(obj)
