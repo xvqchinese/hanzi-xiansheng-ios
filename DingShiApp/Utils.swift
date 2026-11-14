@@ -149,7 +149,14 @@ func md5String(_ str:String) -> String
 var audioPlayer = AVAudioPlayer()
 func playWav(_ tune: String)
 {
-    let soundURL = fileUrlFromGroup("temp.wav")
+    // 确保 App 内也能出声（键盘扩展里已设置过）
+    do {
+        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers, .mixWithOthers])
+        try AVAudioSession.sharedInstance().setActive(true)
+    } catch _ {
+    }
+    let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
+    let soundURL = (groupURL ?? URL(fileURLWithPath: NSTemporaryDirectory())).appendingPathComponent("temp.wav")
     let size = WavEngine.wavCreate(byPys: tune, soundURL)
     
     if size > 0
