@@ -49,6 +49,7 @@ extension KeyboardViewController
                 else
                 {
                     self.out(" ", sendCand: false)
+                    self.catBreak()
                 }
             }
             else if (key.type == Key.KeyType.Return)
@@ -555,6 +556,11 @@ extension KeyboardViewController
     // 上屏取词或停顿 8 秒，都算一个词结束，累计清零，避免两个词被粘成一个
     func catBreak()
     {
+        // 一个词结束时才入库：整词 ≥2 字，按词首字母做键
+        if currentPage != KbPage.M_SK9, gCatWord.count >= 2
+        {
+            LocalPinyin.learnWord(gCatWord, typed: gCatLetters)
+        }
         gCatWord = ""
         gCatLetters = ""
         gCatCodes = ""
