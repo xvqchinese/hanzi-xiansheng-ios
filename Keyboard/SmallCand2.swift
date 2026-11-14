@@ -227,9 +227,14 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         var i: Int32 = 0
         let count: Int32 = engine.CandCount()
         self.candCache.removeAll(keepingCapacity: false)
+        var shownIdx = Set<String>()
         for i in 0..<min(50, count)
         {
-            self.candCache.append(engine.GetCand(i))
+            let c = engine.GetCand(i)
+            let key = c as String
+            if shownIdx.contains(key) { continue }
+            shownIdx.insert(key)
+            self.candCache.append(c)
         }
         
         self.collectionView.reloadData()
