@@ -102,9 +102,13 @@ extension KeyboardViewController
             self.mSettingPanel!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             self.view.addSubview(self.mSettingPanel!)
         }
-        if self.mSettingPanel != nil
+        if let p = self.mSettingPanel
         {
-            self.mSettingPanel!.show()
+            // 按钮重新接到键盘控制器上，原来接到 superview.superclass 是错的，点了没反应
+            p.close.addTarget(self, action: #selector(KeyboardViewController.doSetting), for: .touchUpInside)
+            p.gps.addTarget(self, action: #selector(KeyboardViewController.doLocaltion), for: .touchUpInside)
+            p.more.addTarget(p, action: #selector(SettingView.doMoreSetting), for: .touchUpInside)
+            p.show()
         }
     }
 

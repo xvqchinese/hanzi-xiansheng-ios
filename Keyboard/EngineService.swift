@@ -917,6 +917,9 @@ final class LocalPinyin
                 let wa = snapshot[a], wb = snapshot[b]
                 let fa = fr[wa] ?? 0, fb2 = fr[wb] ?? 0
                 if fa != fb2 { return fa > fb2 }
+                // 词组永远排在单字前面；词组里字数与字母数相等的再优先
+                let ga = (wa.count >= 2 ? 0 : 1), gb = (wb.count >= 2 ? 0 : 1)
+                if ga != gb { return ga < gb }
                 let ka = (wa.count == n ? 0 : 1), kb = (wb.count == n ? 0 : 1)
                 if ka != kb { return ka < kb }
                 if wa.count != wb.count { return wa.count < wb.count }

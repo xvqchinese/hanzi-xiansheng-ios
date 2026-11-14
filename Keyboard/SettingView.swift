@@ -13,7 +13,7 @@ This is the demo banner. The banner is needed so that the top row popups have so
 with something (or leave it blank if you like.)
 */
 
-class SettingView: UIView
+@objcMembers class SettingView: UIView
 {
     //var pageSets: UIButton = UIButton()
     //var pageNews: UIButton = UIButton()
