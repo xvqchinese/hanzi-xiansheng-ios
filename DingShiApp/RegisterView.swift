@@ -12,6 +12,8 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
     let phoneBtn = UIButton(type: .system)
     let mailBtn = UIButton(type: .system)
     let skipBtn = UIButton(type: .system)
+    let netLabel = UILabel()
+    var netOK = false
 
     override func viewDidLoad()
     {
@@ -45,6 +47,41 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
         skipBtn.titleLabel?.font = UIFont.systemFont(ofSize: 14)
         skipBtn.addTarget(self, action: #selector(onSkip), for: .touchUpInside)
         self.view.addSubview(skipBtn)
+
+        netLabel.font = UIFont.systemFont(ofSize: 13)
+        netLabel.textColor = UIColor.darkGray
+        netLabel.textAlignment = .center
+        netLabel.numberOfLines = 0
+        netLabel.text = "正在检查网络…"
+        self.view.addSubview(netLabel)
+        checkNetwork()
+    }
+
+    func checkNetwork()
+    {
+        netOK = false
+        netLabel.textColor = UIColor.darkGray
+        netLabel.text = "正在检查网络…"
+        var req = URLRequest(url: URL(string: "https://www.xvqchinese.com/dsv2/txz/db_update/getdb.php?os=ios")!)
+        req.timeoutInterval = 8
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        URLSession.shared.dataTask(with: req) { d, r, e in
+            DispatchQueue.main.async {
+                let code = (r as? HTTPURLResponse)?.statusCode ?? 0
+                if e == nil && code == 200
+                {
+                    self.netOK = true
+                    self.netLabel.textColor = UIColor(red: 0.02, green: 0.60, blue: 0.20, alpha: 1)
+                    self.netLabel.text = "网络正常，可以注册或登录"
+                }
+                else
+                {
+                    self.netOK = false
+                    self.netLabel.textColor = UIColor(red: 0.80, green: 0.10, blue: 0.10, alpha: 1)
+                    self.netLabel.text = "网络未连接或服务器未响应，请稍后重试"
+                }
+            }
+        }.resume()
     }
 
     func setupButton(_ b: UIButton, _ t: String, _ bg: UIColor, _ fg: UIColor)
@@ -75,11 +112,17 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
             y += 68
         }
         skipBtn.frame = CGRect(x: 0, y: y + 6, width: w, height: 40)
+        netLabel.frame = CGRect(x: 20, y: y + 48, width: w - 40, height: 44)
     }
 
     // MARK: - 苹果登录
     @objc func onApple()
     {
+        if !netOK
+        {
+            self.alert("当前未连接网络，请稍后重试或先不注册")
+            return
+        }
         let req = ASAuthorizationAppleIDProvider().createRequest()
         req.requestedScopes = [.fullName, .email]
         let c = ASAuthorizationController(authorizationRequests: [req])
