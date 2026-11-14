@@ -133,7 +133,15 @@ class HZFlashView: UIView
         ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, ary, self.currentSKIndex)
         // 安卓行为：笔画一到就发声，不需要任何开关
         let sk = ary[self.currentSKIndex].uppercased()
-        let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
+        // sk 库用的是笔画编号：1横 2竖 3撇 4点 5折 6捺
+        let strokeSound: [String: String] = [
+            "1": "hengx", "H": "hengx",
+            "2": "shuq",  "S": "shuq",
+            "3": "piev",  "P": "piev",
+            "4": "dianv", "D": "dianv",
+            "5": "zhex",  "Z": "zhex",
+            "6": "naq",   "N": "naq"
+        ]
         if let py = strokeSound[String(sk.prefix(1))]
         {
             let rep = playWavReport(py)
