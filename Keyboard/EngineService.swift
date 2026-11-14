@@ -197,6 +197,7 @@ final class LocalPinyin
     var isStrokeMode: Bool { return strokeMode }
     private(set) var composed: String = ""
     private var typed: String = ""
+    private var typedAll: String = ""
     private var learned: [String: String] = [:]
     private var learnedIni: [String: String] = [:]
     private var learnedWordIni: [String: String] = [:]
@@ -681,10 +682,14 @@ final class LocalPinyin
         }
         pending = composed + t
         pendingOn = true
-        if typed.count >= 2 { learn(self.strokeMode ? typed.uppercased() : typed, pending) }
+        // 逐字选上屏时，把前几段输入累计起来，否则只剩最后一段，简拼学不到
+        typedAll += typed
+        if typedAll.count >= 2 { learn(self.strokeMode ? typedAll.uppercased() : typedAll, pending) }
+        else if typed.count >= 2 { learn(self.strokeMode ? typed.uppercased() : typed, pending) }
         composed = ""
         input = ""
         typed = ""
+        typedAll = ""
         cands.removeAll()
         codes.removeAll()
         return EST.SMR_OK
