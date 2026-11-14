@@ -516,7 +516,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         }
         
         // 大/中/小 直接按屏幕百分比：0.60 / 0.50 / 0.40
-        let frac = Globals.kbHeight
+        let frac: CGFloat = Globals.kbHeight ?? 0.5
         if frac > 0.2 && frac <= 0.75
         {
             let screenH = UIScreen.main.bounds.height
