@@ -444,9 +444,7 @@ final class LocalPinyin
         if tone.isEmpty
         {
             // 不带调母时按第一声出（x/v/q 分别是二/三/四声）；没有第一声的字才回落到最常用组
-            if let v = charIdx?[base] { return v }
-            if let k = charIdxBest?[base], k != base { return charIdx?[k] ?? [] }
-            return []
+            return charIdx?[base] ?? []
         }
         return charIdx?[base + tone] ?? []
     }
@@ -1034,8 +1032,8 @@ final class LocalPinyin
                 }
                 plain += t.lowercased()
             }
-            var list = hasTone ? LocalPinyin.wordsForPyTone(toned) : LocalPinyin.wordsForPy(plain)
-            if hasTone && list.isEmpty { list = LocalPinyin.wordsForPy(plain) }
+            // 不带调母就当一声：只查带调索引里的纯字母键（各音节都是一声）
+            var list = LocalPinyin.wordsForPyTone(toned)
             for w in list
             {
                 if w.count != 2 { continue }   // 全拼只出二字词，不做多字联想
