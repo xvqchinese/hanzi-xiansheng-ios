@@ -2,6 +2,7 @@ import UIKit
 
 var gCatWord: String = ""
 var gCatLetters: String = ""
+var gCatCodes: String = ""
 //
 //  Catboard.swift
 //  TransliteratingKeyboard
@@ -459,7 +460,12 @@ extension KeyboardViewController
                 return
             }
             self.out(conved, sendCand: false)
-            if self.currentPage == KbPage.M_Chn { self.catLearn(typedNow, conved) }
+            if self.currentPage == KbPage.M_Chn
+            {
+                let cd = code as String
+                if !cd.isEmpty { gCatCodes += (gCatCodes.isEmpty ? cd : "," + cd) }
+                self.catLearn(typedNow, conved)
+            }
         }
         
         // 发音
@@ -468,7 +474,13 @@ extension KeyboardViewController
             if (self.currentPage == KbPage.M_Chn)
             {
                 // 拼音（多音节用逗号分开，发音引擎才认）
-                playWav(self.engine.speechCode(code as String, word: cand as String));
+                var soundCode = code as String
+                let wordStr = cand as String
+                if soundCode.isEmpty, let pu = Catboard.catPyURL,
+                   let d = try? Data(contentsOf: pu),
+                   let j = try? JSONSerialization.jsonObject(with: d) as? [String: String],
+                   let sc = j[wordStr] { soundCode = sc }
+                playWav(self.engine.speechCode(soundCode, word: wordStr));
             }
             else if (self.currentPage == KbPage.M_SK9)
             {
@@ -494,10 +506,15 @@ extension KeyboardViewController
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json")
     }
 
+    static var catPyURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_pinyin.json")
+    }
+
     private func catLearn(_ typedNow: String, _ up: String)
     {
         let t = typedNow.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if t.isEmpty || t.count >= 30 { gCatWord = ""; gCatLetters = ""; return }
+        if t.isEmpty || t.count >= 30 { gCatWord = ""; gCatLetters = ""; gCatCodes = ""; return }
         gCatLetters += t
         gCatWord += up
         if gCatWord.count < 2 { return }
@@ -512,8 +529,15 @@ extension KeyboardViewController
         if ini.count == gCatWord.count && ini.count >= 2
         {
             m[ini] = gCatWord
-            if gCatWord.count >= 3 && ini.count >= 3 { m[ini] = gCatWord }
             if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+        }
+        // 同时记住这个词的逐字拼音码，供上屏发声用
+        if let pu = Catboard.catPyURL, !gCatCodes.isEmpty
+        {
+            var pm: [String: String] = [:]
+            if let d = try? Data(contentsOf: pu), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { pm = j }
+            pm[gCatWord] = gCatCodes
+            if let d = try? JSONSerialization.data(withJSONObject: pm, options: []) { try? d.write(to: pu) }
         }
     }
 
