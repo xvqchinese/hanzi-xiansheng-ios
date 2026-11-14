@@ -546,6 +546,23 @@ final class LocalPinyin
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
+        // 兜底：直接扫描学过的词，按词本身字首字母比对（不依赖任何索引是否建好）
+        if !self.strokeMode && input.count >= 2
+        {
+            var cmCache: [Character: String]? = nil
+            for (_, w) in learned
+            {
+                var ini = ""
+                let cm = cmCache ?? self.makeCharPinyinMap()
+                cmCache = cm
+                for c in w
+                {
+                    if let py = cm[c], let f = py.first { ini.append(f) } else { ini = ""; break }
+                }
+                if ini == input { put(w, input) }
+            }
+            if let w = learned[input] { put(w, input) }
+        }
         if let w = learned[input] { put(w, input) }
         else if let w = learnedIni[input] { put(w, input) }
         else if let w = learnedWordIni[input] { put(w, input) }
@@ -588,6 +605,20 @@ final class LocalPinyin
         {
             let mid = (lo + hi) / 2
             if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
+        }
+        // 兜底：整串没有候选时，按每个字母各出单字（避免候选条全空只剩一排点）
+        if cands.isEmpty && !self.strokeMode && input.count >= 2
+        {
+            for ch in input
+            {
+                let k1 = String(ch)
+                for (w, cd) in entries(forKey: k1)
+                {
+                    if w.count != 1 { continue }
+                    if cd.isEmpty || cd.hasPrefix(k1) { put(w, cd) }
+                }
+                if cands.count >= 20 { break }
+            }
         }
         var i = lo
         var scanned = 0
