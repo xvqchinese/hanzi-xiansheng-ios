@@ -118,7 +118,9 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
             cell!.contentView.addSubview(label)
             label.tag = 1000001
             label.text = self.candCache[indexPath.row] as String
-            label.lineBreakMode = NSLineBreakMode.byTruncatingMiddle
+            label.adjustsFontSizeToFitWidth = true
+            label.minimumScaleFactor = 0.6
+            label.lineBreakMode = NSLineBreakMode.byClipping
             label.sizeToFit()
             label.frame.origin.y = (cell!.frame.height - label.frame.height) / 2
             label.frame.size.width = cell!.frame.width
@@ -129,6 +131,8 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         {
             label?.text = self.candCache[indexPath.row] as String
             label?.font = self.font
+            label?.adjustsFontSizeToFitWidth = true
+            label?.minimumScaleFactor = 0.6
             label?.sizeToFit()
             label?.frame.size.width = cell!.frame.width
             MyLog("cell = " + String(indexPath.row))
