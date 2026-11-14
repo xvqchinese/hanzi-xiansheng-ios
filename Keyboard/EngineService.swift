@@ -454,6 +454,36 @@ final class LocalPinyin
         return charIdx?[base + tone] ?? []
     }
 
+    // 混合输入索引：一段完整音节 + 一段首字母（hanqz → 汉字/汉子）
+    private static var mixText: String? = nil
+    private static var mixCache: [String: [String]] = [:]
+    static func wordsForMix(_ key: String) -> [String]
+    {
+        if let c = mixCache[key] { return c }
+        if mixText == nil
+        {
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: "wordmix", ofType: "txt"),
+               let t = try? String(contentsOfFile: path, encoding: .utf8) { mixText = t }
+            else { mixText = "" }
+        }
+        var out: [String] = []
+        if let t = mixText, !t.isEmpty
+        {
+            for line in t.split(separator: "\n")
+            {
+                guard let tab = line.firstIndex(of: "\t") else { continue }
+                if line[line.startIndex..<tab] == Substring(key)
+                {
+                    out = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                    break
+                }
+            }
+        }
+        if mixCache.count > 200 { mixCache.removeAll() }
+        mixCache[key] = out
+        return out
+    }
+
     static func wordsForIni(_ key: String) -> [String]
     {
         if let c = idxCache[key] { return c }
@@ -1065,6 +1095,41 @@ final class LocalPinyin
                 if w.count != 2 { continue }   // 全拼只出二字词，不做多字联想
                 put(w, "")
                 if cands.count >= 30 { break }
+            }
+        }
+
+        // 混合输入：一段带调完整音节 + 一段首字母（hanqz），首字母那半不限声调
+        if !self.strokeMode
+        {
+            let segs = segments(input)
+            if segs.count == 2 || segs.count == 3
+            {
+                var parts: [String] = []
+                var bad = false
+                for sg in segs
+                {
+                    var t = sg.lowercased()
+                    var tone = ""
+                    var isInitial = false
+                    if t.count == 1 && !("aeiouv".contains(t)) { isInitial = true }
+                    else if t.count >= 3, t.last == t.dropLast().last
+                    {
+                        tone = "n"; t.removeLast()
+                    }
+                    else if let l = t.last, "xvq".contains(l) { tone = String(l); t.removeLast() }
+                    if isInitial { parts.append(t); continue }
+                    if tone == "n" { parts.append(t + String(t.last ?? "e")) }
+                    else { parts.append(t + tone) }
+                }
+                if !bad && parts.contains(where: { $0.count == 1 })
+                {
+                    for w in LocalPinyin.wordsForMix(parts.joined(separator: "|"))
+                    {
+                        if w.count != segs.count { continue }
+                        put(w, "")
+                        if cands.count >= 30 { break }
+                    }
+                }
             }
         }
 
