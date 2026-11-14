@@ -1002,7 +1002,7 @@ final class LocalPinyin
                 var key = segs0[0].lowercased()
                 var tone = ""
                 let lk = key
-                if lk.count >= 3, lk.last == lk.dropLast().last, "aeiou".contains(lk.last!)
+                if lk.count >= 3, lk.last == lk.dropLast().last
                 {
                     tone = "n"; key.removeLast()
                 }
@@ -1030,7 +1030,8 @@ final class LocalPinyin
             {
                 var t = seg
                 let low = t.lowercased()
-                let isNeutral = low.count >= 3 && low.last == low.dropLast().last && "aeiou".contains(low.last!)
+                // 轻声：最后一个非声母字母双写（不限于元音，如 ngg、err）
+                let isNeutral = low.count >= 3 && low.last == low.dropLast().last
                 if isNeutral
                 {
                     toned += low            // 轻声：末字母双写，原样进键
