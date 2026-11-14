@@ -930,7 +930,7 @@ final class LocalPinyin
                     if let f = LocalPinyin.charIni(c) { ini.append(f) } else { bad = true; break }
                 }
                 if bad || ini.count != w.count { continue }
-                if ini.hasPrefix(input) { put(w, "") }
+                if ini == input { put(w, "") }
             }
             if cands.count >= 40 { return }
         }
@@ -939,7 +939,7 @@ final class LocalPinyin
         {
             for (ini, w) in loadUserIni()
             {
-                if ini.hasPrefix(input) { put(w, "") }
+                if ini == input { put(w, "") }
             }
             if cands.count >= 40 { return }
         }
@@ -954,7 +954,7 @@ final class LocalPinyin
                     guard let f = LocalPinyin.charIni(c) else { ini = ""; break }
                     ini.append(f)
                 }
-                if ini.count == input.count && ini.hasPrefix(input) { put(w, "") }
+                if ini == input { put(w, "") }
             }
             if let w = learned[input] { put(w, "") }
         }
