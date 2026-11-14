@@ -417,9 +417,7 @@ final class LocalPinyin
     func loadUserIni() -> [String: String]
     {
         guard let u = LocalPinyin.userIniURL else { return userIniCache }
-        let stamp = (try? FileManager.default.attributesOfItem(atPath: u.path))?[.modificationDate] as? Date
-        if let st = stamp, st == userIniStamp { return userIniCache }
-        userIniStamp = stamp
+        // 不缓存：键盘随时可能新增词组，缓存会读到旧内容导致刚学的词召不回
         if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String]
         {
             userIniCache = j
@@ -430,7 +428,9 @@ final class LocalPinyin
     func saveUserIni()
     {
         guard let u = LocalPinyin.userIniURL else { return }
+        // 合并写入，不能把键盘侧已学的词组覆盖掉
         var m: [String: String] = [:]
+        if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
         for (_, w) in learned
         {
             if w.count < 2 { continue }
