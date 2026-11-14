@@ -211,7 +211,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         NotificationCenter.default.addObserver(forName: Notification.Name("DWKbResize"), object: nil, queue: OperationQueue.main)
         { [weak self] _ in
             guard let s = self else { return }
-            let h = s.getKbHeight(s.getOrientation())
+            let h = s.getKbHeight(getOrientation())
             s.heightConstraint.constant = h
             if !s.heightConstraintAdd
             {
