@@ -354,7 +354,9 @@ final class LocalPinyin
         if let d = try? JSONSerialization.data(withJSONObject: m, options: []),
            let str = String(data: d, encoding: .utf8)
         {
-            UserDefaults(suiteName: "group.DWIME_DS")?.set(str, forKey: "userWords")
+            let ud = UserDefaults(suiteName: "group.DWIME_DS")
+            ud?.set(str, forKey: "userWords")
+            ud?.synchronize()
         }
         markLearned(w)
     }
@@ -441,8 +443,10 @@ final class LocalPinyin
         }
         if tone.isEmpty
         {
-            guard let k = charIdxBest?[base] else { return [] }
-            return charIdx?[k] ?? []
+            // 不带调母时按第一声出（x/v/q 分别是二/三/四声）；没有第一声的字才回落到最常用组
+            if let v = charIdx?[base] { return v }
+            if let k = charIdxBest?[base], k != base { return charIdx?[k] ?? [] }
+            return []
         }
         return charIdx?[base + tone] ?? []
     }

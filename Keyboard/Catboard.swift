@@ -499,6 +499,11 @@ extension KeyboardViewController
                 let cd = code as String
                 if !cd.isEmpty { gCatCodes += (gCatCodes.isEmpty ? cd : "," + cd) }
                 self.catLearn(typedNow, conved)
+                // 逐字拼出一个词的过程中随时入库：只要已累计到 2 个字就写一次
+                if gCatWord.count >= 2
+                {
+                    LocalPinyin.learnWord(gCatWord, typed: gCatLetters)
+                }
                 // 上屏一个词组就结束这次学词累计，避免两个词被粘成一个（鼎氏鼎氏）
                 if conved.count > 1 { catBreak() }
             }
@@ -595,7 +600,9 @@ extension KeyboardViewController
                let d = try? JSONSerialization.data(withJSONObject: m, options: []),
                let str = String(data: d, encoding: .utf8)
             {
-                UserDefaults(suiteName: "group.DWIME_DS")?.set(str, forKey: "userWords")
+                let ud = UserDefaults(suiteName: "group.DWIME_DS")
+                ud?.set(str, forKey: "userWords")
+                ud?.synchronize()
             }
         }
         // 同时记住这个词的逐字拼音码，供上屏发声用
