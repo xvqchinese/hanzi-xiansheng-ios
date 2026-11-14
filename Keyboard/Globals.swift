@@ -36,8 +36,11 @@ struct Globals
         //Globals.vibrate = Globals.prefs.bool(forKey: "vibrate")
         // 语音两项设置写在 App Group，键盘优先读共享设置
         let shared = UserDefaults(suiteName: "group.DWIME_DS")
-        Globals.sound = shared?.bool(forKey: "keySound") ?? Globals.prefs.bool(forKey: "sound")
-        Globals.playWav = shared?.bool(forKey: "playWav") ?? Globals.prefs.bool(forKey: "playWav")
+        // 注意：shared 里没这个键时 bool() 会返回 false，必须先用 object 判断有没有
+        if let v = shared?.object(forKey: "keySound") as? Bool { Globals.sound = v }
+        else { Globals.sound = Globals.prefs.bool(forKey: "sound") }
+        if let v = shared?.object(forKey: "playWav") as? Bool { Globals.playWav = v }
+        else { Globals.playWav = Globals.prefs.bool(forKey: "playWav") }
         Globals.singleHand = Globals.prefs.bool(forKey: "singleHand")
  
         // 全局的

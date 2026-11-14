@@ -536,9 +536,15 @@ extension KeyboardViewController
     
     
 
-    private static var catIniURL: URL?
+    static var catIniURL: URL?
     {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json")
+    }
+
+    // 笔画学习的词组单独存一份，和拼音词组分开
+    static var catIniSkURL: URL?
+    {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_sk.json")
     }
 
     static var catPyURL: URL?
@@ -565,9 +571,10 @@ extension KeyboardViewController
         gCatLetters += t
         gCatWord += up
         if gCatWord.count < 2 { return }
-        guard let u = Catboard.catIniURL else { return }
+        let u: URL? = (self.currentPage == KbPage.M_SK9) ? Catboard.catIniSkURL : Catboard.catIniURL
+        guard let uu = u else { return }
         var m: [String: String] = [:]
-        if let d = try? Data(contentsOf: u), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
+        if let d = try? Data(contentsOf: uu), let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] { m = j }
         var ini = ""
         for c in gCatWord
         {
@@ -577,7 +584,7 @@ extension KeyboardViewController
         {
             m[ini] = gCatWord
             LocalPinyin.markLearned(gCatWord)
-            if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
+            if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: uu) }
         }
         // 同时记住这个词的逐字拼音码，供上屏发声用
         if let pu = Catboard.catPyURL, !gCatCodes.isEmpty
