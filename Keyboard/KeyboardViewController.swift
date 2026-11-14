@@ -515,6 +515,14 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
             }
         }
         
+        // 大/中/小 直接按屏幕百分比：0.60 / 0.50 / 0.40
+        let frac = Globals.kbHeight
+        if frac > 0.2 && frac <= 0.75
+        {
+            let screenH = UIScreen.main.bounds.height
+            if toInterfaceOrientation.isPortrait { return screenH * frac }
+            return screenH * frac * 0.85
+        }
         if self.currentPage == KbPage.M_HW
         {
             return ret * Globals.kbHeight * 1.1 /*放大倍数*/

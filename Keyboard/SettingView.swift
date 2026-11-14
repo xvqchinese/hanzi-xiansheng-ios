@@ -213,9 +213,9 @@ with something (or leave it blank if you like.)
  
     @objc func doKbHeight(_ sender: UIButton)
     {
-        var v: CGFloat = 1.0
-        if sender == self.kbBig { v = 1.55 }
-        else if sender == self.kbSml { v = 0.75 }
+        var v: CGFloat = 0.50
+        if sender == self.kbBig { v = 0.60 }
+        else if sender == self.kbSml { v = 0.40 }
         let gp = UserDefaults(suiteName: "group.DWIME_DS") ?? UserDefaults.standard
         gp.set(CGFloat(v), forKey: "kbheight")
         gp.synchronize()
