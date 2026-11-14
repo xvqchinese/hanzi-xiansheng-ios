@@ -801,6 +801,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
             {
                 AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
             }**/
+            Globals.Load()
             if Globals.sound
             {
                 AudioServicesPlaySystemSound(1104)

@@ -796,12 +796,25 @@ final class LocalPinyin
         if input.isEmpty { return }
         let keys = input.contains("j") ? [input, input.replacingOccurrences(of: "j", with: "")] : [input]
         var seen = Set<String>()
+        // 音与字/词必须严格对应：音节数与每个音节都要相等（忽略末尾调母标记），
+        // 绝不允许“前缀命中”，前缀命中就是联想。
+        func stripTone(_ seg: String) -> String
+        {
+            if let l = seg.last, "xvq".contains(l) { return String(seg.dropLast()) }
+            return seg
+        }
         func ok(_ cd: String) -> Bool
         {
             if self.strokeMode { return true }
             if cd.isEmpty { return true }
-            for k in keys { if cd.hasPrefix(k) { return true } }
-            return false
+            let kSegs = segments(keys[0])
+            let cSegs = segments(cd)
+            if kSegs.isEmpty || cSegs.count != kSegs.count { return false }
+            for i in 0..<kSegs.count
+            {
+                if stripTone(kSegs[i]) != stripTone(cSegs[i]) { return false }
+            }
+            return true
         }
         // 精准是灵魂：全拼带调母时，单字也必须声调一致，否则不出
         let inTones: [String] = {
