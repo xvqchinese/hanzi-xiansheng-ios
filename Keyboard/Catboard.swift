@@ -422,8 +422,8 @@ extension KeyboardViewController
             self.mForwardingView.reset()
             self.engine.Reset()
             
-            // 联想
-            if self.engine.hwAssociate(outStr.substring(from: outStr.length-1) as NSString) > 0
+            // 联想：彻底关闭（精准是灵魂，上屏后不再联想任何字词）
+            if false && self.engine.hwAssociate(outStr.substring(from: outStr.length-1) as NSString) > 0
             {
                 self.hwAssociateKey = outStr.substring(from: outStr.length-1)
                 if self.isBigCandShowing()
