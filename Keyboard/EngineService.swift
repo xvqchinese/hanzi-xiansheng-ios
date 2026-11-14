@@ -836,6 +836,73 @@ final class LocalPinyin
 
     func refresh()
     {
+        refreshRaw()
+        // 统一排序：词组优先 → 使用次数多的优先 → 刚学的优先 → 字数贴合输入
+        let fq = LocalPinyin.wordFreq()
+        let lt = LocalPinyin.learnTimes()
+        let segCnt = segments(input).count
+        let pairs = zip(cands, codes).map { ($0, $1) }
+        let sorted = pairs.sorted { a, b in
+            let wa = a.0, wb = b.0
+            let ca = wa.count, cb = wb.count
+            let ga = ca > 1 ? 0 : 1, gb = cb > 1 ? 0 : 1
+            if ga != gb { return ga < gb }
+            let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
+            if fa != fb { return fa > fb }
+            let ta = lt[wa] ?? 0, tb = lt[wb] ?? 0
+            if ta != tb { return ta > tb }
+            let da = abs(ca - segCnt), db = abs(cb - segCnt)
+            if da != db { return da < db }
+            return false
+        }
+        cands = sorted.map { $0.0 }
+        codes = sorted.map { $0.1 }
+    }
+
+    // 分段出字：整串不是词时，从前往后尽量凑成词组，剩下的音节出单字
+    private func greedyFill()
+    {
+        if self.strokeMode { return }
+        let segs = segments(input)
+        if segs.count < 2 { return }
+        var i = 0
+        var added: [String] = []
+        while i < segs.count
+        {
+            var matched = false
+            var k = min(3, segs.count - i)
+            while k >= 2
+            {
+                var plain = ""
+                for j in i..<(i + k)
+                {
+                    var t = segs[j].lowercased()
+                    if let l = t.last, "xvq".contains(l) { t.removeLast() }
+                    plain += t
+                }
+                let ws = LocalPinyin.wordsForPy(plain).filter { $0.count == k && !added.contains($0) }
+                if let w = ws.first
+                {
+                    added.append(w); cands.append(w); codes.append(segs[i])
+                    i += k; matched = true; break
+                }
+                k -= 1
+            }
+            if matched { continue }
+            // 单字
+            var t = segs[i].lowercased()
+            var tone = ""
+            if let l = t.last, "xvq".contains(l) { tone = String(l); t.removeLast() }
+            if let ch = LocalPinyin.charsFor(base: t, tone: tone).first
+            {
+                added.append(ch); cands.append(ch); codes.append(segs[i])
+            }
+            i += 1
+        }
+    }
+
+    func refreshRaw()
+    {
         cands.removeAll()
         codes.removeAll()
         if input.isEmpty { return }
@@ -1079,6 +1146,12 @@ final class LocalPinyin
         {
             let mid = (lo + hi) / 2
             if cmp(mid, p) < 0 { lo = mid + 1 } else { hi = mid }
+        }
+        // 整串没有候选时，先按音节分段凑词组（汉字 + 溪），再兜底单字
+        if cands.isEmpty
+        {
+            greedyFill()
+            if !cands.isEmpty { return }
         }
         // 兜底：整串没有候选时，按每个字母各出单字（避免候选条全空只剩一排点）
         if cands.isEmpty && !self.strokeMode && input.count >= 2
