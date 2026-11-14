@@ -666,12 +666,6 @@ final class LocalPinyin
         // 第一优先级：用户词库（独立文件，键=词首字母，值=词）
         if !self.strokeMode && input.count >= 2
         {
-            if let w = loadUserIni()[input], w.count >= 2
-            {
-                // 简拼刚好打全，直接待上屏（空格/自动上屏都走这一条）
-                self.pending = w
-                self.pendingOn = true
-            }
             for (ini, w) in loadUserIni()
             {
                 if ini.hasPrefix(input) { put(w, "") }

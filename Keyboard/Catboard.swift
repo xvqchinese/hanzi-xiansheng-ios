@@ -31,7 +31,14 @@ extension KeyboardViewController
                 // 空格
                 if (self.engine.hasInput())
                 {
-                    if self.engine.CandCount() > 0
+                    // 命中“已学词组”时，取词由回车负责，空格只上屏一个空格
+                    if self.engine.CandCount() > 0 && self.engine.GetCand(0).length >= 2
+                    {
+                        self.out(" ", sendCand: false)
+                        self.engine.Reset()
+                        self.closeCand()
+                    }
+                    else if self.engine.CandCount() > 0
                     {
                         self.selectCand(0, str: nil)
                     }
@@ -49,15 +56,22 @@ extension KeyboardViewController
             }
             else if (key.type == Key.KeyType.Return)
             {
-                // 回车
+                // 回车：有候选就取第一个候选（词组/单字都走这里，并发声）
                 if (self.engine.hasInput())
                 {
-                    if self.currentPage != KbPage.M_SK9
+                    if self.engine.CandCount() > 0
                     {
-                        self.out(self.engine.inputStr() as String, sendCand: false)
+                        self.selectCand(0, str: nil)
                     }
-                    self.engine.Reset()
-                    self.closeCand()
+                    else
+                    {
+                        if self.currentPage != KbPage.M_SK9
+                        {
+                            self.out(self.engine.inputStr() as String, sendCand: false)
+                        }
+                        self.engine.Reset()
+                        self.closeCand()
+                    }
                 }
                 else
                 {
