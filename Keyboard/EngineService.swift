@@ -246,12 +246,7 @@ final class LocalPinyin
     {
         if self.input.count >= 2
         {
-            var dbg = " c\(cands.count) \(learned.count)/\(loadUserIni().count)/\(learnCalls)/\(selCalls)"
-            // 诊断：把首字母里命中的键值显出来（临时）
-            let m = loadUserIni()
-            let hit = m.first(where: { $0.key.hasPrefix(self.input) })
-            dbg += hit == nil ? " " + m.keys.sorted().prefix(2).joined(separator: ",") : " [\(hit!.key)=\(hit!.value)]"
-            return self.composed + self.input + dbg
+            return self.composed + self.input
         }
         return self.composed + self.input
     }
