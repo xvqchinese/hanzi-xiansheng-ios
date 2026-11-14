@@ -424,6 +424,18 @@ final class LocalPinyin
                 if let l = base.last, "xvq".contains(l) { base.removeLast() }
                 b[base, default: []].append(contentsOf: v)
             }
+            // 文件里的顺序是按字频排的，合并后仍要按“首次出现的位次”重排
+            var pos: [Character: Int] = [:]
+            var p = 0
+            for (k, v) in m
+            {
+                _ = k
+                for c in v { if pos[c] == nil { pos[c] = p; p += 1 } }
+            }
+            for (k, v) in b
+            {
+                b[k] = v.sorted { (pos[$0] ?? Int.max) < (pos[$1] ?? Int.max) }
+            }
             charIdxBase = b
         }
         if tone.isEmpty { return charIdxBase?[base] ?? [] }
@@ -968,7 +980,12 @@ final class LocalPinyin
         if !self.strokeMode
         {
             let segs0 = segments(input)
-            if segs0.count == 1
+            let hasVowel = { (x: String) -> Bool in
+                let low = x.lowercased()
+                return low.contains("a") || low.contains("e") || low.contains("i")
+                    || low.contains("o") || low.contains("u") || low.contains("v")
+            }
+            if segs0.count == 1 && hasVowel(segs0[0])
             {
                 var key = segs0[0].lowercased()
                 var tone = ""
