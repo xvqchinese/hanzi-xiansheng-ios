@@ -602,8 +602,13 @@ extension KeyboardViewController
 
         if IsNeedCoinciding(self.currentPage)
         {
+            // 有候选时把音节点条收起来，否则它会盖住候选字（用户只看到一排点）
+            if self.engine.CandCount() > 0
+            {
+                self.mCoinciding?.hide()
+            }
             // 更新音节
-            if self.engine.syllableNum() > 0 && self.engine.hasInput()
+            else if self.engine.syllableNum() > 0 && self.engine.hasInput()
             {
                 self.mCoinciding?.updateSyllable(self.engine)
             }
