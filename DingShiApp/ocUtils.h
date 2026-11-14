@@ -28,6 +28,7 @@
 
 +(NSString *)URLDecodedString:(NSString *)str;
 +(NSString *)getHZFlashSkary:(int)index;
++(NSString *)skLettersFor:(NSString *)zi;
 
 
 

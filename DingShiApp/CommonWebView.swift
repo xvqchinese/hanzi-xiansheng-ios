@@ -65,8 +65,8 @@ class CommonWebView: UIViewController, WKNavigationDelegate
         }
         else
         {
-            // 词典页字号偏小，统一放大一号
-            if !(self.url.contains("/txz/"))
+            // 词典页字号偏小，统一放大一号（注册/登录页除外）
+            if !(self.url.contains("reg_ios") || self.url.contains("login_ui") || self.url.contains("apple_login"))
             {
                 let css = "var s=document.createElement('style');s.innerHTML='html,body{font-size:26px !important;line-height:1.5 !important;} body,p,div,span,td,li,dd,dt,section,article,blockquote,h1,h2,h3,h4,h5,font{font-size:26px !important;line-height:1.5 !important;max-width:100% !important;overflow-wrap:break-word !important;word-break:break-word !important;white-space:normal !important;} img{max-width:100% !important;height:auto !important;}';document.head.appendChild(s);"
                 let script = WKUserScript(source: css, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
@@ -129,10 +129,19 @@ class CommonWebView: UIViewController, WKNavigationDelegate
                 
                 if urlString.contains("voice.cpp")
                 {
-                    let pys = urlString.components(separatedBy: "cn=&yin=")
-                    if pys.count == 2
+                    // yi3 -> 鼎氏调母 yiv（2声x 3声v 4声q），否则语音引擎取不到音
+                    if let yin = urlString.components(separatedBy: "yin=").last
                     {
-                        playWav(pys[1]);
+                        var code = yin.removingPercentEncoding ?? yin
+                        if let last = code.last, let tone = Int(String(last))
+                        {
+                            code = String(code.dropLast())
+                            if tone == 2 { code += "x" }
+                            else if tone == 3 { code += "v" }
+                            else if tone == 4 { code += "q" }
+                        }
+                        let rep = playWavReport(code)
+                        NSLog("喇叭朗读 %@ -> %@", code, rep)
                     }
                     decisionHandler(.cancel)
                     return

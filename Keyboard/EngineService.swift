@@ -198,6 +198,7 @@ final class LocalPinyin
     private(set) var composed: String = ""
     private var typed: String = ""
     private var typedAll: String = ""
+    private var wordBuf: String = ""
     private var learned: [String: String] = [:]
 
     // 汉字→拼音首字母对照（离线生成，不依赖词典解析）
@@ -356,7 +357,13 @@ final class LocalPinyin
         guard let u = LocalPinyin.learnedURL, let d = try? Data(contentsOf: u) else { return }
         if let j = try? JSONSerialization.jsonObject(with: d) as? [String: String]
         {
-            learned = j
+            // 清掉旧版本学错的条目：值是单个字、键却是整串拼音的长串
+            var clean: [String: String] = [:]
+            for (k, v) in j
+            {
+                if v.count >= 2 || k.count <= 4 { clean[k] = v }
+            }
+            learned = clean
             rebuildLearnedIni()
             rebuildWordIni()
         }
@@ -365,16 +372,16 @@ final class LocalPinyin
     func rebuildWordIni()
     {
         learnedWordIni.removeAll()
-        let m = makeCharPinyinMap()
         for (_, w) in learned
         {
             if w.count < 2 { continue }
             var ini = ""
             for c in w
             {
-                if let py = m[c], let f = py.first { ini.append(f) }
+                guard let f = LocalPinyin.charIni(c) else { ini = ""; break }
+                ini.append(f)
             }
-            if ini.count >= 2 && learnedWordIni[ini] == nil { learnedWordIni[ini] = w }
+            if ini.count >= 2 && ini.count == w.count && learnedWordIni[ini] == nil { learnedWordIni[ini] = w }
         }
     }
 
@@ -591,19 +598,15 @@ final class LocalPinyin
         // 兜底：直接扫描学过的词，按词本身字首字母比对（不依赖任何索引是否建好）
         if !self.strokeMode && input.count >= 2
         {
-            var cmCache: [Character: String]? = nil
             for (_, w) in learned
             {
                 var ini = ""
-                let cm = cmCache ?? self.makeCharPinyinMap()
-                cmCache = cm
                 for c in w
                 {
-                    if let f = LocalPinyin.charIni(c) { ini.append(f) }
-                    else if let py = cm[c], let f = py.first { ini.append(f) }
-                    else { ini = ""; break }
+                    guard let f = LocalPinyin.charIni(c) else { ini = ""; break }
+                    ini.append(f)
                 }
-                if ini == input { put(w, input) }
+                if ini.count == input.count && ini.hasPrefix(input) { put(w, input) }
             }
             if let w = learned[input] { put(w, input) }
         }
@@ -612,7 +615,7 @@ final class LocalPinyin
         else if let w = learnedWordIni[input] { put(w, input) }
         if !self.strokeMode && input.count >= 2 && input.count <= 5
         {
-            if self.iniIndex == nil { self.buildIniIndex() }
+            if self.iniIndex == nil { self.iniIndex = [:] }
             if let arr = self.iniIndex?[input]
             {
                 for w in arr { put(w, input); if cands.count >= 40 { return } }
@@ -727,12 +730,22 @@ final class LocalPinyin
         pendingOn = true
         // 逐字选上屏时，把前几段输入累计起来，否则只剩最后一段，简拼学不到
         typedAll += typed
-        if typedAll.count >= 2 { learn(self.strokeMode ? typedAll.uppercased() : typedAll, pending) }
-        else if typed.count >= 2 { learn(self.strokeMode ? typed.uppercased() : typed, pending) }
+        // 逐字上屏时把整词攒起来再学，否则只学到最后一个字
+        wordBuf += t
+        let lettersAll = typedAll
+        if lettersAll.count >= 2, wordBuf.count >= 2
+        {
+            learn(self.strokeMode ? lettersAll.uppercased() : lettersAll, wordBuf)
+        }
+        else if typed.count >= 2, wordBuf.count >= 2
+        {
+            learn(self.strokeMode ? typed.uppercased() : typed, wordBuf)
+        }
         composed = ""
         input = ""
         typed = ""
         typedAll = ""
+        wordBuf = ""
         cands.removeAll()
         codes.removeAll()
         return EST.SMR_OK
@@ -746,6 +759,8 @@ final class LocalPinyin
         composed = ""
         input = ""
         typed = ""
+        typedAll = ""
+        wordBuf = ""
         cands.removeAll()
     }
 
@@ -760,6 +775,9 @@ final class LocalPinyin
         input = ""
         pending = ""
         pendingOn = false
+        typed = ""
+        typedAll = ""
+        wordBuf = ""
         cands.removeAll()
         codes.removeAll()
     }

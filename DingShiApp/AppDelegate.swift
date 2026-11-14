@@ -1,3 +1,4 @@
+import AVFoundation
 //
 //  AppDelegate.swift
 //  TransliteratingKeyboard
@@ -53,6 +54,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // 全 App 用播放类音频会话，网页里的朗读链接、笔顺读音都不受静音键与"环境音"类别限制
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers, .mixWithOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch { }
         
         UINavigationBar.appearance().barStyle = .blackTranslucent
         
