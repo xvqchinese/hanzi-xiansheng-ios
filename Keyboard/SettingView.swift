@@ -20,6 +20,9 @@ with something (or leave it blank if you like.)
     //var pagePhrs: UIButton = UIButton()
     
     var more: UIButton!
+    var kbBig: UIButton!
+    var kbMid: UIButton!
+    var kbSml: UIButton!
     var close: UIButton!
     var gps: UIButton!
     var singleHand: UIButton!
@@ -49,6 +52,12 @@ with something (or leave it blank if you like.)
         self.gps = createMyButton(Lang("  定位  "))
         self.singleHand = createMyButton(Globals.singleHand ? Lang("  取消单手  ") : Lang("  单手模式  "))
         self.close = createMyButton(Lang("  返回  "))
+        self.kbBig = createMyButton(Lang("  大  "))
+        self.kbMid = createMyButton(Lang("  中  "))
+        self.kbSml = createMyButton(Lang("  小  "))
+        self.kbBig.titleLabel?.font = UIFont.systemFont(ofSize: 15)
+        self.kbMid.titleLabel?.font = UIFont.systemFont(ofSize: 15)
+        self.kbSml.titleLabel?.font = UIFont.systemFont(ofSize: 15)
 
         if Globals.accessOpen
         {
@@ -58,6 +67,9 @@ with something (or leave it blank if you like.)
             self.setsList.addSubview(self.gps)
             self.setsList.addSubview(self.singleHand)
             self.setsList.addSubview(self.more)
+            self.setsList.addSubview(self.kbBig)
+            self.setsList.addSubview(self.kbMid)
+            self.setsList.addSubview(self.kbSml)
         }
         else
         {
@@ -74,6 +86,9 @@ with something (or leave it blank if you like.)
         self.close.addTarget(self.superview?.superclass, action: Selector("doSetting"), for: .touchUpInside)
         self.gps.addTarget(self.superview?.superclass, action: Selector("doLocaltion"), for: .touchUpInside)
         self.singleHand.addTarget(self, action: Selector("doSingleHand"), for: .touchUpInside)
+        self.kbBig.addTarget(self, action: Selector("doKbHeight:"), for: .touchUpInside)
+        self.kbMid.addTarget(self, action: Selector("doKbHeight:"), for: .touchUpInside)
+        self.kbSml.addTarget(self, action: Selector("doKbHeight:"), for: .touchUpInside)
         
         self.backgroundColor = KeyboardColor.mSettingBColor //UIColor(red: 240/255, green: 240/255, blue: 240/255, alpha: 1)
         self.prv_Load()
@@ -104,6 +119,9 @@ with something (or leave it blank if you like.)
         self.gps = nil
         self.hint = nil
         self.singleHand = nil
+        self.kbBig = nil
+        self.kbMid = nil
+        self.kbSml = nil
     }
     
     deinit
@@ -174,6 +192,12 @@ with something (or leave it blank if you like.)
             let y = self.gps.frame.origin.y + self.gps.frame.size.height + 10
             self.soundBt.frame = CGRect(x: 0, y: y, width: self.frame.width, height: 40)
             self.playWavBt.frame = CGRect(x: 0, y: y+40, width: self.frame.width, height: 40)
+
+            let by = y + 42 + 40
+            let bw = min(self.frame.width/3 - 8, 110)
+            self.kbBig.frame = CGRect(x: 8, y: by, width: bw, height: 36)
+            self.kbMid.frame = CGRect(x: 8 + bw + 8, y: by, width: bw, height: 36)
+            self.kbSml.frame = CGRect(x: 8 + (bw + 8)*2, y: by, width: bw, height: 36)
         }
 
         if self.hint != nil
@@ -187,6 +211,20 @@ with something (or leave it blank if you like.)
     }
 
  
+    @objc func doKbHeight(_ sender: UIButton)
+    {
+        var v: CGFloat = 1.0
+        if sender == self.kbBig { v = 1.55 }
+        else if sender == self.kbSml { v = 0.75 }
+        let gp = UserDefaults(suiteName: "group.DWIME_DS") ?? UserDefaults.standard
+        gp.set(CGFloat(v), forKey: "kbheight")
+        gp.synchronize()
+        Globals.Update()
+        NotificationCenter.default.post(name: Notification.Name("DWKbResize"), object: nil)
+        self.superview?.setNeedsLayout()
+        self.superview?.layoutIfNeeded()
+    }
+
     @objc func doMoreSetting()
     {
         let url: URL? = URL(string: "DWIME.DingShiApp.ext://open-config-app")

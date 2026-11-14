@@ -206,6 +206,23 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         
         self.heightConstraint = NSLayoutConstraint(item:self.inputView!, attribute:.height,
                                     relatedBy:.equal, toItem:nil, attribute:.notAnAttribute, multiplier:0.0, constant:height)
+        self.heightConstraint.priority = UILayoutPriority(999)
+        // 键盘内面板改“大/中/小”后立刻重算高度
+        NotificationCenter.default.addObserver(forName: Notification.Name("DWKbResize"), object: nil, queue: OperationQueue.main)
+        { [weak self] _ in
+            guard let s = self else { return }
+            let h = s.getKbHeight(s.getOrientation())
+            s.heightConstraint.constant = h
+            if !s.heightConstraintAdd
+            {
+                s.inputView!.addConstraint(s.heightConstraint)
+                s.heightConstraintAdd = true
+            }
+            s.preferredContentSize = CGSize(width: s.view.bounds.width, height: h)
+            s.view.setNeedsUpdateConstraints()
+            s.view.setNeedsLayout()
+            s.view.layoutIfNeeded()
+        }
     }
     
     deinit
