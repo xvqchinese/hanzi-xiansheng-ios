@@ -20,6 +20,7 @@ class HZFlashView: UIView
     var currentSKAry:[String]?
     var currentSKIndex: Int = 0;
     var currentWord: String!
+    var dbgLabel: UILabel!
     
     convenience init() {
         self.init(frame: CGRect.zero)
@@ -67,6 +68,14 @@ class HZFlashView: UIView
         soundSw.addTarget(self, action: Selector("onSoundSwitch:"), for: .valueChanged)
         self.addSubview(cue)
         self.addSubview(soundSw)
+
+        dbgLabel = UILabel()
+        dbgLabel.font = UIFont.systemFont(ofSize: 11)
+        dbgLabel.textColor = UIColor.red
+        dbgLabel.numberOfLines = 2
+        dbgLabel.frame = CGRect(x: 8, y: 40, width: r.size.width - 16, height: 30)
+        dbgLabel.text = "调试：等待笔画"
+        self.addSubview(dbgLabel)
         
         //self.skSequence = getStringListByTxt("sk")
         //MyLog("\(self.skSequence)")
@@ -122,11 +131,17 @@ class HZFlashView: UIView
         }
         if (self.currentSKIndex >= ary.count) { self.currentSKIndex = 0 }
         ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, ary, self.currentSKIndex)
-        if (UserDefaults(suiteName: "group.DWIME_DS")?.object(forKey: "skSound") == nil ? true : (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "skSound") ?? true))
+        // 安卓行为：笔画一到就发声，不需要任何开关
+        let sk = ary[self.currentSKIndex].uppercased()
+        let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
+        if let py = strokeSound[String(sk.prefix(1))]
         {
-            let sk = ary[self.currentSKIndex].uppercased()
-            let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
-            if let py = strokeSound[String(sk.prefix(1))] { playWav(py) }
+            let rep = playWavReport(py)
+            dbgLabel.text = "\(self.currentWord ?? "") 第\(self.currentSKIndex + 1)笔 \(sk) → \(rep)"
+        }
+        else
+        {
+            dbgLabel.text = "第\(self.currentSKIndex + 1)笔 \(sk) 无读音码"
         }
         self.currentSKIndex += 1
         if (self.currentSKIndex >= ary.count) { self.currentSKIndex = 0 }

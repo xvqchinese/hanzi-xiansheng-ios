@@ -171,6 +171,28 @@ func playWav(_ tune: String)
 }
 
 
+// 自检版播放：返回“取音字节数 / 播放是否成功”文字，用于 flash 调试
+func playWavReport(_ tune: String) -> String
+{
+    do {
+        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.duckOthers, .mixWithOthers])
+        try AVAudioSession.sharedInstance().setActive(true)
+    } catch let e {
+        return "会话失败:\(e.localizedDescription)"
+    }
+    let soundURL = fileUrlFromGroup("temp.wav")
+    let size = WavEngine.wavCreate(byPys: tune, soundURL)
+    if size <= 0 { return "\(tune) 取音0字节" }
+    do {
+        try audioPlayer = AVAudioPlayer(contentsOf: soundURL)
+        audioPlayer.prepareToPlay()
+        let ok = audioPlayer.play()
+        return "\(tune) \(size)B 播放\(ok ? "成功" : "失败") 时长\(String(format: "%.2f", audioPlayer.duration))s"
+    } catch let e {
+        return "\(tune) \(size)B 播放器异常:\(e.localizedDescription)"
+    }
+}
+
 // 读数据文件到内存
 func loadDBToMem(_ fileName:String) -> UnsafeMutableRawPointer?
 {
