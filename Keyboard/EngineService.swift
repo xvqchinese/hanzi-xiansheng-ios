@@ -789,9 +789,30 @@ final class LocalPinyin
             for k in keys { if cd.hasPrefix(k) { return true } }
             return false
         }
+        // 精准是灵魂：全拼带调母时，单字也必须声调一致，否则不出
+        let inTones: [String] = {
+            guard !self.strokeMode else { return [] }
+            return segments(input).map { seg -> String in
+                if let l = seg.last, "xvq".contains(l) { return String(l) }
+                return ""
+            }
+        }()
+        let toneStrict = inTones.contains { !$0.isEmpty }
+        func toneOK(_ w: String, _ cd: String) -> Bool
+        {
+            if !toneStrict || w.count != 1 { return true }
+            if cd.isEmpty { return false }
+            let cdTones = segments(cd).map { seg -> String in
+                if let l = seg.last, "xvq".contains(l) { return String(l) }
+                return ""
+            }
+            guard let want = inTones.first, let got = cdTones.first else { return false }
+            return want == got
+        }
         func put(_ w: String, _ cd: String)
         {
             if w.isEmpty || w == "·" { return }
+            if !toneOK(w, cd) { return }
             if seen.contains(w) { return }
             if !ok(cd) { return }
             cands.append(w)
