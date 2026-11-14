@@ -1241,7 +1241,7 @@ tou	偷 愈 愉 媮 鋀 鍮 婾 偸
 ox	哦
 oq	哦 喔
 li	哩
-lii	哩 里
+lii	哩
 naa	哪
 tunv	氽 錪
 gg	嗯 哽
@@ -1459,9 +1459,3 @@ baiwav	瓸
 liwav	瓼 甅
 myeonn	丆
 menn	们
-err	儿
-miann	面
-shann	上
-xiae	下
-qii	起
-laii	来
