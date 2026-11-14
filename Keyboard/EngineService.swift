@@ -258,6 +258,40 @@ final class LocalPinyin
 
     static let sySet: Set<String> = Set(LocalPinyin.syList.split(separator: " ").map { String($0) })
 
+    // 全拼索引（key=不带调母的全拼 → 高频词）
+    static var pyText: String?
+    static var pyCache: [String: [String]] = [:]
+
+    static func wordsForPy(_ key: String) -> [String]
+    {
+        if let c = pyCache[key] { return c }
+        if pyText == nil
+        {
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: "wordpy2", ofType: "txt"),
+               let txt = try? String(contentsOfFile: path, encoding: .utf8)
+            {
+                pyText = txt
+            }
+            else { pyText = "" }
+        }
+        var out: [String] = []
+        if let txt = pyText, !txt.isEmpty
+        {
+            for line in txt.split(separator: "\n")
+            {
+                guard let tab = line.firstIndex(of: "\t") else { continue }
+                if line[line.startIndex..<tab] == Substring(key)
+                {
+                    out = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                    break
+                }
+            }
+        }
+        if pyCache.count > 200 { pyCache.removeAll() }
+        pyCache[key] = out
+        return out
+    }
+
     // 使用频率（上屏过的词，次数越多越靠前）
     static var wordFreqURL: URL?
     {
@@ -708,6 +742,23 @@ final class LocalPinyin
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
+        // 最高优先级 -1：全拼（带调母也行）直接取词库里的词，如 dingvshiq → 鼎世
+        if !self.strokeMode && input.count >= 4
+        {
+            var plain = ""
+            for seg in segments(input)
+            {
+                var t = seg
+                if let last = t.last, "xvq".contains(last) { t.removeLast() }
+                plain += t.lowercased()
+            }
+            for w in LocalPinyin.wordsForPy(plain)
+            {
+                put(w, "")
+                if cands.count >= 30 { break }
+            }
+        }
+
         // 最高优先级 0：整词全拼匹配（学过“汉字先生”，打 hanqziqxiansheng 也要出）
         if !self.strokeMode && input.count >= 4, let pu = LocalPinyin.wordPyURL,
            let d = try? Data(contentsOf: pu),
