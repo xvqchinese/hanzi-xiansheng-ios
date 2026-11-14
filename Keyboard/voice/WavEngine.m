@@ -28,7 +28,7 @@ extern int OpenVoiceEngine();
         
         OpenVoiceEngine();
         int size = 0;
-        void * data = CreateVoiceFile(pys, &size, 1);
+        void * data = CreateVoiceFile(pys, &size);
         if (data != NULL)
         {
             NSData * wavData = [NSData dataWithBytes:data length:size];
