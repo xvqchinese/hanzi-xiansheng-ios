@@ -184,6 +184,9 @@ func loadColorIcon(_ name: String, color:UIColor) -> UIImage?
 var audioPlayer = AVAudioPlayer()
 func playWav(_ tune: String)
 {
+    // 每次发声前重读设置：用户在主 App 里关掉“中文发音”，键盘不重启也要立刻生效
+    Globals.Load()
+    if !Globals.playWav || !Globals.accessOpen { return }
     //if tune != nil
     //{
         let soundURL = fileUrlFromGroup("temp.wav")
