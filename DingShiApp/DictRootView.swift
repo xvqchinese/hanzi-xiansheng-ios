@@ -72,14 +72,14 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
                 tf.textColor = UIColor.black
             }
             self.navigationController?.navigationBar.isTranslucent = false
-            self.navigationController?.navigationBar.barTintColor = UIColor(red: 0.24, green: 0.28, blue: 0.30, alpha: 1)
+            self.navigationController?.navigationBar.barTintColor = UIColor.white
             self.searchBar.placeholder = Lang("请输入中文或英文进行查询")
             if let tf = self.searchBar.value(forKey: "searchField") as? UITextField
             {
                 tf.attributedPlaceholder = NSAttributedString(string: Lang("请输入中文或英文进行查询"), attributes: [NSAttributedString.Key.foregroundColor: UIColor.darkGray])
             }
-            self.navigationController?.navigationBar.tintColor = UIColor.white
-            self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+            self.navigationController?.navigationBar.tintColor = UIColor.black
+            self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
             self.navigationController!.view.addSubview(self.searchBar)
 
             if let v = prefs.object(forKey: "dictFontSize") as? Int { self.dictFontIdx = max(0, min(2, v)) }
@@ -107,7 +107,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         {
             self.cancelBtn = UIButton()
             self.cancelBtn.setTitle(Lang("取消  "), for: .normal)
-            self.cancelBtn.setTitleColor(UIColor.white, for: .normal)
+            self.cancelBtn.setTitleColor(UIColor.black, for: .normal)
             self.cancelBtn.sizeToFit()
             self.cancelBtn.addTarget(self, action: Selector("endWorking"), for: .touchUpInside)
             self.cancelBtn.frame.origin.x = self.navigationController!.view.bounds.width - self.cancelBtn.frame.width

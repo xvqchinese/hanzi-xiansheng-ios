@@ -186,7 +186,9 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
         self.compLabel.frame = CGRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height/3.3)
         
         let compHeight = self.compLabel.isHidden ? 0 : self.compLabel.frame.height
-        self.collectionView.frame = CGRect(x: 0, y: 0 + compHeight, width: self.frame.width, height: self.frame.height - compHeight)
+        self.moreBt.frame.size.width = max(28, self.frame.width / 8)
+        self.moreBt.frame.origin.x = self.frame.width - self.moreBt.frame.width
+        self.collectionView.frame = CGRect(x: 0, y: 0 + compHeight, width: self.frame.width - self.moreBt.frame.width, height: self.frame.height - compHeight)
     }
     
     func show()

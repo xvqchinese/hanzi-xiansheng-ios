@@ -66,7 +66,7 @@ class CommonWebView: UIViewController, WKNavigationDelegate
         else
         {
             // 词典页字号偏小，统一放大一号
-            let css = "var s=document.createElement('style');s.innerHTML='html,body{font-size:20px !important;} body *{font-size:inherit !important;line-height:1.5 !important;}';document.head.appendChild(s);"
+            let css = "var s=document.createElement('style');s.innerHTML='html,body{font-size:26px !important;} body *{font-size:inherit !important;line-height:1.5 !important;}';document.head.appendChild(s);"
             let script = WKUserScript(source: css, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
             self.web?.configuration.userContentController.addUserScript(script)
             self.web?.load(URLRequest(url: URL(string: self.url)!))

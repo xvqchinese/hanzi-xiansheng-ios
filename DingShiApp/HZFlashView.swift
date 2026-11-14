@@ -120,9 +120,7 @@ class HZFlashView: UIView
             self.currentSKIndex += 1
             if (self.currentSKIndex >= self.currentSKAry!.count)
             {
-                self.currentSKIndex = self.currentSKAry!.count - 1
-                self.nextTimer?.invalidate()
-                self.nextTimer = nil
+                self.currentSKIndex = 0
             }
             ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, self.currentSKIndex)
             if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true) && self.currentSKIndex >= 0 && self.currentSKIndex < self.currentSKAry!.count
