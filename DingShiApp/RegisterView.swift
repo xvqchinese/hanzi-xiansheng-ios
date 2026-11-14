@@ -149,9 +149,18 @@ class RegisterView: UIViewController, ASAuthorizationControllerDelegate, ASAutho
 
     func presentNav(_ vc: UIViewController)
     {
+        vc.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "返回", style: .plain, target: self, action: #selector(closeNav))
         let nav = UINavigationController(rootViewController: vc)
+        nav.navigationBar.barTintColor = UIColor.white
+        nav.navigationBar.tintColor = UIColor.black
+        nav.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
         nav.modalPresentationStyle = .fullScreen
         self.present(nav, animated: true, completion: nil)
+    }
+
+    @objc func closeNav()
+    {
+        self.dismiss(animated: true, completion: nil)
     }
 
     @objc func onSkip()

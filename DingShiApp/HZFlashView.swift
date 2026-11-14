@@ -36,8 +36,8 @@ class HZFlashView: UIView
         self.frame.size.height = r.height
         self.backgroundColor = UIColor.white.withAlphaComponent(0.8)
 
-        let h = r.height/3*2
-        self.imageView = UIImageView(frame: CGRect(x: 10, y: (r.height-h)/2, width: r.size.width - 20, height: h))
+        let side = min(r.size.width - 48, r.size.height * 0.55)
+        self.imageView = UIImageView(frame: CGRect(x: (r.size.width - side)/2, y: (r.size.height - side)/2 - 20, width: side, height: side))
         self.imageView.isUserInteractionEnabled = false
         self.imageView.backgroundColor = UIColor.clear//greenColor().withAlphaComponent(0.5)
         self.addSubview(self.imageView)
@@ -101,9 +101,9 @@ class HZFlashView: UIView
         {
             self.currentWord = word as String
             self.currentSKAry = sk.components(separatedBy: ",")
-            ocUtils.drawWordPath(word as String, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, -1)
             self.currentSKIndex = 0;
-            self.nextTimer = Timer.scheduledTimer(timeInterval: 0.6, target: self, selector: Selector("showNext"), userInfo: nil, repeats: true)
+            self.showNext()
+            self.nextTimer = Timer.scheduledTimer(timeInterval: 0.9, target: self, selector: Selector("showNext"), userInfo: nil, repeats: true)
         }
         else
         {
@@ -115,27 +115,21 @@ class HZFlashView: UIView
     
     @objc func showNext()
     {
-        if self.currentSKAry != nil
+        guard let ary = self.currentSKAry, !ary.isEmpty else
         {
-            self.currentSKIndex += 1
-            if (self.currentSKIndex >= self.currentSKAry!.count)
-            {
-                self.currentSKIndex = 0
-            }
-            ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, self.currentSKAry, self.currentSKIndex)
-            if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true) && self.currentSKIndex >= 0 && self.currentSKIndex < self.currentSKAry!.count
-            {
-                let sk = self.currentSKAry![self.currentSKIndex].uppercased()
-                let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
-                if let py = strokeSound[String(sk.prefix(1))] { playWav(py) }
-            }
+            self.nextTimer?.invalidate(); self.nextTimer = nil
+            return
         }
-        else
+        if (self.currentSKIndex >= ary.count) { self.currentSKIndex = 0 }
+        ocUtils.drawWordPath(self.currentWord, Lang("楷体_GB2312_v2"), self.imageView, ary, self.currentSKIndex)
+        if (UserDefaults(suiteName: "group.DWIME_DS")?.bool(forKey: "playWav") ?? true)
         {
-            self.nextTimer?.invalidate();
-            self.nextTimer = nil
+            let sk = ary[self.currentSKIndex].uppercased()
+            let strokeSound: [String: String] = ["D": "dianv", "H": "hengx", "S": "shuq", "P": "piev", "N": "naq", "Z": "zhex"]
+            if let py = strokeSound[String(sk.prefix(1))] { playWav(py) }
         }
-        MyLog("showNext = \(self.currentSKIndex)")
+        self.currentSKIndex += 1
+        if (self.currentSKIndex >= ary.count) { self.currentSKIndex = 0 }
     }
     
     @objc func onSoundSwitch(_ sender: UISwitch)

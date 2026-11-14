@@ -153,7 +153,7 @@ class SmallCand2: BannerView, UICollectionViewDelegate, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
     {
         // 一屏固定 6 个候选，左右滑动翻页
-        let usable = collectionView.frame.width - self.moreBt.frame.width
+        let usable = collectionView.frame.width
         let w = max(1, usable / 6)
         return CGSize(width: w, height: collectionView.frame.height)
     }

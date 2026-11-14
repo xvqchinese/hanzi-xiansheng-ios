@@ -45,7 +45,15 @@ class UserViewController: UITableViewController
         if self.inputMode == IM_STROKE { list = list.filter { $0.0.contains(where: { $0.isUppercase }) } }
         else { list = list.filter { !$0.0.contains(where: { $0.isUppercase }) } }
         list.sort { $0.0 < $1.0 }
-        self.items = list
+        var uniq: [(String, String)] = []
+        var seenWord = Set<String>()
+        for it in list
+        {
+            if seenWord.contains(it.1) { continue }
+            seenWord.insert(it.1)
+            uniq.append(it)
+        }
+        self.items = uniq
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -207,7 +215,7 @@ class UserViewController: UITableViewController
     {
         if sender.row >= 0 && sender.row < self.items.count
         {
-            let key = self.items[sender.row].0
+            let word = self.items[sender.row].1
             var j = [String: String]()
             if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
                let d = try? Data(contentsOf: u),
@@ -215,7 +223,8 @@ class UserViewController: UITableViewController
             {
                 j = obj
             }
-            j.removeValue(forKey: key)
+            let deadKeys = j.filter { $0.value == word }.map { $0.key }
+            for k in deadKeys { j.removeValue(forKey: k) }
             if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
                let d = try? JSONSerialization.data(withJSONObject: j, options: [])
             {

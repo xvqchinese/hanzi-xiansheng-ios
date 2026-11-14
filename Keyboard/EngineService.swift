@@ -199,6 +199,7 @@ final class LocalPinyin
     private var typed: String = ""
     private var learned: [String: String] = [:]
     private var learnedIni: [String: String] = [:]
+    private var learnedWordIni: [String: String] = [:]
     var displayInput: String { return self.composed + self.input }
 
     static let syList: String = "a ai an ang ao ba bai ban bao bei ben beng bi bian bie bin bing bo bu cai cang cao ce cen cha chai chan chang chao che chen cheng chi chong chou chu chuan cong cuan cui cun cuo da dai dan dang dao de deng di dian diao ding dong dou du duan dui duo e er fan fang fei feng fo fu gan gang gao ge geng gong gou gu guan gui gun guo ha hai han hang hao he hei heng hong hou hu hua huai huan huang hui huo ji jia jian jiang jiao jie jin jing jiu ju juan jue kai kan kang ke kong ku kuai kuan kuang kui kun lai lan lang lao le lei leng li lian liang liao lin ling liu long lou lu luan lun luo ma mai man mang mao mei men meng mi mian miao min ming mo mou mu na nan nao neng ni nian nie niu nong nu ou p pa pan pang pei peng pi pian piao ping po pu q qi qian qiang qiao qie qin qing qiong qiu qu quan que rang rao ren rong ru ruan rui sa san sang sen sha shan shang shao she shen sheng shi shou shu shua shuai shuang shui shun shuo si song sou su sui sun suo t ta tai tan tang tao teng ti tian tie tong tou tu tuo wa wan wang wei wen weng wu xi xia xian xiang xiao xie xin xing xiong xiu xu xuan xue xun ya yan yang yao ye yi yin ying yong you yu yuan yue yun zan zang zeng zha zhai zhan zhang zhao zhe zhen zheng zhi zhong zhou zhu zhuan zhuang zhui zhuo zi zong zou zu zuo a ai an ang ao ba bai baike baimi baiwa ban bang bao bei ben beng bi bian biang biao bie bin bing bo bu ca cai can cang cao ce cen ceng cha chai chan chang chao che chen cheng chi chong chou chu chua chuai chuan chuang chui chun chuo ci cong cou cu cuan cui cun cuo da dai dan dang dao de den deng di dia dian diao die ding diu dong dou du duan dui dun duo e ei en eng er fa fan fang fei fen feng fenke fenwa fiao fo fou fu ga gai gan gang gao ge gei gen geng gong gou gu gua guai guan guang gui gun guo ha hai han hang hao haoke haowa he hei hen heng hm hong hou hu hua huai huan huang hui hun huo ji jia jian jiang jiao jie jin jing jiong jiu ju juan jue jun ka kai kan kang kao ke kei ken keng kong kou ku kua kuai kuan kuang kui kun kuo la lai lan lang lao le lei leng li lia lian liang liao lie like lin ling liu liwa long lou lu luan lun luo m ma mai man mang mao me mei men meng mi mian miao mie min ming miu mo mou mu na nai nan nang nao ne nei nen ni nian niang niao nie nin ning niu nong nou nu nuan nun nuo o ou pa pai pan pang pao pei pen peng pi pian piao pie pin ping po pou pu qi qia qian qiang qianke qianwa qiao qie qin qing qiong qiu qu quan que qun ran rang rao re ren reng ri rong rou ru rua ruan rui run ruo sa sai san sang sao se sen seng sha shai shan shang shao she shei shen sheng shi shike shiwa shou shu shua shuai shuan shuang shui shun shuo si song sou su suan sui sun suo ta tai tan tang tao te teng ti tian tiao tie ting tong tou tu tuan tui tun tuo w wa wai wan wang wei wen weng wo wu xi xia xian xiang xiao xie xin xing xiong xiu xu xuan xue xun xx ya yan yang yao ye yi yin ying yo yong you yu yuan yue yun za zai zan zang zao ze zei zen zeng zha zhai zhan zhang zhao zhe zhen zheng zhi zhong zhou zhu zhua zhuai zhuan zhuang zhui zhun zhuo zi zong zou zu zuan zui zun zuo"
@@ -316,6 +317,23 @@ final class LocalPinyin
         {
             learned = j
             rebuildLearnedIni()
+            rebuildWordIni()
+        }
+    }
+
+    func rebuildWordIni()
+    {
+        learnedWordIni.removeAll()
+        let m = makeCharPinyinMap()
+        for (_, w) in learned
+        {
+            if w.count < 2 { continue }
+            var ini = ""
+            for c in w
+            {
+                if let py = m[c], let f = py.first { ini.append(f) }
+            }
+            if ini.count >= 2 && learnedWordIni[ini] == nil { learnedWordIni[ini] = w }
         }
     }
 
@@ -518,6 +536,7 @@ final class LocalPinyin
         }
         if let w = learned[input] { put(w, input) }
         else if let w = learnedIni[input] { put(w, input) }
+        else if let w = learnedWordIni[input] { put(w, input) }
         if !self.strokeMode && input.count >= 2 && input.count <= 5
         {
             if self.iniIndex == nil { self.buildIniIndex() }
