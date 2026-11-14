@@ -645,7 +645,7 @@ final class LocalPinyin
         {
             for (ini, w) in loadUserIni()
             {
-                if ini.hasPrefix(input) { put(w, input) }
+                if ini.hasPrefix(input) { put(w, "") }
             }
             if cands.count >= 40 { return }
         }
@@ -660,13 +660,13 @@ final class LocalPinyin
                     guard let f = LocalPinyin.charIni(c) else { ini = ""; break }
                     ini.append(f)
                 }
-                if ini.count == input.count && ini.hasPrefix(input) { put(w, input) }
+                if ini.count == input.count && ini.hasPrefix(input) { put(w, "") }
             }
-            if let w = learned[input] { put(w, input) }
+            if let w = learned[input] { put(w, "") }
         }
-        if let w = learned[input] { put(w, input) }
-        else if let w = learnedIni[input] { put(w, input) }
-        else if let w = learnedWordIni[input] { put(w, input) }
+        if let w = learned[input] { put(w, "") }
+        else if let w = learnedIni[input] { put(w, "") }
+        else if let w = learnedWordIni[input] { put(w, "") }
         if !self.strokeMode && input.count >= 2 && input.count <= 5
         {
             if self.iniIndex == nil { self.iniIndex = [:] }
