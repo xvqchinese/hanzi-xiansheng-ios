@@ -498,6 +498,8 @@ extension KeyboardViewController
                 let cd = code as String
                 if !cd.isEmpty { gCatCodes += (gCatCodes.isEmpty ? cd : "," + cd) }
                 self.catLearn(typedNow, conved)
+                // 上屏一个词组就结束这次学词累计，避免两个词被粘成一个（鼎氏鼎氏）
+                if conved.count > 1 { catBreak() }
             }
         }
         

@@ -868,7 +868,16 @@ final class LocalPinyin
         if !self.strokeMode && input.count >= 2
         {
             var allWords: Set<String> = []
-            for (_, w) in loadUserIni() { allWords.insert(w) }
+            for (_, w) in loadUserIni()
+            {
+                if w.count >= 4, w.count % 2 == 0
+                {
+                    let half = w.count / 2
+                    let a = String(w.prefix(half)), b = String(w.suffix(half))
+                    if a == b { continue }   // “鼎氏鼎氏”这类脏数据跳过
+                }
+                allWords.insert(w)
+            }
             for (_, w) in learned { allWords.insert(w) }
             for w in allWords
             {
