@@ -1621,7 +1621,7 @@ class EngineService
     {
         if !self.isReady { return "" as NSString }
         if self.useLocalPY, let lp = self.localPY { let i = Int(index); return (i >= 0 && i < lp.cands.count ? lp.cands[i] : "nil") as NSString }
-        let cand = IMEngine.dwimeGetCand(index, false)
+        let cand = IMEngine.dwimeGetCand(index, true)   // 不取联想候选
         if (cand != nil && cand!.count > 0)
         {
             return cand! as NSString
