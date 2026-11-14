@@ -246,11 +246,11 @@ final class LocalPinyin
     {
         if self.input.count >= 2
         {
-            var dbg = " 学\(learned.count)/词\(loadUserIni().count)/调\(learnCalls)/选\(selCalls)"
+            var dbg = " \(learned.count)/\(loadUserIni().count)/\(learnCalls)/\(selCalls)"
             // 诊断：把首字母里命中的键值显出来（临时）
             let m = loadUserIni()
             let hit = m.first(where: { $0.key.hasPrefix(self.input) })
-            dbg += hit == nil ? " 无命中 " + m.keys.sorted().prefix(3).joined(separator: ",") : " [\(hit!.key)=\(hit!.value)]"
+            dbg += hit == nil ? " " + m.keys.sorted().prefix(2).joined(separator: ",") : " [\(hit!.key)=\(hit!.value)]"
             return self.composed + self.input + dbg
         }
         return self.composed + self.input
@@ -648,6 +648,26 @@ final class LocalPinyin
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
         }
+        // 最高优先级：不看库里的键，直接按“词本身的字首字母”匹配（键写错也不影响召回）
+        if !self.strokeMode && input.count >= 2
+        {
+            var allWords: Set<String> = []
+            for (_, w) in loadUserIni() { allWords.insert(w) }
+            for (_, w) in learned { allWords.insert(w) }
+            for w in allWords
+            {
+                if w.count < 2 { continue }
+                var ini = ""
+                var bad = false
+                for c in w
+                {
+                    if let f = LocalPinyin.charIni(c) { ini.append(f) } else { bad = true; break }
+                }
+                if bad || ini.count != w.count { continue }
+                if ini.hasPrefix(input) { put(w, "") }
+            }
+            if cands.count >= 40 { return }
+        }
         // 第一优先级：用户词库（独立文件，键=词首字母，值=词）
         if !self.strokeMode && input.count >= 2
         {
@@ -795,6 +815,13 @@ final class LocalPinyin
                 input = String(input.dropFirst(segs.prefix(used).joined().count))
                 pendingOn = false
                 pending = composed + input
+                // 同一串里选了部分音节，也要把整词累计起来学
+                typedAll += typed
+                wordBuf += t
+                if wordBuf.count >= 2, typedAll.count >= 2
+                {
+                    learn(self.strokeMode ? typedAll.uppercased() : typedAll, wordBuf)
+                }
                 refresh()
                 return EST.SMR_OK
             }
