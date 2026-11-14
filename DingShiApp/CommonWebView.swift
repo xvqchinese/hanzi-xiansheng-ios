@@ -68,7 +68,7 @@ class CommonWebView: UIViewController, WKNavigationDelegate
             // 词典页字号偏小，统一放大一号
             if !(self.url.contains("/txz/"))
             {
-                let css = "var s=document.createElement('style');s.innerHTML='html,body{font-size:26px !important;} body *{font-size:inherit !important;line-height:1.5 !important;}';document.head.appendChild(s);"
+                let css = "var s=document.createElement('style');s.innerHTML='html,body{font-size:26px !important;line-height:1.5 !important;} body,p,div,span,td,li,dd,dt,section,article,blockquote,h1,h2,h3,h4,h5,font{font-size:26px !important;line-height:1.5 !important;max-width:100% !important;overflow-wrap:break-word !important;word-break:break-word !important;white-space:normal !important;} img{max-width:100% !important;height:auto !important;}';document.head.appendChild(s);"
                 let script = WKUserScript(source: css, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
                 self.web?.configuration.userContentController.addUserScript(script)
             }
