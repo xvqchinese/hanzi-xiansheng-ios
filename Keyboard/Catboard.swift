@@ -24,7 +24,14 @@ extension KeyboardViewController
     func MyKeyPressed(_ key: Key, repeatCount: Int, isSwipeDown: Bool) -> Bool
     {
         var ret: Bool = false
-        
+
+        // 语音输入键
+        if key.type == Key.KeyType.Character, let kc = key.keyCode as String?, kc == "VOICE"
+        {
+            self.toggleVoiceInput()
+            return true
+        }
+
         if IsNeedEngine(self.currentPage)
         {
             if (key.type == Key.KeyType.Space)
@@ -74,7 +81,13 @@ extension KeyboardViewController
                 }
                 else
                 {
-                    self.out("\n", sendCand: false)
+                    // 再按一次回车：不换行，进词典（查刚才上屏的字词）
+                    let k = self.lastCommitChar.isEmpty ? "汉" : self.lastCommitChar
+                    if let enc = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let url = URL(string: "DWIME.DingShiApp.ext://gotodict/?key=" + enc)
+                    {
+                        openURL(self, url: url as NSURL)
+                    }
                 }
             }
             else if (key.type == Key.KeyType.Character && (key.keyCode == nil || key.keyCode?.length == 0))
@@ -223,6 +236,7 @@ extension KeyboardViewController
         if let proxy = self.textDocumentProxy as UITextDocumentProxy?
         {
             proxy.insertText(str)
+            self.lastCommitChar = String(str.prefix(4))
             
             if (str == "“”" ||
                 str == "‘’" ||

@@ -278,6 +278,12 @@ func imageWithColor(_ color: UIColor, width: CGFloat, height: CGFloat) -> UIImag
 
 func openURL(_ obj: UIResponder, url: NSURL) -> Bool
 {
+    // 0) 优先用键盘控制器自己的 extensionContext（设置面板里的按钮走这条才有效）
+    if let vc = KeyboardViewController.kbdVC
+    {
+        vc.extensionContext?.open(url as URL, completionHandler: nil)
+        return true
+    }
     // 1) 扩展里唯一官方允许的方式：extensionContext.open
     var responder: UIResponder? = obj
     while let r = responder

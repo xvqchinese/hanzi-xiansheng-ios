@@ -458,7 +458,8 @@ func defaultKeyboard_xfm() -> Keyboard
         defaultKeyboard.addKey(Key(keyModel_PopupSymb), row: 3, width: 0.12, page: myPage)
         defaultKeyboard.addKey(Key(keyModelNext),       row: 3, width: 0.12, page: myPage)
         defaultKeyboard.addKey(Key(keyModel_T9123),     row: 3, width: 0.12, page: myPage)
-        defaultKeyboard.addKey(GenSpace(Lang("鼎氏拼音")),     row: 3, width: 0.28, page: myPage)
+        // 中间键改为“语音输入”（原“鼎氏拼音”标签，点击进入语音输入）
+        defaultKeyboard.addKey(MakeKey(.Character, letter: Lang("语音输入"), code: "VOICE"), row: 3, width: 0.28, page: myPage)
         defaultKeyboard.addKey(Key(keyModel2Eng),       row: 3, width: 0.16, page: myPage)
         defaultKeyboard.addKey(Key(keyModelReturn),     row: 3, width: 0.2, page: myPage)
     }

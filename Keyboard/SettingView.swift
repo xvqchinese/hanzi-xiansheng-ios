@@ -83,8 +83,9 @@ with something (or leave it blank if you like.)
         self.addSubview(self.close)
         
         self.more.addTarget(self, action: Selector("doMoreSetting"), for: .touchUpInside)
-        self.close.addTarget(self.superview?.superclass, action: Selector("doSetting"), for: .touchUpInside)
-        self.gps.addTarget(self.superview?.superclass, action: Selector("doLocaltion"), for: .touchUpInside)
+        // 原来 target 传的是 superview?.superclass（不是对象，点了没反应），改为面板自己响应后发通知
+        self.close.addTarget(self, action: Selector("doCloseSelf"), for: .touchUpInside)
+        self.gps.addTarget(self, action: Selector("doLocateSelf"), for: .touchUpInside)
         self.singleHand.addTarget(self, action: Selector("doSingleHand"), for: .touchUpInside)
         self.kbBig.addTarget(self, action: Selector("doKbHeight:"), for: .touchUpInside)
         self.kbMid.addTarget(self, action: Selector("doKbHeight:"), for: .touchUpInside)
@@ -223,6 +224,16 @@ with something (or leave it blank if you like.)
         NotificationCenter.default.post(name: Notification.Name("DWKbResize"), object: nil)
         self.superview?.setNeedsLayout()
         self.superview?.layoutIfNeeded()
+    }
+
+    @objc func doCloseSelf()
+    {
+        NotificationCenter.default.post(name: Notification.Name("DWCloseSetting"), object: nil)
+    }
+
+    @objc func doLocateSelf()
+    {
+        NotificationCenter.default.post(name: Notification.Name("DWLocate"), object: nil)
     }
 
     @objc func doMoreSetting()

@@ -7,6 +7,8 @@
 //
 
 import UIKit
+import Speech
+import AVFoundation
 import Foundation
 import AudioToolbox
 import CoreLocation
@@ -23,6 +25,13 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     
     var heightConstraint: NSLayoutConstraint!
     var heightConstraintAdd: Bool = false
+    var lastCommitChar: String = ""
+    // 语音输入
+    var speechRec: SFSpeechRecognizer?
+    var speechReq: SFSpeechAudioBufferRecognitionRequest?
+    var speechTask: SFSpeechRecognitionTask?
+    var speechOn: Bool = false
+    static weak var kbdVC: KeyboardViewController?
     var mResizeGrip: UIView?
     var mResizeStart: CGFloat?
 
@@ -198,6 +207,14 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     override func viewDidLoad()
     {
         super.viewDidLoad()
+        KeyboardViewController.kbdVC = self
+        // 设置面板/定位按钮改走通知，避免 target 找不到
+        NotificationCenter.default.addObserver(forName: Notification.Name("DWCloseSetting"), object: nil, queue: .main) { [weak self] _ in
+            self?.doSetting()
+        }
+        NotificationCenter.default.addObserver(forName: Notification.Name("DWLocate"), object: nil, queue: .main) { [weak self] _ in
+            self?.doLocaltion()
+        }
         IMEngine.dwimeOpenException()
 
         let dummyView = UILabel(frame:CGRect.zero)
@@ -227,6 +244,11 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
             self.view.addSubview(g)
         }
         self.heightConstraint.priority = UILayoutPriority(999)
+        if let iv = self.inputView, !self.heightConstraintAdd
+        {
+            iv.addConstraint(self.heightConstraint)
+            self.heightConstraintAdd = true
+        }
         // 键盘内面板改“大/中/小”后立刻重算高度
         NotificationCenter.default.addObserver(forName: Notification.Name("DWKbResize"), object: nil, queue: OperationQueue.main)
         { [weak self] _ in
@@ -1017,3 +1039,105 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
 //        return true
 //    }
 //}
+
+// MARK: - 语音输入
+extension KeyboardViewController
+{
+    @objc func toggleVoiceInput()
+    {
+        if speechOn { stopVoice(); return }
+        SFSpeechRecognizer.requestAuthorization { st in
+            DispatchQueue.main.async {
+                guard st == .authorized else {
+                    self.showVoiceTip("请在系统设置里允许“语音识别”和“麦克风”")
+                    return
+                }
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        if granted { self.startVoice() }
+                        else { self.showVoiceTip("请在系统设置里允许麦克风") }
+                    }
+                }
+            }
+        }
+    }
+
+    func showVoiceTip(_ t: String)
+    {
+        let lab = UILabel()
+        lab.text = t
+        lab.font = UIFont.systemFont(ofSize: 13)
+        lab.textColor = .white
+        lab.backgroundColor = UIColor(white: 0.2, alpha: 0.9)
+        lab.textAlignment = .center
+        lab.frame = CGRect(x: 10, y: 6, width: self.view.bounds.width - 20, height: 26)
+        lab.tag = 7788
+        lab.layer.cornerRadius = 6
+        lab.clipsToBounds = true
+        self.view.addSubview(lab)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { lab.removeFromSuperview() }
+    }
+
+    func startVoice()
+    {
+        speechRec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+        guard let rec = speechRec, rec.isAvailable else {
+            showVoiceTip("语音识别暂不可用")
+            return
+        }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch { showVoiceTip("麦克风被占用") ; return }
+
+        speechReq = SFSpeechAudioBufferRecognitionRequest()
+        guard let req = speechReq else { return }
+        req.shouldReportPartialResults = true
+        let engine = AVAudioEngine()
+        let node = engine.inputNode
+        let fmt = node.outputFormat(forBus: 0)
+        node.removeTap(onBus: 0)
+        node.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in req.append(buf) }
+        engine.prepare()
+        do { try engine.start() } catch { showVoiceTip("麦克风启动失败"); return }
+        speechOn = true
+        showVoiceTip("语音输入中，请说话…")
+
+        speechTask = rec.recognitionTask(with: req) { result, err in
+            if let r = result {
+                let t = r.bestTranscription.formattedString
+                if r.isFinal && !t.isEmpty {
+                    DispatchQueue.main.async {
+                        self.textDocumentProxy.insertText(t)
+                        self.lastCommitChar = String(t.prefix(4))
+                    }
+                    self.stopVoice()
+                    return
+                }
+            }
+            if err != nil { DispatchQueue.main.async { self.stopVoice() } }
+        }
+    }
+
+    func stopVoice()
+    {
+        speechOn = false
+        speechTask?.cancel(); speechTask = nil
+        speechReq?.endAudio(); speechReq = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+}
+
+extension KeyboardViewController
+{
+    override func viewDidLayoutSubviews()
+    {
+        super.viewDidLayoutSubviews()
+        if let g = self.mResizeGrip
+        {
+            g.frame = CGRect(x: (self.view.bounds.width - 200) / 2, y: 0, width: 200, height: 24)
+            self.view.bringSubviewToFront(g)
+        }
+    }
+}

@@ -454,6 +454,44 @@ final class LocalPinyin
         return charIdx?[base + tone] ?? []
     }
 
+    // wordpy3 全量缓存（带调全拼），用于“前缀 + 首字母”混合匹配
+    private static var py3Map: [String: [String]]? = nil
+    static func py3Table() -> [String: [String]]
+    {
+        if let t = py3Map { return t }
+        var m: [String: [String]] = [:]
+        if let path = Bundle(for: LocalPinyin.self).path(forResource: "wordpy3", ofType: "txt"),
+           let t = try? String(contentsOfFile: path, encoding: .utf8)
+        {
+            for line in t.split(separator: "\n")
+            {
+                guard let tab = line.firstIndex(of: "\t") else { continue }
+                let k = String(line[line.startIndex..<tab])
+                let v = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                m[k] = v
+            }
+        }
+        py3Map = m
+        return m
+    }
+
+    // 前半段是带调完整音节，后半段只给声母首字母：按前缀找词，校验字数与首字母
+    static func mixedWords(prefix: String, initial: String, charCount: Int) -> [String]
+    {
+        if prefix.isEmpty { return [] }
+        var out: [String] = []
+        let t = py3Table()
+        for (k, v) in t
+        {
+            if !k.hasPrefix(prefix) { continue }
+            let rest = k.dropFirst(prefix.count)
+            if rest.isEmpty || !rest.hasPrefix(initial) { continue }
+            for w in v where w.count == charCount { out.append(w) }
+            if out.count >= 12 { break }
+        }
+        return out
+    }
+
     // 混合输入索引：一段完整音节 + 一段首字母（hanqz → 汉字/汉子）
     private static var mixText: String? = nil
     private static var mixCache: [String: [String]] = [:]
@@ -1108,34 +1146,38 @@ final class LocalPinyin
         }
 
         lv = 1
-        // 混合输入：一段带调完整音节 + 一段首字母（hanqz），首字母那半不限声调
+        // 精准递进：前几段是带调完整音节，末段给首字母（hanqz / hanqziqxians），首字母不限调
         if !self.strokeMode
         {
             let segs = segments(input)
             if segs.count >= 2 && segs.count <= 6
             {
-                var parts: [String] = []
-                var bad = false
-                for sg in segs
+                var toned = ""
+                var used = 0
+                var rest = ""
+                for (i, sg) in segs.enumerated()
                 {
                     var t = sg.lowercased()
-                    var tone = ""
-                    var isInitial = false
-                    if t.count == 1 && !("aeiouv".contains(t)) { isInitial = true }
-                    else if t.count >= 3, t.last == t.dropLast().last
+                    let isInitial = (t.count == 1 && !"aeiouv".contains(t))
+                    if isInitial
                     {
-                        tone = "n"; t.removeLast()
+                        // 首字母必须落在最后一段，且只允许一个
+                        if i != segs.count - 1 { break }
+                        rest = t
+                        used = i
+                        break
                     }
+                    var tone = ""
+                    if t.count >= 3 && t.last == t.dropLast().last { tone = "n"; t.removeLast() }
                     else if let l = t.last, "xvq".contains(l) { tone = String(l); t.removeLast() }
-                    if isInitial { parts.append(t); continue }
-                    if tone == "n" { parts.append(t + String(t.last ?? "e")) }
-                    else { parts.append(t + tone) }
+                    if tone == "n" { toned += t + String(t.last ?? "e") }
+                    else { toned += t + tone }
+                    used = i + 1
                 }
-                if !bad && parts.contains(where: { $0.count == 1 })
+                if !rest.isEmpty && used == segs.count - 1
                 {
-                    for w in LocalPinyin.wordsForMix(parts.joined(separator: "|"))
+                    for w in LocalPinyin.mixedWords(prefix: toned, initial: rest, charCount: segs.count)
                     {
-                        if w.count != segs.count { continue }
                         put(w, "")
                         if cands.count >= 30 { break }
                     }
