@@ -402,6 +402,10 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         MyLog("------->> viewDidLayoutSubviews")
         super.viewDidLayoutSubviews()
         let kbHeight = getKbHeight(getOrientation())
+        if abs(self.preferredContentSize.height - kbHeight) > 1
+        {
+            self.preferredContentSize = CGSize(width: self.view.frame.width, height: kbHeight)
+        }
         MyLog("[KBDBG] view=\(self.view.frame) input=\(String(describing: self.inputView?.frame)) kbH=\(kbHeight) gkb=\(String(describing: Globals.kbHeight))")
         if let g = self.mResizeGrip
         {
@@ -1126,18 +1130,5 @@ extension KeyboardViewController
         speechTask?.cancel(); speechTask = nil
         speechReq?.endAudio(); speechReq = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-    }
-}
-
-extension KeyboardViewController
-{
-    override func viewDidLayoutSubviews()
-    {
-        super.viewDidLayoutSubviews()
-        if let g = self.mResizeGrip
-        {
-            g.frame = CGRect(x: (self.view.bounds.width - 200) / 2, y: 0, width: 200, height: 24)
-            self.view.bringSubviewToFront(g)
-        }
     }
 }
