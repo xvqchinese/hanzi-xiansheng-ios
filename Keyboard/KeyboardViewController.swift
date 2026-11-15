@@ -1143,7 +1143,8 @@ extension KeyboardViewController
             }
             if err != nil {
                 DispatchQueue.main.async {
-                    if let t = self.voicePending, !t.isEmpty {
+                    let t = self.voicePending
+                    if !t.isEmpty {
                         self.textDocumentProxy.insertText(t)
                         self.lastCommitChar = String(t.prefix(4))
                     }
