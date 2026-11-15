@@ -1540,6 +1540,12 @@ final class LocalPinyin
             if "hspdnz".contains(c) || "HSPDNZ".contains(c) { let l = Character(c.lowercased()); input.append(l); typed.append(l) }
         }
         else if c >= "a" && c <= "z" { input.append(c); typed.append(c) }
+        else if c >= "A" && c <= "Z"
+        {
+            // 大写字母一律按小写进编码串，否则大写状态打 HANQZ 一个候选都不出
+            let l = Character(c.lowercased())
+            input.append(l); typed.append(l)
+        }
         if input.count > 30 { input = String(input.suffix(30)) }
         refresh()
     }

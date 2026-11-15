@@ -58,6 +58,13 @@ class CommandBanner: BannerView
         self.settingBt.setBackgroundImage(Globals.images["setp"], for: .selected)
         self.settingBt.setBackgroundImage(Globals.images["setp"], for: .highlighted)
         self.settingBt.sizeToFit()
+        // 绿色设置按钮原来只有一枚浅色图标，看不清：加底色、圆角、描边，扩大点击区
+        self.settingBt.backgroundColor = UIColor(red: 0.13, green: 0.62, blue: 0.35, alpha: 1.0)
+        self.settingBt.layer.cornerRadius = 7
+        self.settingBt.layer.borderWidth = 1
+        self.settingBt.layer.borderColor = UIColor.white.withAlphaComponent(0.85).cgColor
+        self.settingBt.clipsToBounds = true
+        self.settingBt.frame.size = CGSize(width: 40, height: 34)
         
         self.switchBt.setBackgroundImage(Globals.images["kbd"], for: .normal)
         self.switchBt.setBackgroundImage(Globals.images["kbdp"], for: .selected)

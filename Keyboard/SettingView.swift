@@ -84,6 +84,8 @@ with something (or leave it blank if you like.)
         
         self.more.addTarget(self, action: Selector("doMoreSetting"), for: .touchUpInside)
         // 原来 target 传的是 superview?.superclass（不是对象，点了没反应），改为面板自己响应后发通知
+        // 面板自己先兜底绑一次；键盘控制器（ImeHandler.showSetting）会再绑一次，
+        // 所以 doCloseSelf / doLocateSelf 里要先看有没有第二个 target，避免一次点击关两次
         self.close.addTarget(self, action: Selector("doCloseSelf"), for: .touchUpInside)
         self.gps.addTarget(self, action: Selector("doLocateSelf"), for: .touchUpInside)
         self.singleHand.addTarget(self, action: Selector("doSingleHand"), for: .touchUpInside)
@@ -226,14 +228,21 @@ with something (or leave it blank if you like.)
         self.superview?.layoutIfNeeded()
     }
 
+    // 兜底：只有在没人接这个按钮时才发通知（正常由键盘控制器直接处理）
     @objc func doCloseSelf()
     {
-        NotificationCenter.default.post(name: Notification.Name("DWCloseSetting"), object: nil)
+        if self.close.allTargets.count <= 1
+        {
+            NotificationCenter.default.post(name: Notification.Name("DWCloseSetting"), object: nil)
+        }
     }
 
     @objc func doLocateSelf()
     {
-        NotificationCenter.default.post(name: Notification.Name("DWLocate"), object: nil)
+        if self.gps.allTargets.count <= 1
+        {
+            NotificationCenter.default.post(name: Notification.Name("DWLocate"), object: nil)
+        }
     }
 
     @objc func doMoreSetting()
