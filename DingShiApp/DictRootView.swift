@@ -8,6 +8,8 @@
 
 
 import Foundation
+import Speech
+import AVFoundation
 import UIKit
 import WebKit
 import GLKit
@@ -249,41 +251,134 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         self.navigationController?.pushViewController(UserInfoViewController(), animated: true)
     }
     
+    // MARK: 词典页语音（改 iOS 原生识别，去掉百度 SDK 依赖）
+    var spRec: SFSpeechRecognizer?
+    var spReq: SFSpeechAudioBufferRecognitionRequest?
+    var spTask: SFSpeechRecognitionTask?
+    var spEngine: AVAudioEngine?
+    var spListening: Bool = false
+    var spVoiceTip: UILabel?
+
     @objc func onVoiceBtn()
     {
-        // 键盘扩展里用过语音后，音频会话可能还占着 .record；这里先复位再交给百度识别
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playAndRecord, mode: .default,
-                                 options: [.defaultToSpeaker, .allowBluetooth])
-        try? session.setActive(true, options: [])
-        self.customVoiceView = nil
-        self.customVoiceView = BDVRCustomRecognitonViewController(nibName: nil, bundle: nil)
-        self.customVoiceView!.delegate = self
-        
-        BDVoiceRecognitionClient.sharedInstance().setApiKey("LAdtPcao8U8T6Vn7eKwwnjtL", withSecretKey: "a529e2f82826adb4b054e14f7f0f6e4f")
-        BDVoiceRecognitionClient.sharedInstance().setPropertyList([20000])
-        BDVoiceRecognitionClient.sharedInstance().setCityID(1)
-        BDVoiceRecognitionClient.sharedInstance().setConfig("nlu", withFlag: false)
-        BDVoiceRecognitionClient.sharedInstance().setLanguage(Int32(0))
-        BDVoiceRecognitionClient.sharedInstance().cancelListenCurrentDBLevelMeter()
-        BDVoiceRecognitionClient.sharedInstance().setPlayTone(Int32(1), isPlay: false)
-        BDVoiceRecognitionClient.sharedInstance().setPlayTone(Int32(2), isPlay: false)
-        let appCode = "8310051"
-        let datFilePath  = Bundle.main.path(forResource: "s_1", ofType: "")
-        let LMDatFilePath = Bundle.main.path(forResource: "s_2_InputMethod", ofType: "")
-        let recogGrammSlot = ["$song_CORE":"中国", "$app_CORE":"孔子"]
-        let ret = BDVoiceRecognitionClient.sharedInstance().loadOfflineEngine(appCode, license: nil, datFile: datFilePath, lmDatFile: LMDatFilePath, grammSlot: recogGrammSlot)
-        if ret != 0
-        {
-            return
-        }
-        else
-        {
-            let keyWindow = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? UIApplication.shared.windows.first
-            keyWindow?.addSubview(self.customVoiceView!.view)
+        if spListening { stopDictVoice(); return }
+        let auth = SFSpeechRecognizer.requestAuthorization { _ in }
+        _ = auth
+        AVAudioSession.sharedInstance().requestRecordPermission { ok in
+            DispatchQueue.main.async {
+                if !ok { self.dictVoiceTipShow("未授权麦克风，请到 设置→汉字先生 打开"); return }
+                self.startDictVoice()
+            }
         }
     }
-    
+
+    func dictVoiceTipShow(_ t: String)
+    {
+        spVoiceTip?.removeFromSuperview()
+        let lab = UILabel()
+        lab.text = t
+        lab.font = UIFont.systemFont(ofSize: 14)
+        lab.textColor = .white
+        lab.backgroundColor = UIColor(white: 0.15, alpha: 0.92)
+        lab.textAlignment = .center
+        lab.numberOfLines = 0
+        lab.frame = CGRect(x: 12, y: 96, width: self.view.bounds.width - 24, height: 40)
+        lab.layer.cornerRadius = 8
+        lab.clipsToBounds = true
+        self.view.addSubview(lab)
+        self.spVoiceTip = lab
+    }
+
+    func startDictVoice()
+    {
+        stopDictVoice()
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.record, mode: .measurement, options: [])
+            try session.setActive(true, options: [])
+        } catch {
+            dictVoiceTipShow("音频会话启动失败")
+            return
+        }
+        spRec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+        guard let rec = spRec, rec.isAvailable else {
+            dictVoiceTipShow("语音识别暂不可用，请稍后再试")
+            return
+        }
+        spReq = SFSpeechAudioBufferRecognitionRequest()
+        spReq?.shouldReportPartialResults = true
+        if #available(iOS 13.0, *) { spReq?.requiresOnDeviceRecognition = false }
+        let engine = AVAudioEngine()
+        spEngine = engine
+        let input = engine.inputNode
+        let fmt = input.outputFormat(forBus: 0)
+        input.removeTap(onBus: 0)
+        input.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in
+            self.spReq?.append(buf)
+        }
+        do {
+            engine.prepare()
+            try engine.start()
+        } catch {
+            dictVoiceTipShow("麦克风启动失败")
+            stopDictVoice()
+            return
+        }
+        spListening = true
+        dictVoiceTipShow("请说普通话…")
+        spTask = rec.recognitionTask(with: spReq!) { result, err in
+            if let r = result {
+                let t = r.bestTranscription.formattedString
+                if !t.isEmpty {
+                    DispatchQueue.main.async {
+                        self.dictVoiceTipShow(t)
+                        self.searchBar.text = t
+                    }
+                }
+                if r.isFinal {
+                    DispatchQueue.main.async {
+                        self.stopDictVoice()
+                        if self.searchBar.text?.isEmpty == false {
+                            self.startWorking()
+                            self.doSearch()
+                        }
+                    }
+                }
+            }
+            if err != nil {
+                DispatchQueue.main.async {
+                    self.stopDictVoice()
+                    if let t = self.searchBar.text, !t.isEmpty {
+                        self.startWorking()
+                        self.doSearch()
+                    } else {
+                        self.dictVoiceTipShow("没听清，请再说一次")
+                    }
+                }
+            }
+        }
+        // 6 秒没有结果也收尾
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+            if self.spListening { self.stopDictVoice() }
+        }
+    }
+
+    func stopDictVoice()
+    {
+        spListening = false
+        spTask?.cancel(); spTask = nil
+        spReq?.endAudio(); spReq = nil
+        if let e = spEngine {
+            e.stop()
+            e.inputNode.removeTap(onBus: 0)
+        }
+        spEngine = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        if let v = spVoiceTip {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { v.removeFromSuperview() }
+        }
+    }
+
     // 不带百度 UI 的方法
     func voiceRecognitionResultOut(_ results: String!)
     {
@@ -308,7 +403,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
 
     func dictFontPx() -> Int
     {
-        let base: CGFloat = self.dictFontIdx == 0 ? 20 : (self.dictFontIdx == 1 ? 26 : 32)
+        let base: CGFloat = self.dictFontIdx == 0 ? 24 : (self.dictFontIdx == 1 ? 30 : 36)
         let scale = min(max(UIScreen.main.bounds.width / 390.0, 0.9), 1.25)
         return Int(base * scale)
     }
