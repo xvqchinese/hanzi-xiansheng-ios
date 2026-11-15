@@ -1045,9 +1045,14 @@ extension KeyboardViewController
         let cur = SFSpeechRecognizer.authorizationStatus()
         if cur == .notDetermined
         {
-            // 扩展里弹不出授权框：打开主 App 去授权，回来再点这里
+            // 扩展里弹不出授权框：先尝试请求一次，同时打开主 App 去授权
+            SFSpeechRecognizer.requestAuthorization { st in
+                DispatchQueue.main.async {
+                    if st == .authorized { self.startVoice() }
+                    else { self.showVoiceTip("请先在主 App 里允许语音识别与麦克风") }
+                }
+            }
             if let url = URL(string: "DWIME.DingShiApp.ext://open-config-app") { openURL(self, url: url as NSURL) }
-            showVoiceTip("请先在主 App 里允许语音识别与麦克风")
             return
         }
         SFSpeechRecognizer.requestAuthorization { st in

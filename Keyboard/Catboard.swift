@@ -26,7 +26,8 @@ extension KeyboardViewController
         var ret: Bool = false
 
         // 语音输入键
-        if key.type == Key.KeyType.Character, let kc = key.keyCode as String?, kc == "VOICE"
+        if key.type == Key.KeyType.Character, let kc = key.keyCode as String?,
+           kc.hasPrefix("VOICE") || key.outputForCase(false) == "语音输入"
         {
             self.toggleVoiceInput()
             return true
@@ -68,6 +69,10 @@ extension KeyboardViewController
                     {
                         self.selectCand(0, str: nil)
                         self.catBreak()
+                        // 上屏后立刻清空组合串，再按回车就进词典
+                        self.engine.Reset()
+                        self.closeCand()
+                        updateCandComp()
                     }
                     else
                     {
