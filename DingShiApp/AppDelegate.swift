@@ -8,6 +8,7 @@ import AVFoundation
 //
 
 import UIKit
+import Speech
 
 @_silgen_name("DWLastCrash")
 func DWLastCrash() -> UnsafePointer<CChar>?
@@ -149,6 +150,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        // 键盘里的语音输入要靠宿主 App 先拿到权限
+        if SFSpeechRecognizer.authorizationStatus() == .notDetermined
+        {
+            SFSpeechRecognizer.requestAuthorization { _ in }
+        }
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     }
 

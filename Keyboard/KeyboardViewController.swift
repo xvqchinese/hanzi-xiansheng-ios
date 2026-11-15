@@ -244,22 +244,14 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
             self.view.addSubview(g)
         }
         self.heightConstraint.priority = UILayoutPriority(999)
-        if let iv = self.inputView, !self.heightConstraintAdd
-        {
-            iv.addConstraint(self.heightConstraint)
-            self.heightConstraintAdd = true
-        }
+        self.heightConstraint.priority = UILayoutPriority(250)   // 只作参考，绝不压系统高度
         // 键盘内面板改“大/中/小”后立刻重算高度
         NotificationCenter.default.addObserver(forName: Notification.Name("DWKbResize"), object: nil, queue: OperationQueue.main)
         { [weak self] _ in
             guard let s = self else { return }
             let h = s.getKbHeight(getOrientation())
             s.heightConstraint.constant = h
-            if !s.heightConstraintAdd
-            {
-                s.inputView!.addConstraint(s.heightConstraint)
-                s.heightConstraintAdd = true
-            }
+            s.preferredContentSize = CGSize(width: s.view.frame.width, height: h)
             s.preferredContentSize = CGSize(width: s.view.bounds.width, height: h)
             s.view.setNeedsUpdateConstraints()
             s.view.setNeedsLayout()
@@ -1050,6 +1042,14 @@ extension KeyboardViewController
     @objc func toggleVoiceInput()
     {
         if speechOn { stopVoice(); return }
+        let cur = SFSpeechRecognizer.authorizationStatus()
+        if cur == .notDetermined
+        {
+            // 扩展里弹不出授权框：打开主 App 去授权，回来再点这里
+            if let url = URL(string: "DWIME.DingShiApp.ext://open-config-app") { openURL(self, url: url as NSURL) }
+            showVoiceTip("请先在主 App 里允许语音识别与麦克风")
+            return
+        }
         SFSpeechRecognizer.requestAuthorization { st in
             DispatchQueue.main.async {
                 guard st == .authorized else {

@@ -984,14 +984,15 @@ final class LocalPinyin
         let sorted = pairs.sorted { a, b in
             let wa = a.0, wb = b.0
             let ca = wa.count, cb = wb.count
-            // 用到的输入越多越靠前：多字词优先于短词（汉 字 先 生 > 汉 字）
+            // 严格按使用频率
+            let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
+            if fa != fb { return fa > fb }
+            // 同频时，用尽输入更多的排前
             if wa.count != wb.count { return wa.count > wb.count }
             let la = lvv[wa] ?? 2, lb = lvv[wb] ?? 2
             if la != lb { return la < lb }
             let ga = ca > 1 ? 0 : 1, gb = cb > 1 ? 0 : 1
             if ga != gb { return ga < gb }
-            let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
-            if fa != fb { return fa > fb }
             let ta = lt[wa] ?? 0, tb = lt[wb] ?? 0
             if ta != tb { return ta > tb }
             let da = abs(ca - segCnt), db = abs(cb - segCnt)
