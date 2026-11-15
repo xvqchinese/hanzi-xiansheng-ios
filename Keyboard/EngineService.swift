@@ -521,6 +521,12 @@ final class LocalPinyin
         return out
     }
 
+    static func pybAll() -> [String: [String]]
+    {
+        _ = wordsForBases("")
+        return pybMap ?? [:]
+    }
+
     static func wordsForBases(_ key: String) -> [String]
     {
         if pybMap == nil
@@ -686,22 +692,27 @@ final class LocalPinyin
                         full.append(chars[endIdx])
                         endIdx += 1
                     }
-                    else if endIdx + 1 < n && chars[endIdx] == chars[endIdx + 1]
+                    else if endIdx < n && chars[endIdx] == chars[len - 1]
                     {
-                        full.append(chars[endIdx])
-                        full.append(chars[endIdx + 1])
-                        endIdx += 2
+                        full.append(chars[endIdx])   // 轻声：末字母双写
+                        endIdx += 1
                     }
-                    if bestCnt[endIdx] != Int.max && bestCnt[endIdx] + 1 < bestCnt[i]
+                    if bestCnt[endIdx] != Int.max && bestCnt[endIdx] + 1 <= bestCnt[i]
                     {
-                        bestCnt[i] = bestCnt[endIdx] + 1
-                        bestSeg[i] = full
+                        if bestCnt[endIdx] + 1 < bestCnt[i] || (bestSeg[i] ?? "").count < full.count
+                        {
+                            bestCnt[i] = bestCnt[endIdx] + 1
+                            bestSeg[i] = full
+                        }
                     }
                     let plainEnd = i + len
-                    if bestCnt[plainEnd] != Int.max && bestCnt[plainEnd] + 1 < bestCnt[i]
+                    if bestCnt[plainEnd] != Int.max && bestCnt[plainEnd] + 1 <= bestCnt[i]
                     {
-                        bestCnt[i] = bestCnt[plainEnd] + 1
-                        bestSeg[i] = seg
+                        if bestCnt[plainEnd] + 1 < bestCnt[i] || (bestSeg[i] ?? "").count < seg.count
+                        {
+                            bestCnt[i] = bestCnt[plainEnd] + 1
+                            bestSeg[i] = seg
+                        }
                     }
                 }
                 len += 1
@@ -1044,7 +1055,11 @@ final class LocalPinyin
         let sorted = pairs.sorted { a, b in
             let wa = a.0, wb = b.0
             let ca = wa.count, cb = wb.count
-            // 严格按使用频率
+            // 新学的词组排第一（学得越晚越靠前）
+            let lwa = lt[wa] ?? 0, lwb = lt[wb] ?? 0
+            if (lwa > 0) != (lwb > 0) { return lwa > 0 }
+            if lwa != lwb { return lwa > lwb }
+            // 其余严格按使用频率
             let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
             if fa != fb { return fa > fb }
             // 同频时，用尽输入更多的排前
@@ -1145,7 +1160,7 @@ final class LocalPinyin
         let toneStrict = inTones.contains { !$0.isEmpty }
         func toneOK(_ w: String, _ cd: String) -> Bool
         {
-            if !toneStrict || w.count != 1 { return true }
+            if !toneStrict || w.count != 1 || self.segments(self.input).count != 1 { return true }
             if cd.isEmpty { return false }
             let cdTones = segments(cd).map { seg -> String in
                 if let l = seg.last, "xvq".contains(l) { return String(l) }
@@ -1153,6 +1168,35 @@ final class LocalPinyin
             }
             guard let want = inTones.first, let got = cdTones.first else { return false }
             return want == got
+        }
+        // 除末音节外一律严格：带调（含轻声双写）必须同码，无调母只能一声；末音节可按基座前缀放宽
+        func isGiven(_ sg: String) -> Bool
+        {
+            let l = sg.lowercased()
+            if l.count >= 3 && l.last == l.dropLast().last { return true }
+            if let x = l.last, "xvq".contains(x) { return true }
+            return false
+        }
+        func matchWord(_ segs: [String], _ codes: [String]) -> Bool
+        {
+            if self.strokeMode { return true }
+            guard codes.count == segs.count, !segs.isEmpty else { return false }
+            let lastIdx = segs.count - 1
+            for i in 0..<segs.count
+            {
+                let sg = segs[i].lowercased()
+                let b = LocalPinyin.baseOfForSeg(sg)
+                if isGiven(sg)
+                {
+                    if codes[i] != sg { return false }
+                }
+                else if i == lastIdx
+                {
+                    if !codes[i].hasPrefix(b) { return false }
+                }
+                else if codes[i] != b { return false }
+            }
+            return true
         }
         func put(_ w: String, _ cd: String)
         {
@@ -1172,7 +1216,15 @@ final class LocalPinyin
             }
             if !toneOK(w, cd) { return }
             if seen.contains(w) { return }
-            if !ok(cd) { return }
+            if !cd.isEmpty
+            {
+                let cdSegs = cd.components(separatedBy: ",").filter { !$0.isEmpty }
+                let inSegs = segments(keys[0])
+                if w.count > 1 && (cdSegs.count > 1 || inSegs.count > 1)
+                {
+                    if !matchWord(inSegs, cdSegs) { return }
+                }
+            }
             cands.append(w)
             codes.append(self.strokeMode ? input.uppercased() : (cd.isEmpty ? keys[0] : cd))
             seen.insert(w)
@@ -1253,156 +1305,34 @@ final class LocalPinyin
         }
 
         lv = 1
-        // 精准递进：前半段完整音节（带调则严格，无调按词读音）+ 末段首字母（不限调）
+        // 逐步精准：前面每个音节一律严格（带调同调、无调一声），只有末音节可按基座前缀放宽
         if !self.strokeMode
         {
             let segs = segments(input)
-            if segs.count >= 2 && segs.count <= 6, let last = segs.last,
-               last.count >= 1, !"aeiouv".contains(String(last))
+            let allSyl = segs.allSatisfy { $0.count > 1 || "aeiouv".contains(String($0)) }
+            if segs.count >= 2 && segs.count <= 6 && allSyl
             {
                 let head = Array(segs.dropLast())
-                let bases = head.map { LocalPinyin.baseOfForSeg($0) }
-                for (w, codes) in LocalPinyin.mixedByBases(prefixBases: bases, initial: last, charCount: segs.count)
+                let pre = head.map { LocalPinyin.baseOfForSeg($0) }.joined(separator: "|") + "|"
+                let lastBase = LocalPinyin.baseOfForSeg(segs[segs.count - 1])
+                for (k, items) in LocalPinyin.pybAll() where k.hasPrefix(pre)
                 {
-                    var ok = true
-                    for i in 0..<head.count
+                    let tail = String(k.dropFirst(pre.count))
+                    if tail.isEmpty || tail.contains("|") { continue }
+                    if !tail.hasPrefix(lastBase) { continue }
+                    for it in items
                     {
-                        let sg = head[i].lowercased()
-                        let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
-                        if given
-                        {
-                            if codes[i] != sg { ok = false; break }
-                        }
-                        else if codes[i] != bases[i] { ok = false; break }
-                    }
-                    if ok
-                    {
-                        put(w, "")
-                        if cands.count >= 30 { break }
-                    }
-                }
-            }
-        }
-
-        lv = 0
-        // 词级音节匹配（带调整音节严格相等，未带调的音节按词的读音）
-        if !self.strokeMode
-        {
-            let segs = segments(input)
-            if segs.count >= 2 && segs.count <= 6
-            {
-                var bases: [String] = []
-                var ok = true
-                for sg in segs
-                {
-                    var t = sg.lowercased()
-                    if t.count == 1 && !"aeiouv".contains(t) { ok = false; break }
-                    var hasTone = false
-                    if t.count >= 3 && t.last == t.dropLast().last { hasTone = true }
-                    else if let l = t.last, "xvq".contains(l) { hasTone = true }
-                    _ = hasTone
-                    bases.append(LocalPinyin.baseOfForSeg(t))
-                }
-                if ok
-                {
-                    for item in LocalPinyin.wordsForBases(bases.joined(separator: "|"))
-                    {
-                        let parts = item.split(separator: ":")
-                        if parts.count < 2 { continue }
+                        let parts = it.split(separator: ":", maxSplits: 1)
+                        if parts.count != 2 { continue }
                         let w = String(parts[0])
                         let codes = String(parts[1]).components(separatedBy: ",")
                         if codes.count != segs.count { continue }
-                        // 除末音节外一律严格：带调须同调，无调只能一声；末音节可放宽
-                        var match = true
-                        for i in 0..<segs.count
-                        {
-                            let sg = segs[i].lowercased()
-                            let b = LocalPinyin.baseOfForSeg(sg)
-                            let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
-                            if given
-                            {
-                                if codes[i] != sg { match = false; break }
-                            }
-                            else if i == segs.count - 1
-                            {
-                                if LocalPinyin.baseOfForSeg(codes[i]) != b { match = false; break }
-                            }
-                            else if codes[i] != b { match = false; break }
-                        }
-                        if match
-                        {
-                            put(w, "")
-                            if cands.count >= 30 { break }
-                        }
+                        if !matchWord(segs, codes) { continue }
+                        put(w, codes.joined(separator: ","))
+                        if cands.count >= 30 { break }
                     }
                 }
-            }
-        }
-
-        // 最高优先级 0：整词全拼匹配（学过“汉字先生”，打 hanqziqxiansheng 也要出）
-        if !self.strokeMode && input.count >= 4, let pu = LocalPinyin.wordPyURL,
-           let d = try? Data(contentsOf: pu),
-           let pm = (try? JSONSerialization.jsonObject(with: d)) as? [String: String]
-        {
-            let inSegs = segments(input)
-            for (w, code) in pm
-            {
-                if w.count != 2 { continue }   // 全拼只出二字词
-                let cdSegs = code.components(separatedBy: ",").filter { !$0.isEmpty }
-                if cdSegs.count != inSegs.count { continue }
-                var okSeg = true
-                for i in 0..<inSegs.count
-                {
-                    let a = inSegs[i], b = cdSegs[i]
-                    // 必须整段完全相等，不联想、不前缀
-                    if a != b { okSeg = false; break }
-                }
-                if okSeg { put(w, "") }
-                if cands.count >= 40 { return }
-            }
-        }
-        // 递进出字：前 k 段成词（带调严格、无调整串按一声），其余段按自身调出单字；词不成立也必出字
-        if !self.strokeMode
-        {
-            let segs = segments(input)
-            let allSyl = segs.allSatisfy { !($0.count == 1 && !"aeiouv".contains(String($0))) }
-            if segs.count >= 2 && allSyl
-            {
-                lv = 3
-                for k in stride(from: segs.count, through: 2, by: -1)
-                {
-                    var anyTone = false
-                    for sg0 in segs.prefix(k)
-                    {
-                        let l0 = sg0.lowercased()
-                        if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
-                        { anyTone = true; break }
-                    }
-                    let bases = segs.prefix(k).map { LocalPinyin.baseOfForSeg($0) }
-                    for (w, codes) in LocalPinyin.itemsForBases(bases)
-                    {
-                        if codes.count != k { continue }
-                        var ok = true
-                        for i in 0..<k
-                        {
-                            let sg = segs[i].lowercased()
-                            let b = bases[i]
-                            let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
-                            if given
-                            {
-                                if codes[i] != sg { ok = false; break }
-                            }
-                            else if i == k - 1
-                            {
-                                if LocalPinyin.baseOfForSeg(codes[i]) != b { ok = false; break }
-                            }
-                            else if codes[i] != b { ok = false; break }
-                        }
-                        if ok { put(w, "") }
-                        if cands.count >= 20 { break }
-                    }
-                }
-                // 每个音节按自己的调出单字
+                // 每个音节必出同音同调单字
                 lv = 4
                 for sg in segs
                 {
@@ -1410,7 +1340,7 @@ final class LocalPinyin
                     var tone = ""
                     if key.count >= 3 && key.last == key.dropLast().last { tone = "n"; key.removeLast() }
                     else if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
-                    for c in LocalPinyin.charsFor(base: key, tone: tone) { put(c, "") }
+                    for c in LocalPinyin.charsFor(base: key, tone: tone) { put(c, sg.lowercased()) }
                 }
             }
         }
