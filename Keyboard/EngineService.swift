@@ -1279,7 +1279,7 @@ final class LocalPinyin
                         if given { if codes[i] != sg { ok = false; break } }
                         else if !anyToneHead
                         {
-                            if codes[i] != bases[i] { ok = false; break }
+                            if codes[i] != bases[i], codes[i] != bases[i] + String(bases[i].last!) { ok = false; break }
                         }
                         else if LocalPinyin.baseOfForSeg(codes[i]) != bases[i] { ok = false; break }
                     }
@@ -1341,8 +1341,9 @@ final class LocalPinyin
                             }
                             else if !anyTone
                             {
-                                // 全无调母：只能是一声，轻声也不容
-                                if codes[i] != LocalPinyin.baseOfForSeg(sg) { match = false; break }
+                                // 全无调母：只认一声或轻声（末字母双写），三四声一律不出
+                                let b = LocalPinyin.baseOfForSeg(sg)
+                                if codes[i] != b, codes[i] != b + String(b.last!) { match = false; break }
                             }
                             else if LocalPinyin.baseOfForSeg(codes[i]) != LocalPinyin.baseOfForSeg(sg)
                             {
