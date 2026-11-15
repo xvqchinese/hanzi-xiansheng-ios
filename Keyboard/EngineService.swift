@@ -480,6 +480,22 @@ final class LocalPinyin
         return baseOfForSeg(code)
     }
 
+    // 整词基座取词（带回码，便于逐音节比对）
+    static func itemsForBases(_ bases: [String]) -> [(String, [String])]
+    {
+        let key = bases.joined(separator: "|")
+        _ = wordsForBases(key)
+        guard let items = pybMap?[key] else { return [] }
+        var out: [(String, [String])] = []
+        for it in items
+        {
+            let parts = it.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            out.append((String(parts[0]), String(parts[1]).components(separatedBy: ",")))
+        }
+        return out
+    }
+
     // 前半段按音节基座（未带调的音节不限定调），末段只给首字母
     static func mixedByBases(prefixBases: [String], initial: String, charCount: Int) -> [(String, [String])]
     {
@@ -1366,6 +1382,57 @@ final class LocalPinyin
                 if cands.count >= 40 { return }
             }
         }
+        // 递进出字：前 k 段成词（带调严格、无调整串按一声），其余段按自身调出单字；词不成立也必出字
+        if !self.strokeMode
+        {
+            let segs = segments(input)
+            let allSyl = segs.allSatisfy { !($0.count == 1 && !"aeiouv".contains(String($0))) }
+            if segs.count >= 2 && allSyl
+            {
+                lv = 3
+                for k in stride(from: segs.count, through: 2, by: -1)
+                {
+                    var anyTone = false
+                    for sg0 in segs.prefix(k)
+                    {
+                        let l0 = sg0.lowercased()
+                        if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
+                        { anyTone = true; break }
+                    }
+                    let bases = segs.prefix(k).map { LocalPinyin.baseOfForSeg($0) }
+                    for (w, codes) in LocalPinyin.itemsForBases(bases)
+                    {
+                        if codes.count != k { continue }
+                        var ok = true
+                        for i in 0..<k
+                        {
+                            let sg = segs[i].lowercased()
+                            let b = bases[i]
+                            let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
+                            if given { if codes[i] != sg { ok = false; break } }
+                            else if !anyTone
+                            {
+                                if codes[i] != b, codes[i] != b + String(b.last!) { ok = false; break }
+                            }
+                            else if LocalPinyin.baseOfForSeg(codes[i]) != b { ok = false; break }
+                        }
+                        if ok { put(w, "") }
+                        if cands.count >= 20 { break }
+                    }
+                }
+                // 每个音节按自己的调出单字
+                lv = 4
+                for sg in segs
+                {
+                    var key = sg.lowercased()
+                    var tone = ""
+                    if key.count >= 3 && key.last == key.dropLast().last { tone = "n"; key.removeLast() }
+                    else if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
+                    for c in LocalPinyin.charsFor(base: key, tone: tone) { put(c, "") }
+                }
+            }
+        }
+
         lv = 2
         // 内置词库：简拼字母完全相同的词，按词频顺序取前若干
         if !self.strokeMode && input.count >= 2
