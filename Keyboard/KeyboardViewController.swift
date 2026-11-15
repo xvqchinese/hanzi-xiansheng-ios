@@ -31,6 +31,7 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
     var speechReq: SFSpeechAudioBufferRecognitionRequest?
     var speechTask: SFSpeechRecognitionTask?
     var speechOn: Bool = false
+    var voicePending: String = ""
     static weak var kbdVC: KeyboardViewController?
     var mResizeGrip: UIView?
     var mResizeStart: CGFloat?
@@ -1090,6 +1091,7 @@ extension KeyboardViewController
 
     func startVoice()
     {
+        voicePending = ""
         speechRec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
         guard let rec = speechRec, rec.isAvailable else {
             showVoiceTip("语音识别暂不可用")
@@ -1129,6 +1131,7 @@ extension KeyboardViewController
         speechTask = rec.recognitionTask(with: req) { result, err in
             if let r = result {
                 let t = r.bestTranscription.formattedString
+                if !t.isEmpty { self.voicePending = t }
                 if r.isFinal && !t.isEmpty {
                     DispatchQueue.main.async {
                         self.textDocumentProxy.insertText(t)
@@ -1138,7 +1141,15 @@ extension KeyboardViewController
                     return
                 }
             }
-            if err != nil { DispatchQueue.main.async { self.stopVoice() } }
+            if err != nil {
+                DispatchQueue.main.async {
+                    if let t = self.voicePending, !t.isEmpty {
+                        self.textDocumentProxy.insertText(t)
+                        self.lastCommitChar = String(t.prefix(4))
+                    }
+                    self.stopVoice()
+                }
+            }
         }
     }
 

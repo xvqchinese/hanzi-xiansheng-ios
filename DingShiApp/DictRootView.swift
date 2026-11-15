@@ -251,6 +251,11 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     
     @objc func onVoiceBtn()
     {
+        // 键盘扩展里用过语音后，音频会话可能还占着 .record；这里先复位再交给百度识别
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playAndRecord, mode: .default,
+                                 options: [.defaultToSpeaker, .allowBluetooth])
+        try? session.setActive(true, options: [])
         self.customVoiceView = nil
         self.customVoiceView = BDVRCustomRecognitonViewController(nibName: nil, bundle: nil)
         self.customVoiceView!.delegate = self
@@ -298,7 +303,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     {
         self.activityIndicatorView.stopAnimating()
         self.applyFontTo(webView)
-        if #available(iOS 14.0, *) { webView.pageZoom = 1.6 }
+        if #available(iOS 14.0, *) { webView.pageZoom = 1.3 }
     }
 
     func dictFontPx() -> Int

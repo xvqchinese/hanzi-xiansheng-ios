@@ -83,6 +83,8 @@ with something (or leave it blank if you like.)
         self.addSubview(self.close)
         
         self.more.addTarget(self, action: Selector("doMoreSetting"), for: .touchUpInside)
+        self.more.layer.zPosition = 200
+        self.more.isUserInteractionEnabled = true
         // 原来 target 传的是 superview?.superclass（不是对象，点了没反应），改为面板自己响应后发通知
         // 面板自己先兜底绑一次；键盘控制器（ImeHandler.showSetting）会再绑一次，
         // 所以 doCloseSelf / doLocateSelf 里要先看有没有第二个 target，避免一次点击关两次
