@@ -12,6 +12,8 @@
 		CC0000000000000000000A03 /* wordpy2.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A04 /* wordpy2.txt */; };
 		CC0000000000000000000A05 /* wordpy3.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A06 /* wordpy3.txt */; };
 		CC0000000000000000000A07 /* charidx.txt in Resources */ = {isa = PBXBuildFile; fileRef= CC0000000000000000000A08 /* charidx.txt */; };
+		CC0000000000000000000A09 /* wordmix.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A10 /* wordmix.txt */; };
+		CC0000000000000000000A11 /* wordpyb.txt in Resources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000A12 /* wordpyb.txt */; };
 		AA0000000000000000000A02 /* sk.data in Resources */ = {isa = PBXBuildFile; fileRef = 049F0EA119FE1EBC00F4B694 /* sk.data */; };
 		AA0000000000000000000A03 /* en.data in Resources */ = {isa = PBXBuildFile; fileRef = 049F0E9D19FE1EAF00F4B694 /* en.data */; };
 		AA0000000000000000000A04 /* cn2en.data in Resources */ = {isa = PBXBuildFile; fileRef = 9D6BA7DD1D0FB95A00E03FEA /* cn2en.data */; };
