@@ -717,6 +717,12 @@ final class LocalPinyin
                 }
                 len += 1
             }
+            // 单字母兜底必须放在 DP 里面算，否则末尾单字母（hanqz 的 z）会把整串切废
+            if bestCnt[i] == Int.max && bestCnt[i + 1] != Int.max
+            {
+                bestCnt[i] = bestCnt[i + 1] + 1
+                bestSeg[i] = String(chars[i])
+            }
             i -= 1
         }
         // 切不出来的位置兜底成单字母段（首字母混输要用）
@@ -2022,6 +2028,9 @@ class EngineService
             {
                 if key == EST.SPKEY_Return
                 {
+                    // 有候选先取第一个上屏；没有输入才进词典
+                    if lp.hasInput() && lp.cands.count > 0 { return lp.select(0) }
+                    if lp.hasInput() { lp.commitRaw(); return EST.SMR_OK }
                     if let t = lp.plainText(), !t.isEmpty
                     {
                         self.dictHook?(t)

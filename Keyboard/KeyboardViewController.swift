@@ -210,7 +210,8 @@ class KeyboardViewController: UIInputViewController, KeyboardCandProtocol, CLLoc
         KeyboardViewController.kbdVC = self
         // 设置面板/定位按钮改走通知，避免 target 找不到
         NotificationCenter.default.addObserver(forName: Notification.Name("DWCloseSetting"), object: nil, queue: .main) { [weak self] _ in
-            self?.doSetting()
+            self?.closeSetting()
+            self?.showKeyboard()
         }
         NotificationCenter.default.addObserver(forName: Notification.Name("DWLocate"), object: nil, queue: .main) { [weak self] _ in
             self?.doLocaltion()

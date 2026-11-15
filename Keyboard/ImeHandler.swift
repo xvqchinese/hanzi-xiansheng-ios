@@ -104,9 +104,8 @@ extension KeyboardViewController
         }
         if let p = self.mSettingPanel
         {
-            // 按钮重新接到键盘控制器上，原来接到 superview.superclass 是错的，点了没反应
-            p.close.addTarget(self, action: #selector(KeyboardViewController.doSetting), for: .touchUpInside)
-            p.gps.addTarget(self, action: #selector(KeyboardViewController.doLocaltion), for: .touchUpInside)
+            // 返回/定位改走 SettingView 自己发的通知（DWCloseSetting / DWLocate），
+            // 这里不再重复绑 target，避免一次点击关两次
             p.more.addTarget(p, action: #selector(SettingView.doMoreSetting), for: .touchUpInside)
             p.show()
         }

@@ -231,18 +231,12 @@ with something (or leave it blank if you like.)
     // 兜底：只有在没人接这个按钮时才发通知（正常由键盘控制器直接处理）
     @objc func doCloseSelf()
     {
-        if self.close.allTargets.count <= 1
-        {
-            NotificationCenter.default.post(name: Notification.Name("DWCloseSetting"), object: nil)
-        }
+        NotificationCenter.default.post(name: Notification.Name("DWCloseSetting"), object: nil)
     }
 
     @objc func doLocateSelf()
     {
-        if self.gps.allTargets.count <= 1
-        {
-            NotificationCenter.default.post(name: Notification.Name("DWLocate"), object: nil)
-        }
+        NotificationCenter.default.post(name: Notification.Name("DWLocate"), object: nil)
     }
 
     @objc func doMoreSetting()
