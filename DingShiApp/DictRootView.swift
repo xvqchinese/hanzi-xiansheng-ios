@@ -303,7 +303,7 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
     {
         self.activityIndicatorView.stopAnimating()
         self.applyFontTo(webView)
-        if #available(iOS 14.0, *) { webView.pageZoom = 1.3 }
+        if #available(iOS 14.0, *) { webView.pageZoom = 1.45 }
     }
 
     func dictFontPx() -> Int

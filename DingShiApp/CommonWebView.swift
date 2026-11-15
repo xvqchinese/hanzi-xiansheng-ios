@@ -116,7 +116,7 @@ class CommonWebView: UIViewController, WKNavigationDelegate
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!)
     {
         self.injectBigFont(webView)
-        if #available(iOS 14.0, *) { webView.pageZoom = 1.3 }
+        if #available(iOS 14.0, *) { webView.pageZoom = 1.40 }
         self.activityIndicatorView.stopAnimating()
     }
     
