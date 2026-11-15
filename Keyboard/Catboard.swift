@@ -88,15 +88,13 @@ extension KeyboardViewController
                 {
                     // 再按一次回车：不换行，进词典（查刚才上屏的字词）
                     let k = self.lastCommitChar.isEmpty ? "汉" : self.lastCommitChar
-                    if let enc = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                       let url = URL(string: "DWIME.DingShiApp.ext://gotodict/?key=" + enc)
-                    {
-                        _ = openURL(self, url: url as NSURL)
-                        if let vc = KeyboardViewController.kbdVC
-                        { vc.showVoiceTip("回车进词典 k=\(k) " + lastOpenURLResult) }
-                    }
-                    else if let vc = KeyboardViewController.kbdVC
-                    { vc.showVoiceTip("回车：URL 构造失败 k=\(k)") }
+                    // 键盘扩展打不开主 App 的自定义 URL（系统会静默拒绝），改走 App Group 通知：
+                    // 键盘写请求，主 App 前台轮询到就跳词典并查这个词
+                    let d = UserDefaults(suiteName: "group.DWIME_DS")
+                    d?.set("dict:" + k + ":" + String(Date().timeIntervalSince1970), forKey: "kbRequest")
+                    d?.synchronize()
+                    if let vc = KeyboardViewController.kbdVC
+                    { vc.showVoiceTip("已请求 App 打开词典：" + k) }
                 }
             }
             else if (key.type == Key.KeyType.Character && (key.keyCode == nil || key.keyCode?.length == 0))

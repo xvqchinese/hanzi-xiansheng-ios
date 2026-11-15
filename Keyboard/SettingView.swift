@@ -243,8 +243,10 @@ with something (or leave it blank if you like.)
 
     @objc func doMoreSetting()
     {
-        let url: URL? = URL(string: "DWIME.DingShiApp.ext://open-config-app")
-        _ = openURL(self, url: url! as NSURL)
-        if let vc = KeyboardViewController.kbdVC { vc.showVoiceTip("设置跳转 " + lastOpenURLResult) }
+        // 同样改走 App Group：写请求，主 App 轮询到后切到“设置”页
+        let d = UserDefaults(suiteName: "group.DWIME_DS")
+        d?.set("setting:" + String(Date().timeIntervalSince1970), forKey: "kbRequest")
+        d?.synchronize()
+        if let vc = KeyboardViewController.kbdVC { vc.showVoiceTip("已请求 App 打开设置") }
     }
 }

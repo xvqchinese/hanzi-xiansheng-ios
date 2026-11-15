@@ -55,6 +55,34 @@ class XFMAppViewController: UITabBarController {
         
         //self.setViewControllers([self.navDict!, self.navTran!, /*self.navKejian!, */self.navSetting!], animated: false)
         self.setViewControllers([self.navSetting!, self.navDict!, self.navTran!], animated: false)
+        startKbRequestPolling()
+    }
+
+    // 键盘扩展打不开自定义 URL，改由 App Group 传请求：键盘写、App 轮询
+    var kbLastReq: String = ""
+    var kbTimer: Timer?
+
+    func startKbRequestPolling()
+    {
+        kbTimer?.invalidate()
+        kbTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            guard let d = UserDefaults(suiteName: "group.DWIME_DS"),
+                  let req = d.string(forKey: "kbRequest"), !req.isEmpty else { return }
+            if req == self.kbLastReq { return }
+            self.kbLastReq = req
+            let parts = req.components(separatedBy: ":")
+            if parts.count >= 2 && parts[0] == "setting" {
+                self.selectedIndex = 0
+            } else if parts.count >= 3 && parts[0] == "dict" {
+                self.selectedIndex = 1
+                let word = parts[1]
+                if let dr = self.dictRoot {
+                    dr.searchBar.text = word
+                    dr.searchBarSearchButtonClicked(dr.searchBar)
+                }
+            }
+        }
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle
