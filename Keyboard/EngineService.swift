@@ -444,10 +444,9 @@ final class LocalPinyin
         }
         if tone == "n"
         {
-            // 轻声：末字母双写；该音节没有轻声字时按一声出（kongg → 空）
-            let k = base + String(base.last ?? "e")
-            let v = charIdx?[k] ?? []
-            return v.isEmpty ? (charIdx?[base] ?? []) : v
+            // 轻声：键是元音原位双写形（meen/koong）；该音节没有轻声字时按一声出（koong → 空）
+            let v = charIdx?[base] ?? []
+            return v.isEmpty ? (charIdx?[LocalPinyin.collapse(base)] ?? []) : v
         }
         if tone.isEmpty
         {
@@ -467,13 +466,34 @@ final class LocalPinyin
             || s.contains("o") || s.contains("u") || s.contains("v")
     }
 
+    // 轻声：韵母里的元音字母原位双写（men → meen，kong → koong）；折回基座
+    static func collapse(_ s: String) -> String
+    {
+        let low = s.lowercased()
+        for v in ["a", "e", "i", "o", "u"]
+        {
+            if let r = low.range(of: v + v)
+            {
+                var t = low
+                t.replaceSubrange(r, with: v)
+                return t
+            }
+        }
+        return low
+    }
+
+    static func isNeutral(_ s: String) -> Bool
+    {
+        let low = s.lowercased()
+        return collapse(low) != low
+    }
+
     // 去掉调母/轻声双写，得到纯音节基座（v 是 ü，不是调母，靠“剩不剩韵母”判别）
     static func baseOfForSeg(_ code: String) -> String
     {
         var c = code.lowercased()
         if let l = c.last, "xvq".contains(l), hasVowel(String(c.dropLast())) { c.removeLast() }
-        if c.count >= 2, c.last == c.dropLast().last, hasVowel(String(c.dropLast())) { c.removeLast() }
-        return c
+        return collapse(c)
     }
 
 
@@ -685,6 +705,19 @@ final class LocalPinyin
             while len <= 6 && i + len <= n
             {
                 let seg = String(chars[i..<(i + len)])
+                if !LocalPinyin.sySet.contains(seg) && LocalPinyin.isNeutral(seg)
+                {
+                    // 轻声音节：men 的轻声写作 meen（元音原位双写）
+                    let base = LocalPinyin.collapse(seg)
+                    if LocalPinyin.sySet.contains(base), bestCnt[i + len] != Int.max, bestCnt[i + len] + 1 <= bestCnt[i]
+                    {
+                        if bestCnt[i + len] + 1 < bestCnt[i] || (bestSeg[i] ?? "").count < seg.count
+                        {
+                            bestCnt[i] = bestCnt[i + len] + 1
+                            bestSeg[i] = seg
+                        }
+                    }
+                }
                 if LocalPinyin.sySet.contains(seg)
                 {
                     var endIdx = i + len
@@ -692,11 +725,6 @@ final class LocalPinyin
                     if endIdx < n && "xvq".contains(chars[endIdx])
                     {
                         full.append(chars[endIdx])
-                        endIdx += 1
-                    }
-                    else if endIdx < n && chars[endIdx] == chars[len - 1]
-                    {
-                        full.append(chars[endIdx])   // 轻声：末字母双写
                         endIdx += 1
                     }
                     if bestCnt[endIdx] != Int.max && bestCnt[endIdx] + 1 <= bestCnt[i]
@@ -737,28 +765,6 @@ final class LocalPinyin
                 bestSeg[fix] = String(chars[fix])
             }
             fix += 1
-        }
-        // 修复：末字母双写被误当轻声（kongg|e → kong|ge），仅当后面能起两字母以上音节时拆
-        var rp = 0
-        while rp < n
-        {
-            if let sg = bestSeg[rp], sg.count >= 3, let l = sg.last, sg.dropLast().last == l
-            {
-                let b = String(sg.dropLast())
-                if LocalPinyin.sySet.contains(b)
-                {
-                    let j = rp + b.count
-                    var can = false
-                    var L = 2
-                    while L <= 6 && j + L <= n
-                    {
-                        if LocalPinyin.sySet.contains(String(chars[j..<(j + L)])) { can = true; break }
-                        L += 1
-                    }
-                    if can, bestCnt[j] != Int.max, bestCnt[j] + 1 == bestCnt[rp] { bestSeg[rp] = b }
-                }
-            }
-            rp += 1
         }
         if bestCnt[0] == Int.max { return [s] }
         var out: [String] = []
@@ -1275,9 +1281,9 @@ final class LocalPinyin
                 var key = segs0[0].lowercased()
                 var tone = ""
                 let lk = key
-                if lk.count >= 3, lk.last == lk.dropLast().last
+                if LocalPinyin.isNeutral(lk)
                 {
-                    tone = "n"; key.removeLast()
+                    tone = "n"   // 轻声形原样作键（meen/koong），查不到再退回基座
                 }
                 else if let l = key.last, "xvq".contains(l) { tone = String(l); key.removeLast() }
                 lv = 3
@@ -1304,13 +1310,12 @@ final class LocalPinyin
             {
                 var t = seg
                 let low = t.lowercased()
-                // 轻声：最后一个非声母字母双写（不限于元音，如 ngg、err）
-                let isNeutral = low.count >= 3 && low.last == low.dropLast().last
-                if isNeutral
+                // 轻声：韵母里最后一个非声母字母（元音）双写，如 maa/nee/zii/koong
+                if LocalPinyin.isNeutral(low)
                 {
-                    toned += low            // 轻声：末字母双写，原样进键
+                    toned += low            // 轻声：元音原位双写，原样进键（meen）
                     hasTone = true
-                    t.removeLast()
+                    t = LocalPinyin.collapse(low)
                 }
                 else if let last = t.last, "xvq".contains(last)
                 {

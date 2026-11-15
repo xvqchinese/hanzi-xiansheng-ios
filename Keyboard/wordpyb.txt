@@ -1440,7 +1440,7 @@ ren|shi	认识:renq,shix 人士:renx,shiq 人事:renx,shiq 人世:renx,shiq 人�
 ren|cong	人丛:renx,congx
 ren|wei	认为:renq,weiq 人为:renx,weiq 任为:renq,weix 壬未:renx,weiq
 ren|ren	人人:renx,renx 仁人:renx,renx 任人:renq,renx 忍忍:renv,renv 认人:renq,renx 认认:renq,renq
-ren|men	人们:renx,mene
+ren|men	人们:renx,meen
 ren|ti	人体:renx,tiv 人梯:renx,ti
 ren|er	人儿:renx,erx 亻尔:renx,erv
 ren|li	人力:renx,liq 任吏:renq,liq
@@ -1546,7 +1546,7 @@ cang|huang	仓皇:cang,huangx 苍黄:cang,huangx
 zai|xi	仔细:zaiv,xiq
 shi|tu	试图:shiq,tux 师徒:shi,tux 仕途:shiq,tux 使徒:shiv,tux 士徒:shiq,tux 视图:shiq,tux 誓图:shiq,tux
 ta|ren	他人:ta,renx
-ta|men	他们:ta,mene 它们:ta,mene 她们:ta,mene
+ta|men	他们:ta,meen 它们:ta,meen 她们:ta,meen
 ta|lia	他俩:ta,liav
 ta|ma|de	他妈的:ta,ma,dee
 ta|jia	他家:ta,jia 她家:ta,jia
@@ -1584,7 +1584,7 @@ ling|ren	令人:lingq,renx 伶人:lingx,renx 领人:lingv,renx
 ling|zun	令尊:lingq,zun
 ling|hu	令狐:lingq,hux 菱湖:lingx,hux
 ling|hu|chong	令狐冲:lingq,hux,chong
-yi|shang	以上:yiv,shangq 衣裳:yi,shanga 一上:yi,shangq 意商:yiq,shang 衣商:yi,shang 议商:yiq,shang
+yi|shang	以上:yiv,shangq 衣裳:yi,shaang 一上:yi,shangq 意商:yiq,shang 衣商:yi,shang 议商:yiq,shang
 yi|nei	以内:yiv,neiq
 yi|nan	以南:yiv,nanx 疑难:yix,nanx 役男:yi,nanx
 yi|hou	以后:yiv,houq
@@ -1909,7 +1909,7 @@ zuo|da	作答:zuoq,dax 做答:zuoq,dax
 zuo|zhe	作者:zuoq,zhev
 zuo|zheng	作证:zuoq,zhengq 佐证:zuov,zhengq 坐正:zuoq,zhengq 左证:zuov,zhengq
 zuo|feng	作风:zuoq,feng
-ni|men	你们:niv,mene
+ni|men	你们:niv,meen
 ni|hao	你好:niv,haov
 ni|jia	你家:niv,jia
 ni|lao	你老:niv,laov
@@ -2071,7 +2071,7 @@ fu|shen	俯身:fuv,shen 复审:fuq,shenv 福神:fux,shenx 茯神:fux,shenx 覆�
 ju|le|bu	俱乐部:juq,leq,buq
 ju|quan	俱全:juq,quanx
 feng|lu	俸禄:fengq,luq 枫露:feng,luq 风炉:feng,lux
-an|men	俺们:anv,mene 暗门:anq,menx
+an|men	俺们:anv,meen 暗门:anq,menx
 bei|zeng	倍增:beiq,zeng
 shu|di	倏地:shu,diq 属地:shuv,diq 树敌:shuq,dix 竖笛:shuq,dix
 shu|hu	疏忽:shu,hu 倏忽:shu,hu
@@ -4678,7 +4678,7 @@ ka|fei	咖啡:ka,fei
 dong|dong	咚咚:dong,dong 东东:dong,dong 冬冬:dong,dong 动动:dongq,dongq 鼕鼕:dong,dong
 zi|xun	咨询:zi,xunx 资讯:zi,xunq 咨讯:zi,xunq 自寻:ziq,xunx 资询:zi,xunx
 yao|ya	咬牙:yaov,yax
-zan|men	咱们:zanx,mene
+zan|men	咱们:zanx,meen
 zan|lia	咱俩:zanx,liav
 zan|jia	咱家:zanx,jia
 ke|sou	咳嗽:kex,souq
@@ -8062,7 +8062,7 @@ cheng|gui	成规:chengx,gui 城轨:chengx,guiv
 cheng|bai	成败:chengx,baiq
 cheng|dou	成都:chengx,dou
 cheng|zhang	成长:chengx,zhangv 成章:chengx,zhang
-wo|men	我们:wov,mene
+wo|men	我们:wov,meen
 wo|hui	我会:wov,huiq
 wo|jun	我军:wov,jun
 wo|guo	我国:wov,guox

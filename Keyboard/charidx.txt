@@ -147,7 +147,7 @@ daiq	带 待 代 戴 岱 袋 贷 绐 怠 黛 簤 迨 甙 殆 玳 埭 帶 瀻 骀
 lingq	另 令 呤 炩
 sa	撒 仨 挲 挱
 yix	宜 移 仪 夷 遗 疑 咦 怡 颐 彝 姨 迤 胰 沂 彛 彜 飴 弬 贻 寲 诒 觺 遺 嶷 彞 圯 饴 簃 讉 匜 宐 痍 箷 冝 暆 訑 栘 椸 迆 頤 顊 恞 迻 乁 侇 儀 媐 宧 峓 嶬 巸 扅 拸 柂 桋 椬 沶 熪 狋 珆 瓵 眙 籎 羠 耛 萓 蛦 螔 衪 袘 詑 詒 誃 謻 貤 貽 跠 鏔 頉 頥 鸃
-mene	们 們
+meen	们 們
 fanv	反 返 仮 払 釩
 chaoq	仯 耖 仦 觘
 yangv	养 氧 仰 痒 氱 炴 攁 柍 佒 傟 坱 岟 慃 懩 楧 癢 礢 紻 蝆 軮 養 駚
@@ -752,7 +752,7 @@ xueq	血 谑 坹 吷 桖 瀥 狘 謔 趐
 chix	持 迟 池 驰 弛 竾 墀 茌 蚳 箎 坻 篪 歭 踟 岻 漦 筂 荎 謘 貾 赿 趍 遅 遟 遲 馳
 la	拉 翋 垃 邋 搚 柆 菈
 longv	拢 陇 垄 垅 儱 壟 壠 攏 竉 篢 隴 龓
-mini	垊
+miin	垊
 heq	贺 鹤 赫 鶴 褐 垎 壑 癋 焃 煂 燺 佫 嗃 寉 熇 爀 碋 穒 翯 袔 謞 賀 靍 靎 靏 鶮 鸖
 lvq	率 绿 律 虑 氯 滤 垏 嵂 箻 寽 繂 櫖 葎 勴 慮 濾 爈 綠 緑 膟 鑢
 cix	词 辞 磁 雌 瓷 慈 祠 茨 嬨 甆 礠 垐 鹚 糍 柌 茈 堲 濨 珁 薋 詞 辝 辤 辭 飺 餈 鴜 鶿 鷀
@@ -883,7 +883,7 @@ xiaov	小 晓 皢 筱 暁 曉 皛 筿 篠 謏
 shaov	少
 gav	尕 玍
 liaoq	料 廖 撂 镣 尥 尞 尦 炓 窷
-kunu	尡
+kuun	尡
 wang	汪 尪 尣 尩 尫
 gaq	尬 魀
 tuix	颓 穨 尵 弚 蘈 蹪 隤 頹 頺 頽 魋
@@ -947,7 +947,7 @@ huaix	怀 淮 褢 槐 徊 踝 懐 懷 櫰 瀤 耲 蘹 褱
 chengv	逞 悜 骋 徎 侱 庱 睈 騁
 xux	徐 俆 蒣
 dex	得 德 锝 徳 悳 恴 惪 棏 淂 鍀
-xini	忄
+xiin	忄
 gaiv	改 忋 絠
 renv	忍 稔 棯 秹 荏 栠 栣 綛 荵 躵
 chanq	颤 忏 羼 韂 摲 懴 懺 硟 顫
@@ -1102,7 +1102,7 @@ sen	森 槮 椮 襂
 zou	邹 诹 陬 鄹 驺 棷 棸 鲰 箃 緅 菆 諏 郰 鄒 騶 鯫 黀 齱 齺
 men	椚
 dux	读 毒 独 渎 涜 椟 犊 牍 韣 獨 髑 殰 皾 碡 黩 牘 韥 瓄 凟 匵 嬻 櫝 瀆 犢 蝳 裻 読 讀 讟 豄 贕 錖 鑟 韇 騳 黷
-quana	椦
+quaan	椦
 pianx	谝 楄 骈 楩 胼 蹁 腁 諚 賆 跰 駢 騈 骿
 laq	辣 腊 蜡 溂 楋 镴 揧 攋 爉 瓎 瘌 臈 臘 蝋 蝲 蠟 辢 鑞 鬎 鯻
 xuanq	鏇 炫 眩 渲 镟 楦 铉 泫 縼 眴 绚 衒 碹 怰 昡 楥 琄 絢 繏 蔙 袨 讂 贙 鉉 鞙 颴
@@ -1143,7 +1143,7 @@ tengx	疼 腾 藤 痋 滕 誊 縢 騰 邆 儯 幐 漛 籐 籘 虅 謄 駦 驣 �
 louq	漏 镂 陋 瘘 瘺 屚 瘻 鏤
 mangv	蟒 莽 硥 蠎 漭 壾 茻 莾
 cuiv	璀 皠 漼 趡
-zongo	潈
+zoong	潈
 hongq	闂 闀 讧 澒 銾 撔 澋 訌 閧 鬨
 quanv	犬 绻 烇 畎 犭 汱 綣 虇
 req	热 熱
@@ -1154,7 +1154,7 @@ tuiq	退 褪 蜕 蛻 煺 侻 娧 駾
 xiongx	雄 熊
 naix	腉 熋 孻 摨
 teng	熥 膯 鼟
-jingi	燝
+jiing	燝
 yex	爷 耶 爺 鎁 捓 揶 擨 釾 鋣 铘
 zang	臧 賍 赃 牂 蔵 匨 羘 賘 贓 贜 髒
 pianq	片 骗 騗 騙 魸
@@ -1202,7 +1202,7 @@ bov	跛 簸 箥
 qii	簯 缼
 saiq	赛 簺 僿 嗮 賽
 fenv	粉 黺
-yini	粌
+yiin	粌
 taii	粏
 cu	粗 觕 麁 麄 麤
 qiuv	糗 搝
@@ -1216,7 +1216,7 @@ zuanv	纂 纘 缵 籫 繤 纉
 raoq	绕 繞 遶
 shengx	绳 憴 縄 繩 譝
 que	缺 阙 蒛
-yanga	羪
+yaang	羪
 shuav	耍
 lunv	耣 埨 碖 稐
 rouq	肉 宍
@@ -1225,7 +1225,7 @@ ang	肮 骯
 tai	胎 囼 孡
 pangq	胖 炐 肨
 nengx	能
-nini	脌
+niin	脌
 cuov	脞
 genv	艮
 qiong	芎
@@ -1241,7 +1241,7 @@ chaiq	虿 囆 瘥 蠆 袃 訍
 hax	蛤
 max	麻 蟆 犘 痲 蔴 蟇
 chav	衩 镲 蹅 鑔
-shanga	裳
+shaang	裳
 shuaq	誜
 shuo	说 說 哾 説
 shuix	谁 誰 脽
@@ -1264,7 +1264,7 @@ niangq	酿 醸 釀
 bux	醭 轐 鳪
 chongq	铳 銃 揰
 wuu	錻
-zhanga	鏱
+zhaang	鏱
 xinx	鐔 枔 襑
 tiev	铁 鐡 鐵 僣 蛈 銕 驖 鴩
 a	阿 锕 錒
