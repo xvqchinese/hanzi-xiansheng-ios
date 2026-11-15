@@ -91,8 +91,12 @@ extension KeyboardViewController
                     if let enc = k.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                        let url = URL(string: "DWIME.DingShiApp.ext://gotodict/?key=" + enc)
                     {
-                        openURL(self, url: url as NSURL)
+                        _ = openURL(self, url: url as NSURL)
+                        if let vc = KeyboardViewController.kbdVC
+                        { vc.showVoiceTip("回车进词典 k=\(k) " + lastOpenURLResult) }
                     }
+                    else if let vc = KeyboardViewController.kbdVC
+                    { vc.showVoiceTip("回车：URL 构造失败 k=\(k)") }
                 }
             }
             else if (key.type == Key.KeyType.Character && (key.keyCode == nil || key.keyCode?.length == 0))

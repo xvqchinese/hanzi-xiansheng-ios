@@ -244,6 +244,7 @@ with something (or leave it blank if you like.)
     @objc func doMoreSetting()
     {
         let url: URL? = URL(string: "DWIME.DingShiApp.ext://open-config-app")
-        openURL(self, url: url! as NSURL);
+        _ = openURL(self, url: url! as NSURL)
+        if let vc = KeyboardViewController.kbdVC { vc.showVoiceTip("设置跳转 " + lastOpenURLResult) }
     }
 }

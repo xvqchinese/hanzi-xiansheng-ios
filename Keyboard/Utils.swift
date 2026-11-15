@@ -293,13 +293,17 @@ func openURLViaApp(_ u: URL) -> Bool
     return false
 }
 
+var lastOpenURLResult: String = "none"
+
 func openURL(_ obj: UIResponder, url: NSURL) -> Bool
 {
     let u = url as URL
     // 0) 优先用键盘控制器自己的 extensionContext；失败再走 UIApplication 兜底
     if let vc = KeyboardViewController.kbdVC, let ctx = vc.extensionContext
     {
+        lastOpenURLResult = "ctx-sent"
         ctx.open(u) { ok in
+            lastOpenURLResult = ok ? "ctx-ok" : "ctx-fail"
             if !ok { openURLViaApp(u) }
         }
         return true
@@ -316,7 +320,7 @@ func openURL(_ obj: UIResponder, url: NSURL) -> Bool
         responder = r.next
     }
     // 2) 兜底：UIApplication 反射调用
-    if openURLViaApp(u) { return true }
+    if openURLViaApp(u) { lastOpenURLResult = "app-ok"; return true }
     do
     {
         let application = try sharedApplication(obj)
