@@ -1094,11 +1094,17 @@ extension KeyboardViewController
             showVoiceTip("语音识别暂不可用")
             return
         }
+        let session = AVAudioSession.sharedInstance()
+        // 键盘扩展里 playAndRecord + 蓝牙常常起不来：先用纯录音模式，失败再退回 playAndRecord
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch { showVoiceTip("麦克风被占用") ; return }
+            try session.setCategory(.record, mode: .measurement, options: [])
+            try session.setActive(true, options: [])
+        } catch {
+            do {
+                try session.setCategory(.playAndRecord, mode: .default, options: [.duckOthers, .defaultToSpeaker])
+                try session.setActive(true, options: [])
+            } catch { showVoiceTip("麦克风启动失败，请在设置里允许键盘完全访问与麦克风"); return }
+        }
 
         speechReq = SFSpeechAudioBufferRecognitionRequest()
         guard let req = speechReq else { return }
@@ -1109,7 +1115,13 @@ extension KeyboardViewController
         node.removeTap(onBus: 0)
         node.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in req.append(buf) }
         engine.prepare()
-        do { try engine.start() } catch { showVoiceTip("麦克风启动失败"); return }
+        do { try engine.start() }
+        catch
+        {
+            node.removeTap(onBus: 0)
+            showVoiceTip("麦克风启动失败，请在设置里允许键盘完全访问与麦克风")
+            return
+        }
         speechOn = true
         showVoiceTip("语音输入中，请说话…")
 

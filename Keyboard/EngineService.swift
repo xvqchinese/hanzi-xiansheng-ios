@@ -1220,7 +1220,8 @@ final class LocalPinyin
             {
                 let cdSegs = cd.components(separatedBy: ",").filter { !$0.isEmpty }
                 let inSegs = segments(keys[0])
-                if w.count > 1 && (cdSegs.count > 1 || inSegs.count > 1)
+                // 只校验“整串等长”的情况；前缀成词（hanqziqxi → 汉字）由取词处自行判定
+                if w.count > 1 && cdSegs.count == inSegs.count && inSegs.count > 1
                 {
                     if !matchWord(inSegs, cdSegs) { return }
                 }
@@ -1305,37 +1306,48 @@ final class LocalPinyin
         }
 
         lv = 1
-        // 逐步精准：前面每个音节一律严格（带调同调、无调一声），只有末音节可按基座前缀放宽
+        // 逐步精准：前面每个音节一律严格（带调同调、无调一声），只有末音节按基座前缀放宽；
+        // 末音节可以是完整音节，也可以是首字母（hanqziqxians、hanqz）
         if !self.strokeMode
         {
             let segs = segments(input)
-            let allSyl = segs.allSatisfy { $0.count > 1 || "aeiouv".contains(String($0)) }
-            if segs.count >= 2 && segs.count <= 6 && allSyl
+            let vowSet = "aeiouv"
+            let headOK = segs.dropLast().allSatisfy { $0.count > 1 || vowSet.contains(String($0)) }
+            if segs.count >= 2 && segs.count <= 6 && headOK
             {
-                let head = Array(segs.dropLast())
-                let pre = head.map { LocalPinyin.baseOfForSeg($0) }.joined(separator: "|") + "|"
-                let lastBase = LocalPinyin.baseOfForSeg(segs[segs.count - 1])
-                for (k, items) in LocalPinyin.pybAll() where k.hasPrefix(pre)
+                let lastSeg = segs[segs.count - 1].lowercased()
+                // 前 k 段成词：词不成立也继续，保证 3 段以上仍能出 2 字词（hanqziqxi → 汉字）
+                for k in stride(from: segs.count, through: 2, by: -1)
                 {
-                    let tail = String(k.dropFirst(pre.count))
-                    if tail.isEmpty || tail.contains("|") { continue }
-                    if !tail.hasPrefix(lastBase) { continue }
-                    for it in items
+                    let head = Array(segs[0..<(k - 1)])
+                    let pre = head.map { LocalPinyin.baseOfForSeg($0) }.joined(separator: "|") + "|"
+                    let ls = (k == segs.count) ? lastSeg : segs[k - 1].lowercased()
+                    let lb = LocalPinyin.baseOfForSeg(ls)
+                    for (key, items) in LocalPinyin.pybAll() where key.hasPrefix(pre)
                     {
-                        let parts = it.split(separator: ":", maxSplits: 1)
-                        if parts.count != 2 { continue }
-                        let w = String(parts[0])
-                        let codes = String(parts[1]).components(separatedBy: ",")
-                        if codes.count != segs.count { continue }
-                        if !matchWord(segs, codes) { continue }
-                        put(w, codes.joined(separator: ","))
-                        if cands.count >= 30 { break }
+                        let tail = String(key.dropFirst(pre.count))
+                        if tail.isEmpty || tail.contains("|") { continue }
+                        if !tail.hasPrefix(lb) { continue }
+                        for it in items
+                        {
+                            let parts = it.split(separator: ":", maxSplits: 1)
+                            if parts.count != 2 { continue }
+                            let w = String(parts[0])
+                            let codes = String(parts[1]).components(separatedBy: ",")
+                            if codes.count != k { continue }
+                            var seq = head
+                            seq.append(ls)
+                            if !matchWord(seq, codes) { continue }
+                            put(w, codes.joined(separator: ","))
+                            if cands.count >= 40 { break }
+                        }
                     }
                 }
-                // 每个音节必出同音同调单字
+                // 每个完整音节必出同音同调单字（末段是首字母时不出字）
                 lv = 4
                 for sg in segs
                 {
+                    if sg.count == 1 && !vowSet.contains(String(sg)) { continue }
                     var key = sg.lowercased()
                     var tone = ""
                     if key.count >= 3 && key.last == key.dropLast().last { tone = "n"; key.removeLast() }
