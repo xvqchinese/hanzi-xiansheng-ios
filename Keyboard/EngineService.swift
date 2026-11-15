@@ -1259,6 +1259,14 @@ final class LocalPinyin
                         let w = String(parts[0])
                         let codes = String(parts[1]).components(separatedBy: ",")
                         if codes.count != segs.count { continue }
+                        // 一个调母都没带 → 整词按“一声”严格校验，别的调一律不出
+                        var anyTone = false
+                        for sg0 in segs
+                        {
+                            let l0 = sg0.lowercased()
+                            if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
+                            { anyTone = true; break }
+                        }
                         var match = true
                         for i in 0..<segs.count
                         {
@@ -1269,6 +1277,11 @@ final class LocalPinyin
                             if toneGiven
                             {
                                 if codes[i] != sg { match = false; break }
+                            }
+                            else if !anyTone
+                            {
+                                // 全无调母：该音节必须就是一声（码必须等于纯基座，不许带调、不许轻声）
+                                if codes[i] != LocalPinyin.baseOfForSeg(sg) { match = false; break }
                             }
                             else if LocalPinyin.baseOfForSeg(codes[i]) != LocalPinyin.baseOfForSeg(sg)
                             {
