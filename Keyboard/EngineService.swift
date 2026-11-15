@@ -444,8 +444,10 @@ final class LocalPinyin
         }
         if tone == "n"
         {
-            // 轻声：末字母双写
-            return charIdx?[base + String(base.last ?? "e")] ?? []
+            // 轻声：末字母双写；该音节没有轻声字时按一声出（kongg → 空）
+            let k = base + String(base.last ?? "e")
+            let v = charIdx?[k] ?? []
+            return v.isEmpty ? (charIdx?[base] ?? []) : v
         }
         if tone.isEmpty
         {
@@ -735,6 +737,28 @@ final class LocalPinyin
                 bestSeg[fix] = String(chars[fix])
             }
             fix += 1
+        }
+        // 修复：末字母双写被误当轻声（kongg|e → kong|ge），仅当后面能起两字母以上音节时拆
+        var rp = 0
+        while rp < n
+        {
+            if let sg = bestSeg[rp], sg.count >= 3, let l = sg.last, sg.dropLast().last == l
+            {
+                let b = String(sg.dropLast())
+                if LocalPinyin.sySet.contains(b)
+                {
+                    let j = rp + b.count
+                    var can = false
+                    var L = 2
+                    while L <= 6 && j + L <= n
+                    {
+                        if LocalPinyin.sySet.contains(String(chars[j..<(j + L)])) { can = true; break }
+                        L += 1
+                    }
+                    if can, bestCnt[j] != Int.max, bestCnt[j] + 1 == bestCnt[rp] { bestSeg[rp] = b }
+                }
+            }
+            rp += 1
         }
         if bestCnt[0] == Int.max { return [s] }
         var out: [String] = []
