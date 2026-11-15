@@ -189,6 +189,7 @@ final class LocalPinyin
 
     private(set) var input: String = ""
     private(set) var cands: [String] = []
+    private var levels: [String: Int] = [:]
     private(set) var codes: [String] = []
     private(set) var pending: String = ""
     private(set) var pendingOn: Bool = false
@@ -1005,7 +1006,7 @@ final class LocalPinyin
         if input.isEmpty { return }
         let keys = input.contains("j") ? [input, input.replacingOccurrences(of: "j", with: "")] : [input]
         var seen = Set<String>()
-        var levels: [String: Int] = [:]
+        levels.removeAll()
         var lv = 0   // 0=带调整音节全对  1=混合（首字母放宽）  2=纯首字母  3=单字
         // 音与字/词必须严格对应：音节数与每个音节都要相等（忽略末尾调母标记），
         // 绝不允许“前缀命中”，前缀命中就是联想。
