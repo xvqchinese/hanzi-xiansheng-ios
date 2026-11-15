@@ -2058,8 +2058,8 @@ class EngineService
                 if key == EST.SPKEY_Return
                 {
                     // 有候选先取第一个上屏；没有输入才进词典
-                    if lp.hasInput() && lp.cands.count > 0 { return lp.select(0) }
-                    if lp.hasInput() { lp.commitRaw(); return EST.SMR_OK }
+                    if !lp.input.isEmpty && !lp.cands.isEmpty { return lp.select(0) }
+                    if !lp.input.isEmpty { lp.commitRaw(); return EST.SMR_OK }
                     if let t = lp.plainText(), !t.isEmpty
                     {
                         self.dictHook?(t)
