@@ -480,6 +480,31 @@ final class LocalPinyin
         return baseOfForSeg(code)
     }
 
+    // 前半段按音节基座（未带调的音节不限定调），末段只给首字母
+    static func mixedByBases(prefixBases: [String], initial: String, charCount: Int) -> [(String, [String])]
+    {
+        let pre = prefixBases.joined(separator: "|") + "|"
+        var out: [(String, [String])] = []
+        _ = wordsForBases(pre)   // 触发加载
+        guard let m = pybMap else { return out }
+        for (k, items) in m where k.hasPrefix(pre)
+        {
+            let tail = String(k.dropFirst(pre.count))
+            if !tail.hasPrefix(initial) { continue }
+            for it in items
+            {
+                let parts = it.split(separator: ":", maxSplits: 1)
+                guard parts.count == 2 else { continue }
+                let w = String(parts[0])
+                let codes = String(parts[1]).components(separatedBy: ",")
+                if codes.count != charCount { continue }
+                out.append((w, codes))
+                if out.count >= 12 { break }
+            }
+        }
+        return out
+    }
+
     static func wordsForBases(_ key: String) -> [String]
     {
         if pybMap == nil
@@ -667,6 +692,17 @@ final class LocalPinyin
             }
             i -= 1
         }
+        // 切不出来的位置兜底成单字母段（首字母混输要用）
+        var fix = 0
+        while fix < n
+        {
+            if bestSeg[fix] == nil && bestCnt[fix + 1] != Int.max
+            {
+                bestCnt[fix] = bestCnt[fix + 1] + 1
+                bestSeg[fix] = String(chars[fix])
+            }
+            fix += 1
+        }
         if bestCnt[0] == Int.max { return [s] }
         var out: [String] = []
         var k = 0
@@ -679,6 +715,14 @@ final class LocalPinyin
                 if seg.isEmpty { k += 1 }
             }
             else { return [s] }
+        }
+        // 末尾连续单字母合成一段首字母（dingvsh → dingv + sh）
+        let vowSet = "aeiouv"
+        while out.count >= 2, out[out.count-1].count == 1, out[out.count-2].count == 1,
+              !vowSet.contains(out[out.count-1]), !vowSet.contains(out[out.count-2])
+        {
+            out[out.count-2] += out[out.count-1]
+            out.removeLast()
         }
         return out
     }
@@ -1193,37 +1237,26 @@ final class LocalPinyin
         }
 
         lv = 1
-        // 精准递进：前几段是带调完整音节，末段给首字母（hanqz / hanqziqxians），首字母不限调
+        // 精准递进：前半段完整音节（带调则严格，无调按词读音）+ 末段首字母（不限调）
         if !self.strokeMode
         {
             let segs = segments(input)
-            if segs.count >= 2 && segs.count <= 6
+            if segs.count >= 2 && segs.count <= 6, let last = segs.last,
+               last.count >= 1, !"aeiouv".contains(String(last))
             {
-                var toned = ""
-                var used = 0
-                var rest = ""
-                for (i, sg) in segs.enumerated()
+                let head = Array(segs.dropLast())
+                let bases = head.map { LocalPinyin.baseOfForSeg($0) }
+                for (w, codes) in LocalPinyin.mixedByBases(prefixBases: bases, initial: last, charCount: segs.count)
                 {
-                    var t = sg.lowercased()
-                    let isInitial = (t.count == 1 && !"aeiouv".contains(t))
-                    if isInitial
+                    var ok = true
+                    for i in 0..<head.count
                     {
-                        // 首字母必须落在最后一段，且只允许一个
-                        if i != segs.count - 1 { break }
-                        rest = t
-                        used = i
-                        break
+                        let sg = head[i].lowercased()
+                        let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
+                        if given { if codes[i] != sg { ok = false; break } }
+                        else if LocalPinyin.baseOfForSeg(codes[i]) != bases[i] { ok = false; break }
                     }
-                    var tone = ""
-                    if t.count >= 3 && t.last == t.dropLast().last { tone = "n"; t.removeLast() }
-                    else if let l = t.last, "xvq".contains(l) { tone = String(l); t.removeLast() }
-                    if tone == "n" { toned += t + String(t.last ?? "e") }
-                    else { toned += t + tone }
-                    used = i + 1
-                }
-                if !rest.isEmpty && used == segs.count - 1
-                {
-                    for w in LocalPinyin.mixedWords(prefix: toned, initial: rest, charCount: segs.count)
+                    if ok
                     {
                         put(w, "")
                         if cands.count >= 30 { break }
