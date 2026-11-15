@@ -112482,3 +112482,4 @@ hanqziqxiansheng	汉字先生
 dingvshiqshurufaq	鼎氏输入法
 dingvshiqciqvianv	鼎氏词典
 dingviqvhanqvciqv	鼎氏汉语词典
+dingshiq	丁氏

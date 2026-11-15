@@ -1246,6 +1246,13 @@ final class LocalPinyin
             {
                 let head = Array(segs.dropLast())
                 let bases = head.map { LocalPinyin.baseOfForSeg($0) }
+                var anyToneHead = false
+                for sg0 in head
+                {
+                    let l0 = sg0.lowercased()
+                    if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
+                    { anyToneHead = true; break }
+                }
                 for (w, codes) in LocalPinyin.mixedByBases(prefixBases: bases, initial: last, charCount: segs.count)
                 {
                     var ok = true
@@ -1254,6 +1261,10 @@ final class LocalPinyin
                         let sg = head[i].lowercased()
                         let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
                         if given { if codes[i] != sg { ok = false; break } }
+                        else if !anyToneHead
+                        {
+                            if codes[i] != bases[i], codes[i] != bases[i] + String(bases[i].last!) { ok = false; break }
+                        }
                         else if LocalPinyin.baseOfForSeg(codes[i]) != bases[i] { ok = false; break }
                     }
                     if ok
@@ -1314,8 +1325,9 @@ final class LocalPinyin
                             }
                             else if !anyTone
                             {
-                                // 全无调母：该音节必须就是一声（码必须等于纯基座，不许带调、不许轻声）
-                                if codes[i] != LocalPinyin.baseOfForSeg(sg) { match = false; break }
+                                // 全无调母：该音节必须是一声或轻声（末字母双写），别的调一律不出
+                                let b = LocalPinyin.baseOfForSeg(sg)
+                                if codes[i] != b, codes[i] != b + String(b.last!) { match = false; break }
                             }
                             else if LocalPinyin.baseOfForSeg(codes[i]) != LocalPinyin.baseOfForSeg(sg)
                             {
