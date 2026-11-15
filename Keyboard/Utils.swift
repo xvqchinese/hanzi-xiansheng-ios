@@ -276,12 +276,32 @@ func imageWithColor(_ color: UIColor, width: CGFloat, height: CGFloat) -> UIImag
 }
 
 
+// 扩展里 extensionContext.open 常常静默失败，兜底用 UIApplication 的 openURL:（运行时反射，扩展可编译）
+@discardableResult
+func openURLViaApp(_ u: URL) -> Bool
+{
+    if let cls = NSClassFromString("UIApplication") as? NSObject.Type,
+       let app = cls.perform(NSSelectorFromString("sharedApplication"))?.takeUnretainedValue() as? NSObject
+    {
+        let sel = NSSelectorFromString("openURL:")
+        if app.responds(to: sel)
+        {
+            app.perform(sel, with: u)
+            return true
+        }
+    }
+    return false
+}
+
 func openURL(_ obj: UIResponder, url: NSURL) -> Bool
 {
-    // 0) 优先用键盘控制器自己的 extensionContext（设置面板里的按钮走这条才有效）
-    if let vc = KeyboardViewController.kbdVC
+    let u = url as URL
+    // 0) 优先用键盘控制器自己的 extensionContext；失败再走 UIApplication 兜底
+    if let vc = KeyboardViewController.kbdVC, let ctx = vc.extensionContext
     {
-        vc.extensionContext?.open(url as URL, completionHandler: nil)
+        ctx.open(u) { ok in
+            if !ok { openURLViaApp(u) }
+        }
         return true
     }
     // 1) 扩展里唯一官方允许的方式：extensionContext.open
@@ -295,7 +315,8 @@ func openURL(_ obj: UIResponder, url: NSURL) -> Bool
         }
         responder = r.next
     }
-    // 2) 兜底：老办法
+    // 2) 兜底：UIApplication 反射调用
+    if openURLViaApp(u) { return true }
     do
     {
         let application = try sharedApplication(obj)

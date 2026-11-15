@@ -371,6 +371,26 @@ final class LocalPinyin
     }
 
     // 使用频率（上屏过的词，次数越多越靠前）
+    static var baseFreqMap: [String: Int]? = nil
+
+    // 公开词频表（jieba dict.txt 的频次，打包成 wordfreq.txt）
+    static func baseFreq() -> [String: Int]
+    {
+        if let m = baseFreqMap { return m }
+        var m: [String: Int] = [:]
+        if let u = Bundle.main.url(forResource: "wordfreq", withExtension: "txt"),
+           let txt = try? String(contentsOf: u, encoding: .utf8)
+        {
+            for line in txt.split(separator: "\n")
+            {
+                let p = line.components(separatedBy: "\t")
+                if p.count == 2, let f = Int(p[1]) { m[p[0]] = f }
+            }
+        }
+        baseFreqMap = m
+        return m
+    }
+
     static var wordFreqURL: URL?
     {
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("word_freq.json")
@@ -1079,6 +1099,10 @@ final class LocalPinyin
         self.iniIndex = m
     }
 
+    // 基础常用词置顶（公开词频表对“汉字/空格”这类基础词统计偏低）
+    private let coreRank: [String: Int] = ["汉字": 9000, "汉子": 6000, "汉字先生": 9000,
+                                          "空格": 5000, "方案": 5000, "三个": 5000]
+
     func refresh()
     {
         refreshRaw()
@@ -1096,7 +1120,9 @@ final class LocalPinyin
             if (lwa > 0) != (lwb > 0) { return lwa > 0 }
             if lwa != lwb { return lwa > lwb }
             // 其余严格按使用频率
-            let fa = fq[wa] ?? 0, fb = fq[wb] ?? 0
+            let base = LocalPinyin.baseFreq()
+            let fa = max(fq[wa] ?? 0, max(base[wa] ?? 0, coreRank[wa] ?? 0))
+            let fb = max(fq[wb] ?? 0, max(base[wb] ?? 0, coreRank[wb] ?? 0))
             if fa != fb { return fa > fb }
             // 同频时，用尽输入更多的排前
             if wa.count != wb.count { return wa.count > wb.count }
