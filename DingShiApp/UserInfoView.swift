@@ -26,7 +26,7 @@ class UserInfoViewController: UIViewController, WKNavigationDelegate
         self.view.addSubview(self.web!)
         self.navigationItem.title = Lang("用户")
         
-        self.web?.load(URLRequest(url: URL(string: "http://www.xvqchinese.com/dsv2/txz/?os=ios&lang=\(Lang("lang"))")!))
+        self.web?.load(URLRequest(url: URL(string: "http://www.xvqchinese.com/dsv2/txz/?os=ios&lang=\(Lang("lang"))&t=\(Int(Date().timeIntervalSince1970))")!))
         
         // wait...
         activityIndicatorView = UIActivityIndicatorView(style: .white)
