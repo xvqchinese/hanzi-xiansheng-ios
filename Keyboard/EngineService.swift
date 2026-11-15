@@ -455,6 +455,51 @@ final class LocalPinyin
         return charIdx?[base + tone] ?? []
     }
 
+    // 词级音节匹配：不要求每个音节都带调母——没带调的音节按该词本身的读音算，
+    // 带了调的音节必须严格相等（hanqzi → 汉字、汉子；单音节仍严格只出一声）
+    private static var pybMap: [String: [String]]? = nil
+
+    private static func hasVowel(_ s: String) -> Bool
+    {
+        return s.contains("a") || s.contains("e") || s.contains("i")
+            || s.contains("o") || s.contains("u") || s.contains("v")
+    }
+
+    // 去掉调母/轻声双写，得到纯音节基座（v 是 ü，不是调母，靠“剩不剩韵母”判别）
+    static func baseOfForSeg(_ code: String) -> String
+    {
+        var c = code.lowercased()
+        if let l = c.last, "xvq".contains(l), hasVowel(String(c.dropLast())) { c.removeLast() }
+        if c.count >= 2, c.last == c.dropLast().last, hasVowel(String(c.dropLast())) { c.removeLast() }
+        return c
+    }
+
+
+    private static func baseOf(_ code: String) -> String
+    {
+        return baseOfForSeg(code)
+    }
+
+    static func wordsForBases(_ key: String) -> [String]
+    {
+        if pybMap == nil
+        {
+            var m: [String: [String]] = [:]
+            if let path = Bundle(for: LocalPinyin.self).path(forResource: "wordpyb", ofType: "txt"),
+               let t = try? String(contentsOfFile: path, encoding: .utf8)
+            {
+                for line in t.split(separator: "\n")
+                {
+                    guard let tab = line.firstIndex(of: "\t") else { continue }
+                    let k = String(line[line.startIndex..<tab])
+                    m[k] = line[line.index(after: tab)...].split(separator: " ").map { String($0) }
+                }
+            }
+            pybMap = m
+        }
+        return pybMap?[key] ?? []
+    }
+
     // wordpy3 全量缓存（带调全拼），用于“前缀 + 首字母”混合匹配
     private static var py3Map: [String: [String]]? = nil
     static func py3Table() -> [String: [String]]
@@ -1187,6 +1232,59 @@ final class LocalPinyin
         }
 
         lv = 0
+        // 词级音节匹配（带调整音节严格相等，未带调的音节按词的读音）
+        if !self.strokeMode
+        {
+            let segs = segments(input)
+            if segs.count >= 2 && segs.count <= 6
+            {
+                var bases: [String] = []
+                var ok = true
+                for sg in segs
+                {
+                    var t = sg.lowercased()
+                    if t.count == 1 && !"aeiouv".contains(t) { ok = false; break }
+                    var hasTone = false
+                    if t.count >= 3 && t.last == t.dropLast().last { hasTone = true }
+                    else if let l = t.last, "xvq".contains(l) { hasTone = true }
+                    _ = hasTone
+                    bases.append(LocalPinyin.baseOfForSeg(t))
+                }
+                if ok
+                {
+                    for item in LocalPinyin.wordsForBases(bases.joined(separator: "|"))
+                    {
+                        let parts = item.split(separator: ":")
+                        if parts.count < 2 { continue }
+                        let w = String(parts[0])
+                        let codes = String(parts[1]).components(separatedBy: ",")
+                        if codes.count != segs.count { continue }
+                        var match = true
+                        for i in 0..<segs.count
+                        {
+                            let sg = segs[i].lowercased()
+                            var toneGiven = false
+                            if sg.count >= 3 && sg.last == sg.dropLast().last { toneGiven = true }
+                            else if let l = sg.last, "xvq".contains(l) { toneGiven = true }
+                            if toneGiven
+                            {
+                                if codes[i] != sg { match = false; break }
+                            }
+                            else if LocalPinyin.baseOfForSeg(codes[i]) != LocalPinyin.baseOfForSeg(sg)
+                            {
+                                match = false; break
+                            }
+                        }
+                        if match
+                        {
+                            put(w, "")
+                            if cands.count >= 30 { break }
+                        }
+                    }
+                }
+            }
+        }
+
         // 最高优先级 0：整词全拼匹配（学过“汉字先生”，打 hanqziqxiansheng 也要出）
         if !self.strokeMode && input.count >= 4, let pu = LocalPinyin.wordPyURL,
            let d = try? Data(contentsOf: pu),
