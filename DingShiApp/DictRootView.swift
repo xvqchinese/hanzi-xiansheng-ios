@@ -481,6 +481,11 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
         self.doShowPhrItem()
     }
     
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
+    {
+        return 52
+    }
+
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
     {
         var cell: UITableViewCell? = tableView.dequeueReusableCell(withIdentifier: "Cell")
@@ -490,8 +495,8 @@ class DictRootController: UIViewController, UISearchBarDelegate, WKNavigationDel
             cell = UITableViewCell(style: UITableViewCell.CellStyle.default, reuseIdentifier: "Cell") as UITableViewCell
             cell!.selectionStyle = UITableViewCell.SelectionStyle.default
             let label = UILabel()
-            label.frame = CGRect(x: cell!.frame.height / 2, y: 0, width: 320, height: cell!.frame.height)
-            label.font = UIFont.boldSystemFont(ofSize: 16)
+            label.frame = CGRect(x: 20, y: 0, width: max(320, UIScreen.main.bounds.width - 40), height: 52)
+            label.font = UIFont.boldSystemFont(ofSize: 21)
             label.textColor = UIColor.black.withAlphaComponent(0.6)
             label.backgroundColor = UIColor.clear
             label.textAlignment = .left
