@@ -1262,13 +1262,6 @@ final class LocalPinyin
             {
                 let head = Array(segs.dropLast())
                 let bases = head.map { LocalPinyin.baseOfForSeg($0) }
-                var anyToneHead = false
-                for sg0 in head
-                {
-                    let l0 = sg0.lowercased()
-                    if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
-                    { anyToneHead = true; break }
-                }
                 for (w, codes) in LocalPinyin.mixedByBases(prefixBases: bases, initial: last, charCount: segs.count)
                 {
                     var ok = true
@@ -1276,13 +1269,11 @@ final class LocalPinyin
                     {
                         let sg = head[i].lowercased()
                         let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
-                        if given { if codes[i] != sg { ok = false; break } }
-                        else if !anyToneHead
+                        if given
                         {
-                            if i == 0 { if codes[i] != bases[i] { ok = false; break } }
-                            else if LocalPinyin.baseOfForSeg(codes[i]) != bases[i] { ok = false; break }
+                            if codes[i] != sg { ok = false; break }
                         }
-                        else if LocalPinyin.baseOfForSeg(codes[i]) != bases[i] { ok = false; break }
+                        else if codes[i] != bases[i] { ok = false; break }
                     }
                     if ok
                     {
@@ -1321,36 +1312,22 @@ final class LocalPinyin
                         let w = String(parts[0])
                         let codes = String(parts[1]).components(separatedBy: ",")
                         if codes.count != segs.count { continue }
-                        // 一个调母都没带 → 整词按“一声”严格校验，别的调一律不出
-                        var anyTone = false
-                        for sg0 in segs
-                        {
-                            let l0 = sg0.lowercased()
-                            if (l0.count >= 3 && l0.last == l0.dropLast().last) || (l0.last.map { "xvq".contains($0) } ?? false)
-                            { anyTone = true; break }
-                        }
+                        // 除末音节外一律严格：带调须同调，无调只能一声；末音节可放宽
                         var match = true
                         for i in 0..<segs.count
                         {
                             let sg = segs[i].lowercased()
-                            var toneGiven = false
-                            if sg.count >= 3 && sg.last == sg.dropLast().last { toneGiven = true }
-                            else if let l = sg.last, "xvq".contains(l) { toneGiven = true }
-                            if toneGiven
+                            let b = LocalPinyin.baseOfForSeg(sg)
+                            let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
+                            if given
                             {
                                 if codes[i] != sg { match = false; break }
                             }
-                            else if !anyTone
+                            else if i == segs.count - 1
                             {
-                                // 全无调母：首音节必须一声，后续音节不限调
-                                let b = LocalPinyin.baseOfForSeg(sg)
-                                if i == 0 { if codes[i] != b { match = false; break } }
-                                else if LocalPinyin.baseOfForSeg(codes[i]) != b { match = false; break }
+                                if LocalPinyin.baseOfForSeg(codes[i]) != b { match = false; break }
                             }
-                            else if LocalPinyin.baseOfForSeg(codes[i]) != LocalPinyin.baseOfForSeg(sg)
-                            {
-                                match = false; break
-                            }
+                            else if codes[i] != b { match = false; break }
                         }
                         if match
                         {
@@ -1411,12 +1388,15 @@ final class LocalPinyin
                             let sg = segs[i].lowercased()
                             let b = bases[i]
                             let given = (sg.count >= 3 && sg.last == sg.dropLast().last) || (sg.last.map { "xvq".contains($0) } ?? false)
-                            if given { if codes[i] != sg { ok = false; break } }
-                            else if !anyTone
+                            if given
                             {
-                                if codes[i] != b, codes[i] != b + String(b.last!) { ok = false; break }
+                                if codes[i] != sg { ok = false; break }
                             }
-                            else if LocalPinyin.baseOfForSeg(codes[i]) != b { ok = false; break }
+                            else if i == k - 1
+                            {
+                                if LocalPinyin.baseOfForSeg(codes[i]) != b { ok = false; break }
+                            }
+                            else if codes[i] != b { ok = false; break }
                         }
                         if ok { put(w, "") }
                         if cands.count >= 20 { break }
