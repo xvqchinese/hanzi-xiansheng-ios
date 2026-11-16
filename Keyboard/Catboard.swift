@@ -62,35 +62,13 @@ extension KeyboardViewController
             }
             else if (key.type == Key.KeyType.Return)
             {
-                // 回车：合法中文编码 → 取第一个候选；切成音节的英文串（apple 等）→ 原样上屏
+                // 回车：中文状态下直接上原始字母串（与安卓原版一致）；要选汉字用手指点候选
                 if (self.engine.hasInput())
                 {
-                    if !self.engine.isFullValidSpell()
-                    {
-                        self.out(self.engine.inputStr() as String, sendCand: false)
-                        self.engine.Reset()
-                        self.closeCand()
-                        updateCandComp()
-                        return
-                    }
-                    if self.engine.CandCount() > 0
-                    {
-                        self.selectCand(0, str: nil)
-                        self.catBreak()
-                        // 上屏后立刻清空组合串，再按回车就进词典
-                        self.engine.Reset()
-                        self.closeCand()
-                        updateCandComp()
-                    }
-                    else
-                    {
-                        if self.currentPage != KbPage.M_SK9
-                        {
-                            self.out(self.engine.inputStr() as String, sendCand: false)
-                        }
-                        self.engine.Reset()
-                        self.closeCand()
-                    }
+                    self.out(self.engine.inputStr() as String, sendCand: false)
+                    self.engine.Reset()
+                    self.closeCand()
+                    updateCandComp()
                 }
                 else
                 {
