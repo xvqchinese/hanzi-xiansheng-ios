@@ -80,6 +80,8 @@ class XFMAppViewController: UITabBarController {
                 if let dr = self.dictRoot {
                     dr.searchBar.text = word
                     dr.searchBarSearchButtonClicked(dr.searchBar)
+                    dr.startWorking()
+                    dr.doSearch()
                 }
             }
         }

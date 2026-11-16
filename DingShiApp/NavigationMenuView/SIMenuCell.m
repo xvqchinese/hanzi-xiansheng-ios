@@ -24,6 +24,7 @@
     if (self) {
         self.contentView.backgroundColor = [UIColor color:[SIMenuConfiguration itemsColor] withAlpha:[SIMenuConfiguration menuAlpha]];
         self.textLabel.textColor = [SIMenuConfiguration itemTextColor];
+        self.textLabel.font = [UIFont boldSystemFontOfSize:18];
         self.textLabel.textAlignment = NSTextAlignmentCenter;
         self.textLabel.shadowColor = [UIColor darkGrayColor];
         self.textLabel.shadowOffset = CGSizeMake(0.0, -1.0);
