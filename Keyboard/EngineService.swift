@@ -883,6 +883,19 @@ final class LocalPinyin
         }
     }
 
+    // 去掉“是更长词条前缀”的半截词，避免召回时同时出 丁树 / 丁树雄
+    static func dropPrefixDup(_ j: [String: String]) -> [String: String]
+    {
+        let words = Set(j.values)
+        var r: [String: String] = [:]
+        for (k, v) in j
+        {
+            let isPrefixDup = words.contains { $0.count > v.count && $0.hasPrefix(v) }
+            if !isPrefixDup { r[k] = v }
+        }
+        return r
+    }
+
     private var userIniCache: [String: String] = [:]
     private var userIniStamp: Date? = nil
 
@@ -893,7 +906,7 @@ final class LocalPinyin
            let d = s.data(using: .utf8),
            let j = (try? JSONSerialization.jsonObject(with: d)) as? [String: String], !j.isEmpty
         {
-            userIniCache = j
+            userIniCache = Self.dropPrefixDup(j)
             return userIniCache
         }
         guard let u = LocalPinyin.userIniURL else { return userIniCache }

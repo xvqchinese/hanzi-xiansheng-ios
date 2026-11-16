@@ -53,6 +53,11 @@ class UserViewController: UITableViewController
             seenWord.insert(it.1)
             uniq.append(it)
         }
+        // 清掉“是更长词条前缀”的半截词（如 丁树 / 丁树雄 同时存在时只留长的）
+        let words = Set(uniq.map { $0.1 })
+        uniq = uniq.filter { it in
+            !words.contains { other in other.count > it.1.count && other.hasPrefix(it.1) }
+        }
         self.items = uniq
     }
 
