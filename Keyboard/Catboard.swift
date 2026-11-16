@@ -244,6 +244,11 @@ extension KeyboardViewController
         {
             proxy.insertText(str)
             self.lastCommitChar = String(str.prefix(4))
+            if !LocalPinyin.lastLearnMsg.isEmpty, let vc = KeyboardViewController.kbdVC
+            {
+                vc.showVoiceTip(LocalPinyin.lastLearnMsg)
+                LocalPinyin.lastLearnMsg = ""
+            }
             
             if (str == "“”" ||
                 str == "‘’" ||

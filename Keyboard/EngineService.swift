@@ -924,6 +924,8 @@ final class LocalPinyin
         if let d = try? JSONSerialization.data(withJSONObject: m, options: []) { try? d.write(to: u) }
     }
 
+    static var lastLearnMsg: String = ""
+
     func saveLearned()
     {
         guard let u = LocalPinyin.learnedURL else { return }
@@ -957,6 +959,19 @@ final class LocalPinyin
         }
         saveLearned()
         saveUserIni()
+        // 落盘自检：App Group 写不进去（未开完全访问）就明确提示，不静默失败
+        if let u = LocalPinyin.learnedURL
+        {
+            let ok = (try? Data(contentsOf: u)) != nil
+            if !ok
+            {
+                LocalPinyin.lastLearnMsg = "学词失败：请到 设置→通用→键盘→鼎氏 打开“允许完全访问”"
+            }
+            else
+            {
+                LocalPinyin.lastLearnMsg = ""
+            }
+        }
     }
 
     static func readU32(_ b: [UInt8], _ o: Int) -> UInt32
