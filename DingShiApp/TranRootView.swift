@@ -8,6 +8,8 @@
 
 import Foundation
 import UIKit
+import Speech
+import AVFoundation
 
 
 class TranRootController: UIViewController, SINavigationMenuDelegate, UITextViewDelegate, BDRecognizerViewDelegate, BDRecognizerOutDelegate {
@@ -207,35 +209,126 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
     {
     }
     
+    // 翻译页语音：改 iOS 原生识别（与词典页一致，去百度 SDK 依赖）
+    var trRec: SFSpeechRecognizer?
+    var trReq: SFSpeechAudioBufferRecognitionRequest?
+    var trTask: SFSpeechRecognitionTask?
+    var trEngine: AVAudioEngine?
+    var trListening: Bool = false
+    var trTip: UILabel?
+
     @objc func onMicrophone()
     {
-        self.customVoiceView = nil
-        self.customVoiceView = BDVRCustomRecognitonViewController(nibName: nil, bundle: nil)
-        self.customVoiceView!.delegate = self
-        
-        BDVoiceRecognitionClient.sharedInstance().setApiKey("LAdtPcao8U8T6Vn7eKwwnjtL", withSecretKey: "a529e2f82826adb4b054e14f7f0f6e4f")
-        BDVoiceRecognitionClient.sharedInstance().setPropertyList([20000])
-        BDVoiceRecognitionClient.sharedInstance().setCityID(1)
-        BDVoiceRecognitionClient.sharedInstance().setConfig("nlu", withFlag: false)
-        BDVoiceRecognitionClient.sharedInstance().setLanguage(Int32(0))
-        BDVoiceRecognitionClient.sharedInstance().cancelListenCurrentDBLevelMeter()
-        BDVoiceRecognitionClient.sharedInstance().setPlayTone(Int32(1), isPlay: false)
-        BDVoiceRecognitionClient.sharedInstance().setPlayTone(Int32(2), isPlay: false)
-        let appCode = "8310051"
-        let datFilePath  = Bundle.main.path(forResource: "s_1", ofType: "")
-        let lmDatFilePath = Bundle.main.path(forResource: "s_2_InputMethod", ofType: "")
-        let recogGrammSlot = ["$song_CORE":"中国", "$app_CORE":"孔子"]
-        let ret = BDVoiceRecognitionClient.sharedInstance().loadOfflineEngine(appCode, license: nil, datFile: datFilePath, lmDatFile: lmDatFilePath, grammSlot: recogGrammSlot)
-        if ret != 0
-        {
-            return
-        }
-        else
-        {
-            UIApplication.shared.keyWindow!.addSubview(self.customVoiceView!.view)
+        if trListening { stopTrVoice(); return }
+        AVAudioSession.sharedInstance().requestRecordPermission { ok in
+            DispatchQueue.main.async {
+                if !ok { self.trTipShow("未授权麦克风，请到 设置→汉字先生 打开"); return }
+                self.startTrVoice()
+            }
         }
     }
-    
+
+    func trTipShow(_ t: String)
+    {
+        trTip?.removeFromSuperview()
+        let lab = UILabel()
+        lab.text = t
+        lab.font = UIFont.systemFont(ofSize: 14)
+        lab.textColor = .white
+        lab.backgroundColor = UIColor(white: 0.15, alpha: 0.92)
+        lab.textAlignment = .center
+        lab.numberOfLines = 0
+        lab.frame = CGRect(x: 12, y: 90, width: self.view.bounds.width - 24, height: 40)
+        lab.layer.cornerRadius = 8
+        lab.clipsToBounds = true
+        self.view.addSubview(lab)
+        self.trTip = lab
+    }
+
+    func startTrVoice()
+    {
+        stopTrVoice()
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.record, mode: .measurement, options: [])
+            try session.setActive(true, options: [])
+        } catch {
+            trTipShow("音频会话启动失败")
+            return
+        }
+        trRec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+        guard let rec = trRec, rec.isAvailable else {
+            trTipShow("语音识别暂不可用，请稍后再试")
+            return
+        }
+        trReq = SFSpeechAudioBufferRecognitionRequest()
+        trReq?.shouldReportPartialResults = true
+        let engine = AVAudioEngine()
+        trEngine = engine
+        let input = engine.inputNode
+        let fmt = input.outputFormat(forBus: 0)
+        input.removeTap(onBus: 0)
+        input.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in
+            self.trReq?.append(buf)
+        }
+        do {
+            engine.prepare()
+            try engine.start()
+        } catch {
+            trTipShow("麦克风启动失败")
+            stopTrVoice()
+            return
+        }
+        trListening = true
+        trTipShow("请说普通话…")
+        trTask = rec.recognitionTask(with: trReq!) { result, err in
+            if let r = result {
+                let t = r.bestTranscription.formattedString
+                if !t.isEmpty {
+                    DispatchQueue.main.async {
+                        self.trTipShow(t)
+                        self.inputTxt.text = t
+                    }
+                }
+                if r.isFinal {
+                    DispatchQueue.main.async {
+                        self.stopTrVoice()
+                        if (self.inputTxt.text ?? "").isEmpty == false { self.doTran() }
+                    }
+                }
+            }
+            if err != nil {
+                DispatchQueue.main.async {
+                    self.stopTrVoice()
+                    if (self.inputTxt.text ?? "").isEmpty == false {
+                        self.doTran()
+                    } else {
+                        self.trTipShow("没听清，请再说一次")
+                    }
+                }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+            if self.trListening { self.stopTrVoice() }
+        }
+    }
+
+    func stopTrVoice()
+    {
+        trListening = false
+        trTask?.cancel(); trTask = nil
+        trReq?.endAudio(); trReq = nil
+        if let e = trEngine {
+            e.stop()
+            e.inputNode.removeTap(onBus: 0)
+        }
+        trEngine = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        if let v = trTip {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { v.removeFromSuperview() }
+        }
+    }
+
     // 百度自带 ui
     private func voice_ui()
     {
