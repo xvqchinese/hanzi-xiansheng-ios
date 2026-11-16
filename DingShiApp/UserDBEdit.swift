@@ -53,6 +53,13 @@ class UserViewController: UITableViewController
             seenWord.insert(it.1)
             uniq.append(it)
         }
+        // 把整词重复两次的值（丁树雄丁树雄）折回一个
+        uniq = uniq.map { ($0.0, { (v: String) -> String in
+            let n = v.count
+            if n % 2 == 0, n >= 4 { let h = String(v.prefix(n/2)); if h + h == v { return h } }
+            return v
+        }($0.1)) }
+
         // 清掉“是更长词条前缀”的半截词（如 丁树 / 丁树雄 同时存在时只留长的）
         let words = Set(uniq.map { $0.1 })
         uniq = uniq.filter { it in

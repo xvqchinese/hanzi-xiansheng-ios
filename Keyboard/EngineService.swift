@@ -884,11 +884,25 @@ final class LocalPinyin
     }
 
     // 去掉“是更长词条前缀”的半截词，避免召回时同时出 丁树 / 丁树雄
+    // 把“丁树雄丁树雄”这类整词重复两次的值折回一个
+    static func collapseDup(_ v: String) -> String
+    {
+        let n = v.count
+        if n % 2 == 0, n >= 4
+        {
+            let half = String(v.prefix(n / 2))
+            if half + half == v { return half }
+        }
+        return v
+    }
+
     static func dropPrefixDup(_ j: [String: String]) -> [String: String]
     {
-        let words = Set(j.values)
+        var fixed: [String: String] = [:]
+        for (k, v) in j { fixed[k] = collapseDup(v) }
+        let words = Set(fixed.values)
         var r: [String: String] = [:]
-        for (k, v) in j
+        for (k, v) in fixed
         {
             let isPrefixDup = words.contains { $0.count > v.count && $0.hasPrefix(v) }
             if !isPrefixDup { r[k] = v }
@@ -1710,7 +1724,9 @@ final class LocalPinyin
         composed = ""
         input = ""
         typed = ""
-        // typedAll / wordBuf 要跨字累计，不能每次都清空，否则整词永远学不到
+        // 整词已选完（input 清空）→ 学词计数复位，否则下一个词会把上一个词拼进来（丁树雄丁树雄）
+        typedAll = ""
+        wordBuf = ""
         cands.removeAll()
         codes.removeAll()
         return EST.SMR_OK
