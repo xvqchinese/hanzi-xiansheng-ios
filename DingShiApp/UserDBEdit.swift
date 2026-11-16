@@ -113,6 +113,12 @@ class UserViewController: UITableViewController
         self.cmdbar.frame.size.height = self.pyBtn.frame.height
         self.pyBtn.backgroundColor = UIColor.blue.withAlphaComponent(0.5)
 
+        if let m = UserDefaults.standard.string(forKey: "dbgDelStep"), !m.hasPrefix("E-")
+        {
+            let al = UIAlertController(title: "上次删除停在", message: m, preferredStyle: .alert)
+            al.addAction(UIAlertAction(title: "知道了", style: .default))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.present(al, animated: true) }
+        }
         self.loadDB();
         self.navigationItem.title = Lang("user_title")
         let backItem = UIBarButtonItem(title: Lang("返回"), style: .plain, target: self, action: Selector("onBackPage"))
@@ -231,8 +237,14 @@ class UserViewController: UITableViewController
         guard row >= 0, row < snapshot.count else { return }
         let word = snapshot[row].1
         // 先离开当前的按钮点击/表格布局回调，再改数据与刷新，避免在刷新过程中动表格
+        let mark = { (st: String) in
+            UserDefaults.standard.set("\(st) | row=\(row) | word=\(word)", forKey: "dbgDelStep")
+            UserDefaults.standard.synchronize()
+        }
+        mark("A-tap")
         DispatchQueue.main.async {
             autoreleasepool {
+                mark("B-async")
                 let g = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
                 // 1) 删学习库
                 if let u = g?.appendingPathComponent("learned_words.json"),
@@ -253,8 +265,11 @@ class UserViewController: UITableViewController
                     if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
                 }
                 // 3) 重新读库再刷新（读库内部已做去重与折叠）
+                mark("C-files-done")
                 self.loadDB()
+                mark("D-loadDB-done")
                 self.tableView.reloadData()
+                mark("E-reload-done")
             }
         }
     }
