@@ -192,8 +192,9 @@ class UserViewController: UITableViewController
         }
         guard let statusLabel = cell!.contentView.viewWithTag(1000001) as? UILabel,
               let button = cell!.contentView.viewWithTag(1000011) as? MyButton else { return cell! }
+        guard indexPath.row >= 0, indexPath.row < self.items.count else { return cell! }
         let it = self.items[indexPath.row]
-        statusLabel.text = String(format: "%05d   %@", indexPath.row, it.1)
+        statusLabel.text = String(format: "%05d   %@", indexPath.row, it.1 as NSString)
         statusLabel.sizeToFit()
         statusLabel.frame.origin.y = (cell!.frame.height - statusLabel.frame.height) / 2
         statusLabel.frame.size.width = self.tableView.frame.width - 30
@@ -261,13 +262,13 @@ class MyCell : UITableViewCell
 {
     @objc func handleSwipeRight()
     {
-        let button:MyButton = self.contentView.viewWithTag(1000011) as!  MyButton
+        guard let button = self.contentView.viewWithTag(1000011) as? MyButton else { return }
         button.isHidden = !button.isHidden
     }
 
     @objc func handleSwipeLeft()
     {
-        let button:MyButton = self.contentView.viewWithTag(1000011) as!  MyButton
+        guard let button = self.contentView.viewWithTag(1000011) as? MyButton else { return }
         button.isHidden = !button.isHidden
     }
 }
