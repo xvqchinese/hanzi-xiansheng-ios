@@ -162,115 +162,74 @@ class UserViewController: UITableViewController
         
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
-        tableView.cellForRow(at: indexPath)?.isSelected = false
+        tableView.deselectRow(at: indexPath, animated: false)
     }
-    
-    override  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> MyCell
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> MyCell
     {
-        var cell: MyCell? = tableView.dequeueReusableCell(withIdentifier: "Cell") as? MyCell
-        
+        var cell = tableView.dequeueReusableCell(withIdentifier: "Cell") as? MyCell
         if cell == nil
         {
-            cell = MyCell(style: UITableViewCell.CellStyle.default, reuseIdentifier: "Cell") as MyCell
-            cell!.selectionStyle = UITableViewCell.SelectionStyle.default
+            cell = MyCell(style: .default, reuseIdentifier: "Cell")
             let statusLabel = UILabel()
-            statusLabel.frame = CGRect(x: 20, y: 6, width: self.tableView.frame.width - 30, height: cell!.frame.height)
+            statusLabel.tag = 1000001
             statusLabel.font = UIFont.boldSystemFont(ofSize: 16)
             statusLabel.textColor = UIColor.black
             statusLabel.backgroundColor = UIColor.clear
-            statusLabel.lineBreakMode = NSLineBreakMode.byWordWrapping
+            statusLabel.lineBreakMode = .byWordWrapping
             statusLabel.textAlignment = .left
             statusLabel.numberOfLines = 0
             cell!.contentView.addSubview(statusLabel)
-            statusLabel.tag = 1000001
-            
-            let button: MyButton = MyButton()
-            button.setTitle(Lang("button_delete"), for: .normal)
-            button.backgroundColor = UIColor.red
-            button.sizeToFit()
-            button.frame.origin.x = tableView.frame.width - button.frame.width
-            button.frame.size.height = cell!.frame.height
-            button.center.y = cell!.center.y
-            button.isHidden =  true
-            button.tag = 1000011
-            button.addTarget(self, action: Selector(("button_highlight:")), for: UIControl.Event.touchDown)
-            button.addTarget(self, action: Selector(("button_unighlight:")), for: [UIControl.Event.touchUpInside, UIControl.Event.touchUpOutside, UIControl.Event.touchCancel])
-            button.addTarget(self, action: Selector(("delete_item:")), for: UIControl.Event.touchUpInside)
-            cell!.contentView.addSubview(button)
-            
-            let gestureRecognizerR: UISwipeGestureRecognizer = UISwipeGestureRecognizer()
-            gestureRecognizerR.direction = UISwipeGestureRecognizer.Direction.right
-            gestureRecognizerR.addTarget(cell!, action: Selector("handleSwipeRight"))
-            cell!.addGestureRecognizer(gestureRecognizerR)
-
-            let gestureRecognizerL: UISwipeGestureRecognizer = UISwipeGestureRecognizer()
-            gestureRecognizerL.direction = UISwipeGestureRecognizer.Direction.left
-            gestureRecognizerL.addTarget(cell!, action: Selector("handleSwipeLeft"))
-            cell!.addGestureRecognizer(gestureRecognizerL)
         }
-        guard let statusLabel = cell!.contentView.viewWithTag(1000001) as? UILabel,
-              let button = cell!.contentView.viewWithTag(1000011) as? MyButton else { return cell! }
+        guard let statusLabel = cell!.contentView.viewWithTag(1000001) as? UILabel else { return cell! }
         guard indexPath.row >= 0, indexPath.row < self.items.count else { return cell! }
         let it = self.items[indexPath.row]
         statusLabel.text = String(format: "%05d   %@", indexPath.row, it.1 as NSString)
-        statusLabel.sizeToFit()
-        statusLabel.frame.origin.y = (cell!.frame.height - statusLabel.frame.height) / 2
-        statusLabel.frame.size.width = self.tableView.frame.width - 30
-        button.row = indexPath.row
-        
+        statusLabel.frame = CGRect(x: 20, y: 6, width: tableView.frame.width - 30, height: max(24, cell!.frame.height - 12))
         return cell!
     }
-    
-    @objc func button_highlight(_ sender: UIButton)
+
+    // 用系统自带的左滑删除，替掉自绘手势＋红色按钮（那条路是闪崩的来源）
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration?
     {
-        sender.backgroundColor = UIColor.blue
-    }
-    @objc func button_unighlight(_ sender: UIButton)
-    {
-        sender.backgroundColor = UIColor.red
-    }
-    
-    @objc func delete_item(_ sender: UIButton)
-    {
-        let row = (sender as? MyButton)?.row ?? -1
-        let snapshot = self.items
-        guard row >= 0, row < snapshot.count else { return }
-        let word = snapshot[row].1
-        // 先离开当前的按钮点击/表格布局回调，再改数据与刷新，避免在刷新过程中动表格
-        let mark = { (st: String) in
-            UserDefaults.standard.set("\(st) | row=\(row) | word=\(word)", forKey: "dbgDelStep")
-            UserDefaults.standard.synchronize()
+        guard indexPath.row >= 0, indexPath.row < self.items.count else { return nil }
+        let word = self.items[indexPath.row].1
+        let act = UIContextualAction(style: .destructive, title: Lang("button_delete")) { [weak self] _, _, done in
+            guard let self = self else { done(false); return }
+            self.removeWord(word)
+            done(true)
         }
-        mark("A-tap")
-        DispatchQueue.main.async {
-            autoreleasepool {
-                mark("B-async")
-                let g = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
-                // 1) 删学习库
-                if let u = g?.appendingPathComponent("learned_words.json"),
-                   let d = try? Data(contentsOf: u),
-                   let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
-                {
-                    var j = obj
-                    for k in j.filter({ $0.value == word }).map({ $0.key }) { j.removeValue(forKey: k) }
-                    if let nd = try? JSONSerialization.data(withJSONObject: j, options: []) { try? nd.write(to: u) }
-                }
-                // 2) 删简拼首字母索引
-                if let u2 = g?.appendingPathComponent("user_word_ini.json"),
-                   let d2 = try? Data(contentsOf: u2),
-                   let obj2 = try? JSONSerialization.jsonObject(with: d2) as? [String: String]
-                {
-                    var j2 = obj2
-                    for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
-                    if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
-                }
-                // 3) 重新读库再刷新（读库内部已做去重与折叠）
-                mark("C-files-done")
-                self.loadDB()
-                mark("D-loadDB-done")
-                self.tableView.reloadData()
-                mark("E-reload-done")
-            }
+        act.backgroundColor = UIColor.red
+        return UISwipeActionsConfiguration(actions: [act])
+    }
+
+    func removeWord(_ word: String)
+    {
+        if let row = self.items.firstIndex(where: { $0.1 == word })
+        {
+            self.items.remove(at: row)
+            self.tableView.reloadData()
+        }
+        let g = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
+        if let u = g?.appendingPathComponent("learned_words.json"),
+           let d = try? Data(contentsOf: u),
+           let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
+        {
+            var j = obj
+            for k in j.filter({ $0.value == word }).map({ $0.key }) { j.removeValue(forKey: k) }
+            if let nd = try? JSONSerialization.data(withJSONObject: j, options: []) { try? nd.write(to: u) }
+        }
+        if let u2 = g?.appendingPathComponent("user_word_ini.json"),
+           let d2 = try? Data(contentsOf: u2),
+           let obj2 = try? JSONSerialization.jsonObject(with: d2) as? [String: String]
+        {
+            var j2 = obj2
+            for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
+            if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.loadDB()
+            self?.tableView.reloadData()
         }
     }
 
