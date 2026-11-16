@@ -187,9 +187,9 @@ class UserViewController: UITableViewController
             button.center.y = cell!.center.y
             button.isHidden =  true
             button.tag = 1000011
-            button.addTarget(self, action: Selector("button_highlight:"), for: UIControl.Event.touchDown)
-            button.addTarget(self, action: Selector("button_unighlight:"), for: [UIControl.Event.touchUpInside, UIControl.Event.touchUpOutside, UIControl.Event.touchCancel])
-            button.addTarget(self, action: Selector("delete_item:"), for: UIControl.Event.touchUpInside)
+            button.addTarget(self, action: Selector(("button_highlight:")), for: UIControl.Event.touchDown)
+            button.addTarget(self, action: Selector(("button_unighlight:")), for: [UIControl.Event.touchUpInside, UIControl.Event.touchUpOutside, UIControl.Event.touchCancel])
+            button.addTarget(self, action: Selector(("delete_item:")), for: UIControl.Event.touchUpInside)
             cell!.contentView.addSubview(button)
             
             let gestureRecognizerR: UISwipeGestureRecognizer = UISwipeGestureRecognizer()
@@ -215,18 +215,18 @@ class UserViewController: UITableViewController
         return cell!
     }
     
-    @objc func button_highlight(sender: MyButton)
+    @objc func button_highlight(_ sender: UIButton)
     {
         sender.backgroundColor = UIColor.blue
     }
-    @objc func button_unighlight(sender: MyButton)
+    @objc func button_unighlight(_ sender: UIButton)
     {
         sender.backgroundColor = UIColor.red
     }
     
-    @objc func delete_item(sender: MyButton)
+    @objc func delete_item(_ sender: UIButton)
     {
-        let row = sender.row
+        let row = (sender as? MyButton)?.row ?? -1
         let snapshot = self.items
         guard row >= 0, row < snapshot.count else { return }
         let word = snapshot[row].1
