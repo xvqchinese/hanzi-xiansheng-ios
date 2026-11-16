@@ -171,17 +171,18 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
             //self.outView.addSubview(self.soundBtn)
         }
         
-        let index = prefs.integer(forKey: "tranLang")
-        if self.froms[Int(index)] == "zh"
-        {
-            self.voiceBtn.isHidden = false
-        }
-        else
-        {
-            self.voiceBtn.isHidden = true
-        }
+        // 语音按钮始终显示（英文界面也要能语音输入）
+        self.voiceBtn.isHidden = false
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let w = self.inputAre?.bounds.width, w > 100 {
+            self.clearBtn?.frame = CGRect(x: w - 44, y: self.inputAre.bounds.height - 44, width: 40, height: 40)
+            self.voiceBtn?.frame = CGRect(x: w - 92, y: self.inputAre.bounds.height - 44, width: 40, height: 40)
+        }
+    }
+
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         //self.hidesBottomBarWhenPushed = false
@@ -195,14 +196,7 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
     func didSelectItem(at index: UInt) {
         
         prefs.set(Int(index), forKey: "tranLang")
-        if self.froms[Int(index)] == "zh"
-        {
-            self.voiceBtn.isHidden = false
-        }
-        else
-        {
-            self.voiceBtn.isHidden = true
-        }
+        self.voiceBtn.isHidden = false
     }
     
     func textViewDidChange(textView: UITextView)
@@ -219,6 +213,13 @@ class TranRootController: UIViewController, SINavigationMenuDelegate, UITextView
 
     @objc func onMicrophone()
     {
+        let idx = prefs.integer(forKey: "tranLang")
+        if idx < self.froms.count && self.froms[idx] != "zh" {
+            if let zh = self.froms.firstIndex(of: "zh") {
+                prefs.set(zh, forKey: "tranLang")
+                self.trTipShow("已切到中文翻译方向")
+            }
+        }
         if trListening { stopTrVoice(); return }
         AVAudioSession.sharedInstance().requestRecordPermission { ok in
             DispatchQueue.main.async {
