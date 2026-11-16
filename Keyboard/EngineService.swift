@@ -957,6 +957,18 @@ final class LocalPinyin
             learned[wordIni] = text
             learnedWordIni[wordIni] = text
         }
+        // 学到完整词后，清掉同库里“是这个词前缀”的半截词条
+        if text.count >= 3
+        {
+            for (k, v) in learned where v != text && text.hasPrefix(v) && v.count >= 2
+            {
+                learned.removeValue(forKey: k)
+            }
+            for (k, v) in learnedIni where v != text && text.hasPrefix(v) && v.count >= 2
+            {
+                learnedIni.removeValue(forKey: k)
+            }
+        }
         saveLearned()
         saveUserIni()
         // 落盘自检：App Group 写不进去（未开完全访问）就明确提示，不静默失败
@@ -1659,13 +1671,9 @@ final class LocalPinyin
                 input = String(input.dropFirst(segs.prefix(used).joined().count))
                 pendingOn = false
                 pending = composed + input
-                // 同一串里选了部分音节，也要把整词累计起来学
+                // 同一串里选了部分音节：只累计，不学词（否则会学到“丁树”这种半截词）
                 typedAll += typed
                 wordBuf += t
-                if wordBuf.count >= 2, typedAll.count >= 2
-                {
-                    learn(self.strokeMode ? typedAll.uppercased() : typedAll, wordBuf)
-                }
                 refresh()
                 return EST.SMR_OK
             }
