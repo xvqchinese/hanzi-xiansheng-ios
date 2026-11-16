@@ -227,31 +227,38 @@ class UserViewController: UITableViewController
     @objc func delete_item(sender: MyButton)
     {
         let row = sender.row
-        guard row >= 0, row < self.items.count else { return }
-        let word = self.items[row].1
-        // 1) 删学习库
-        if let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json"),
-           let d = try? Data(contentsOf: u),
-           let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
-        {
-            var j = obj
-            for k in j.filter({ $0.value == word }).map({ $0.key }) { j.removeValue(forKey: k) }
-            if let nd = try? JSONSerialization.data(withJSONObject: j, options: []) { try? nd.write(to: u) }
+        let snapshot = self.items
+        guard row >= 0, row < snapshot.count else { return }
+        let word = snapshot[row].1
+        // 先离开当前的按钮点击/表格布局回调，再改数据与刷新，避免在刷新过程中动表格
+        DispatchQueue.main.async {
+            autoreleasepool {
+                let g = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")
+                // 1) 删学习库
+                if let u = g?.appendingPathComponent("learned_words.json"),
+                   let d = try? Data(contentsOf: u),
+                   let obj = try? JSONSerialization.jsonObject(with: d) as? [String: String]
+                {
+                    var j = obj
+                    for k in j.filter({ $0.value == word }).map({ $0.key }) { j.removeValue(forKey: k) }
+                    if let nd = try? JSONSerialization.data(withJSONObject: j, options: []) { try? nd.write(to: u) }
+                }
+                // 2) 删简拼首字母索引
+                if let u2 = g?.appendingPathComponent("user_word_ini.json"),
+                   let d2 = try? Data(contentsOf: u2),
+                   let obj2 = try? JSONSerialization.jsonObject(with: d2) as? [String: String]
+                {
+                    var j2 = obj2
+                    for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
+                    if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
+                }
+                // 3) 重新读库再刷新（读库内部已做去重与折叠）
+                self.loadDB()
+                self.tableView.reloadData()
+            }
         }
-        // 2) 删简拼首字母索引（否则删了学习库还会被召回）
-        if let u2 = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("user_word_ini.json"),
-           let d2 = try? Data(contentsOf: u2),
-           let obj2 = try? JSONSerialization.jsonObject(with: d2) as? [String: String]
-        {
-            var j2 = obj2
-            for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
-            if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
-        }
-        // 先同步数据源，再按行删除，最后重排一次，避免 reload 过程中行号越界
-        if row < self.items.count { self.items.remove(at: row) }
-        self.tableView.reloadData()
     }
-    
+
     func saveDB()
     {
         if self.userDB != nil
