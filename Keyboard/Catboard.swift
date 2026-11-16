@@ -62,9 +62,17 @@ extension KeyboardViewController
             }
             else if (key.type == Key.KeyType.Return)
             {
-                // 回车：有候选就取第一个候选（词组/单字都走这里，并发声）
+                // 回车：合法中文编码 → 取第一个候选；切成音节的英文串（apple 等）→ 原样上屏
                 if (self.engine.hasInput())
                 {
+                    if !self.engine.isFullValidSpell()
+                    {
+                        self.out(self.engine.inputStr() as String, sendCand: false)
+                        self.engine.Reset()
+                        self.closeCand()
+                        updateCandComp()
+                        return
+                    }
                     if self.engine.CandCount() > 0
                     {
                         self.selectCand(0, str: nil)

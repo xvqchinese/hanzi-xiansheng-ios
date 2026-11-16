@@ -702,6 +702,16 @@ final class LocalPinyin
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.DWIME_DS")?.appendingPathComponent("learned_words.json")
     }
 
+    // 整串能否被完整切成合法鼎式音节（apple 这类切不动的就是英文字母，回车应原样上屏）
+    func isFullValidSpell() -> Bool
+    {
+        let cur = String(input).lowercased()
+        if cur.isEmpty { return false }
+        let segs = segments(cur)
+        if segs.isEmpty { return false }
+        return segs.joined() == cur
+    }
+
     func segments(_ s: String) -> [String]
     {
         let chars = Array(s)
