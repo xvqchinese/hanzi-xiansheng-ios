@@ -190,8 +190,8 @@ class UserViewController: UITableViewController
             gestureRecognizerL.addTarget(cell!, action: Selector("handleSwipeLeft"))
             cell!.addGestureRecognizer(gestureRecognizerL)
         }
-        let statusLabel:UILabel = cell!.contentView.viewWithTag(1000001) as!  UILabel
-        let button:MyButton = cell!.contentView.viewWithTag(1000011) as!  MyButton
+        guard let statusLabel = cell!.contentView.viewWithTag(1000001) as? UILabel,
+              let button = cell!.contentView.viewWithTag(1000011) as? MyButton else { return cell! }
         let it = self.items[indexPath.row]
         statusLabel.text = String(format: "%05d   %@", indexPath.row, it.1)
         statusLabel.sizeToFit()
@@ -234,7 +234,8 @@ class UserViewController: UITableViewController
             for k in j2.filter({ $0.value == word }).map({ $0.key }) { j2.removeValue(forKey: k) }
             if let nd = try? JSONSerialization.data(withJSONObject: j2, options: []) { try? nd.write(to: u2) }
         }
-        self.loadDB()
+        // 先同步数据源，再按行删除，最后重排一次，避免 reload 过程中行号越界
+        if row < self.items.count { self.items.remove(at: row) }
         self.tableView.reloadData()
     }
     
