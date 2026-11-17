@@ -72,15 +72,9 @@ extension KeyboardViewController
                 }
                 else
                 {
-                    // 再按一次回车：不换行，进词典（查刚才上屏的字词）
-                    let k = self.lastCommitChar.isEmpty ? "汉" : self.lastCommitChar
-                    // 键盘扩展打不开主 App 的自定义 URL（系统会静默拒绝），改走 App Group 通知：
-                    // 键盘写请求，主 App 前台轮询到就跳词典并查这个词
-                    let d = UserDefaults(suiteName: "group.DWIME_DS")
-                    d?.set("dict:" + k + ":" + String(Date().timeIntervalSince1970), forKey: "kbRequest")
-                    d?.synchronize()
-                    if let vc = KeyboardViewController.kbdVC
-                    { vc.showVoiceTip("已请求 App 打开词典：" + k) }
+                    // 没有待上屏的字母时，回车就是正常回车：换一行（与安卓原版一致）
+                    // 发送交给微信自己的发送键，键盘不介入，也不查词典
+                    (self.textDocumentProxy as UITextDocumentProxy?)?.insertText("\n")
                 }
             }
             else if (key.type == Key.KeyType.Character && (key.keyCode == nil || key.keyCode?.length == 0))
